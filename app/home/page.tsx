@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../supabaseClient';
+import AdminLink from './_components/Navigation/AdminLink';
 
 const COUNTRIES_CITIES: Record<string, string[]> = {
   'تونس': ['بنزرت','أريانة','تونس العاصمة','منوبة','بن عروس','نابل','زغوان','باجة','جندوبة','الكاف','سليانة','سوسة','المنستير','المهدية','صفاقس','القيروان','سيدي بوزيد','قفصة','قابس','مدنين','تطاوين','توزر','قبلي','غفصة'],

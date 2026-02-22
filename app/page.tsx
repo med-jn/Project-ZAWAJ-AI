@@ -99,6 +99,14 @@ export default function HomePage() {
               <span className="text-lg font-black tracking-tight">الدخول عبر جوجل</span>
             </button>
 
+<button
+  onClick={() => router.push('/register')}
+  className="w-full py-4 px-6 rounded-full border border-[#c0002a]/40 text-white flex items-center justify-center gap-3 transition-all duration-300 hover:scale-[1.03] active:scale-95 hover:bg-[#c0002a]/10"
+>
+  <span className="text-xl">✉️</span>
+  <span className="text-lg font-black tracking-tight">التسجيل بالبريد الإلكتروني</span>
+</button>
+
             <p className="text-white/20 text-[10px] leading-relaxed">
               بتسجيل دخولك توافق على سياسة الخصوصية <br /> وشروط الاستخدام المعتمدة
             </p>

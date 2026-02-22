@@ -1,8 +1,7 @@
-.env
-node_modules
 node_modules/
 .next/
 out/
 build/
-.env*.local
-.DS_Store
+.env
+.env.local
+.DS_StoreSs
