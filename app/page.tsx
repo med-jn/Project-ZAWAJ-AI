@@ -24,11 +24,20 @@ export default function LandingPage() {
   }, [router]);
 
   const handleGoogleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + '/auth/callback' }
-    });
-  };
+  const isMobileApp = window.location.protocol === 'capacitor:';
+
+  const redirectUrl = isMobileApp
+    ? 'com.zawaj.ai://auth/callback'
+    : window.location.origin + '/auth/callback';
+
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: redirectUrl,
+      skipBrowserRedirect: false,
+    },
+  });
+};
 
   if (loading) {
     return (

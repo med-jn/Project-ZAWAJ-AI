@@ -1,104 +1,362 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* 1. استدعاء الخط من جوجل */
-
-/* 2. التغيرات العامة للموقع */
+/* ══════════════════════════════════════════
+   الثيم الداكن — افتراضي
+══════════════════════════════════════════ */
 :root {
-  --color-primary: #A4161A;
-  --color-primary-hover: #8E1417;
-  --color-gold: #D4AF37;
-  --color-gold-hover: #C49B2E;
-  --color-accent: #FF4D6D;
-  --bg-main: #0F0F14;
-  --bg-surface: #16161D;
-  --bg-soft: #1C1C24;
-  --text-main: #F5F5F5;
-  --text-secondary: #CFCFCF;
+  /* ── الألوان ──────────────────────────── */
+  --color-primary:        #B3334B;
+  --color-primary-hover:  #962B3F;
+  --color-primary-soft:   rgba(179,51,75,0.20);
+  --color-primary-xsoft:  rgba(179,51,75,0.10);
+  --color-secondary:      #ffffff;
+  --color-gold:           #D4AF37;
+  --color-gold-hover:     #C49B2E;
+  --color-accent:         #A4161A;
+
+  --bg-main:     #080008;
+  --bg-surface:  #121212;
+  --bg-soft:     #1C1C24;
+  --bg-elevated: #22222C;
+
+  --text-main:       #FFFFFF;
+  --text-secondary:  #C1C1C1;
+  --text-tertiary:   #AAAAAA;
   --text-on-primary: #FFFFFF;
-  --border-soft: rgba(255,255,255,0.08);
-  --border-gold: rgba(212,175,55,0.4);
-  --glass-bg: rgba(255,255,255,0.06);
-  --glass-border: rgba(255,255,255,0.12);
-  --glass-blur: blur(25px);
-  --shadow-soft: 0 10px 40px rgba(0,0,0,0.6);
-  --shadow-red-glow: 0 0 35px rgba(164,22,26,0.5);
-  --shadow-gold-glow: 0 0 35px rgba(212,175,55,0.45);
+
+  --border-soft:   rgba(179,51,75,0.4);
+  --border-medium: rgba(179,51,75,0.7);
+  --border-gold:   rgba(212,175,55,0.4);
+
+  --glass-bg:     rgba(255,255,255,0.05);
+  --glass-border: rgba(255,255,255,0.11);
+  --glass-blur:   blur(32px);
+
+  --shadow-soft:      0 8px 32px rgba(0,0,0,0.55);
+  --shadow-deep:      0 24px 64px rgba(0,0,0,0.70);
+  --shadow-red-glow:  rgba(179,51,75,0.25);
+  --shadow-gold-glow: rgba(212,175,55,0.50);
+
+  --input-line:        rgba(255,255,255,0.35);
+  --input-line-focus:  #A4161A;
+  --input-placeholder: rgba(255,255,255,0.50);
+
+  /* ══════════════════════════════════════════
+     نظام الأحجام العالمي — rem + clamp
+     ────────────────────────────────────────
+     html يرث حجم الخط من النظام (100% = 16px)
+     clamp(min, مفضّل, max) يضمن:
+       • النص لا يختفي عند أصغر حجم
+       • العناصر لا تتداخل عند أكبر حجم
+  ══════════════════════════════════════════ */
+
+  /* ── أحجام النص ──────────────────────── */
+  --text-2xs:  clamp(0.625rem,  0.6875rem, 0.75rem);   /* 10→11→12px */
+  --text-xs:   clamp(0.6875rem, 0.75rem,   0.875rem);  /* 11→12→14px */
+  --text-sm:   clamp(0.75rem,   0.8125rem, 0.9375rem); /* 12→13→15px */
+  --text-base: clamp(0.875rem,  1rem,      1.125rem);  /* 14→16→18px */
+  --text-md:   clamp(0.9375rem, 1.0625rem, 1.1875rem); /* 15→17→19px */
+  --text-lg:   clamp(1rem,      1.125rem,  1.3125rem); /* 16→18→21px */
+  --text-xl:   clamp(1.125rem,  1.3125rem, 1.5rem);    /* 18→21→24px */
+  --text-2xl:  clamp(1.25rem,   1.5rem,    1.875rem);  /* 20→24→30px */
+  --text-3xl:  clamp(1.5rem,    1.875rem,  2.25rem);   /* 24→30→36px */
+
+  /* ── المسافات — نظام 4px ──────────────── */
+  --sp-1:  0.25rem;   /*  4px */
+  --sp-2:  0.5rem;    /*  8px */
+  --sp-3:  0.75rem;   /* 12px */
+  --sp-4:  1rem;      /* 16px */
+  --sp-5:  1.25rem;   /* 20px */
+  --sp-6:  1.5rem;    /* 24px */
+  --sp-8:  2rem;      /* 32px */
+  --sp-10: 2.5rem;    /* 40px */
+  --sp-12: 3rem;      /* 48px */
+  --sp-16: 4rem;      /* 64px */
+
+  /* ── مكونات ──────────────────────────── */
+  --nav-h:    3.875rem;  /* 62px — شريط التنقل  */
+  --header-h: 3.5rem;    /* 56px — الهيدر        */
+  --btn-h:    2.75rem;   /* 44px — زر (touch target الموصى به) */
+  --btn-h-lg: 3.25rem;   /* 52px — زر كبير       */
+
+  /* ── أيقونات ─────────────────────────── */
+  --icon-sm: 1rem;       /* 16px */
+  --icon-md: 1.25rem;    /* 20px */
+  --icon-lg: 1.5rem;     /* 24px */
+  --icon-xl: 2rem;       /* 32px */
+
+  /* ── الأفاتار ─────────────────────────── */
+  --avatar-xs: 1.75rem;  /* 28px */
+  --avatar-sm: 2.5rem;   /* 40px */
+  --avatar-md: 3.25rem;  /* 52px */
+  --avatar-lg: 4rem;     /* 64px */
+  --avatar-xl: 6rem;     /* 96px */
+
+  /* ── نصف الأقطار ─────────────────────── */
+  --radius-xs:  0.375rem;
+  --radius-sm:  0.5rem;
+  --radius-md:  0.75rem;
+  --radius-lg:  1rem;
+  --radius-xl:  1.5rem;
+  --radius-2xl: 2rem;
+  --radius-full: 9999px;
+
+  /* ── التباعد بين الأسطر ──────────────── */
+  --lh-tight:   1.25;
+  --lh-snug:    1.375;
+  --lh-normal:  1.5;
+  --lh-relaxed: 1.625;
+
+  /* للتوافق مع الكود القديم */
+  --base-font-size: 1rem;
 }
 
-[data-theme="light"] {
-  --color-primary: #8B1E3F;
-  --color-primary-hover: #741933;
-  --color-gold: #C6A75E;
-  --color-gold-hover: #B8964F;
-  --bg-main: #F6F3F2;
-  --bg-surface: #FFFFFF;
-  --text-main: #1C1C1C;
-  --text-secondary: #555555;
+/* ══════════════════════════════════════════
+   الثيم النهاري
+══════════════════════════════════════════ */
+html.light {
+  --color-primary:        #B3334B;
+  --color-primary-hover:  #962B3F;
+  --color-primary-soft:   rgba(179,51,75,0.25);
+  --color-primary-xsoft:  rgba(179,51,75,0.40);
+  --color-secondary:      #B3334B;
+  --color-gold:           #D4AF37;
+  --color-gold-hover:     #A07830;
+  --color-accent:         #962B3F;
+
+  --bg-main:     #FFFFFF;
+  --bg-surface:  #FFFFFF;
+  --bg-soft:     #F5F5F5;
+  --bg-elevated: #F5F5F5;
+
+  --text-main:       #000000;
+  --text-secondary:  #101010;
+  --text-tertiary:   #3D3D3D;
+  --text-on-primary: #FFFFFF;
+
+  --border-soft:   rgba(179,51,75,0.50);
+  --border-medium: rgba(179,51,75,0.35);
+  --border-gold:   rgba(184,150,62,0.4);
+
+  --glass-bg:     rgba(255,255,255,0.72);
+  --glass-border: rgba(0,0,0,0.09);
+  --glass-blur:   blur(32px);
+
+  --shadow-soft:      0 4px 20px rgba(0,0,0,0.08);
+  --shadow-deep:      0 16px 48px rgba(0,0,0,0.14);
+  --shadow-red-glow:  rgba(139,30,63,0.18);
+  --shadow-gold-glow: rgba(184,150,62,0.22);
+
+  --input-line:        rgba(0,0,0,0.35);
+  --input-line-focus:  #8B1E3F;
+  --input-placeholder: rgba(0,0,0,0.25);
+
+  color-scheme: light;
 }
 
+/* ══════════════════════════════════════════
+   القاعدة
+══════════════════════════════════════════ */
 @layer base {
   * {
-    font-family: 'IBM Plex Sans Arabic', sans-serif;
+    font-family: 'Cairo', sans-serif;
+    box-sizing: border-box;
+    min-width: 0; /* يمنع تجاوز الـ flexbox */
   }
+
+  html {
+    /* ✅ يرث حجم الخط من إعدادات الجهاز
+       المستخدم يتحكم بالحجم من إعدادات هاتفه
+       100% = 16px افتراضي، clamp تمنع التطرف */
+    font-size: 100%;
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html.light { color-scheme: light; }
+
   body {
     @apply antialiased;
     background-color: var(--bg-main);
     color: var(--text-main);
     direction: rtl;
-    color-scheme: dark;
+    line-height: var(--lh-normal);
     margin: 0;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
+    /* لا font-size ثابت — يرث من html */
+  }
+
+  h1 { font-size: var(--text-3xl); line-height: var(--lh-tight);   font-weight: 900; margin: 0; }
+  h2 { font-size: var(--text-2xl); line-height: var(--lh-tight);   font-weight: 800; margin: 0; }
+  h3 { font-size: var(--text-xl);  line-height: var(--lh-snug);    font-weight: 700; margin: 0; }
+  h4 { font-size: var(--text-lg);  line-height: var(--lh-snug);    font-weight: 700; margin: 0; }
+  p  { font-size: var(--text-base);line-height: var(--lh-relaxed); margin: 0; }
+
+  input, textarea, select, button {
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0.5;
+    filter: invert(1);
+  }
+  html.light input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: none;
   }
 }
 
+/* ══════════════════════════════════════════
+   المكوّنات
+══════════════════════════════════════════ */
 @layer components {
+
+  .glass-panel {
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-soft);
+    transition: all 0.3s ease;
+  }
+
+  .btn-premium {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--sp-2);
+    padding: 0 var(--sp-5);
+    height: var(--btn-h);
+    min-height: var(--btn-h);
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--text-on-primary);
+    background: var(--color-primary);
+    box-shadow: 0 0.5rem 1.5rem var(--shadow-red-glow);
+    transition: all 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-premium:active { transform: scale(0.97); }
+
+  :root:not(html.light) .btn-premium::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 50%; height: 100%;
+    background: linear-gradient(to right, transparent, rgba(255,255,255,0.25), transparent);
+    transform: skewX(-25deg);
+    transition: left 0.7s;
+  }
+  :root:not(html.light) .btn-premium:hover::after { left: 150%; }
+
+  .bg-luxury-gradient {
+    background: radial-gradient(ellipse at 50% 0%,
+      rgba(179,51,75,0.35) 0%, var(--bg-main) 70%);
+    min-height: 100dvh;
+    width: 100%;
+  }
+  html.light .bg-luxury-gradient {
+    background: radial-gradient(ellipse at 50% 0%,
+      rgba(179,51,75,0.5) 0%, var(--bg-main) 33%);
+  }
+
   .snap-container {
     scroll-snap-type: y mandatory;
     overflow-y: scroll;
-    height: 100vh;
+    height: 100dvh;
     @apply no-scrollbar;
   }
   .snap-section {
     scroll-snap-align: start;
-    height: 100vh;
+    height: 100dvh;
     width: 100%;
     position: relative;
     overflow: hidden;
   }
-  .glass-panel {
-    @apply backdrop-blur-2xl border shadow-2xl transition-all duration-300;
-    background: var(--glass-bg);
-    border-color: var(--glass-border);
-    border-radius: 24px;
+
+  .lux-input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1.5px solid var(--input-line);
+    padding: var(--sp-3) 0;
+    font-size: var(--text-base);
+    font-weight: 500;
+    line-height: var(--lh-normal);
+    color: var(--text-main);
+    caret-color: var(--color-primary);
+    outline: none;
+    transition: border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    font-family: inherit;
   }
-  .btn-premium {
-    @apply flex items-center justify-center gap-2 px-8 py-4 rounded-full 
-           font-bold text-white transition-all duration-300 shadow-xl;
-    background: var(--color-primary);
-  }
-  .bg-luxury-gradient {
-    background: radial-gradient(circle at center, rgba(164, 22, 26, 0.20) 0%, var(--bg-main) 80%);
-    @apply min-h-screen w-full;
-  }
+  .lux-input:focus { border-bottom-color: var(--input-line-focus); }
+  .lux-input::placeholder { color: var(--input-placeholder); font-weight: 400; }
 }
 
+/* ══════════════════════════════════════════
+   الأدوات
+══════════════════════════════════════════ */
 @layer utilities {
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  /* أحجام النص */
+  .text-2xs  { font-size: var(--text-2xs);  }
+  .text-xs   { font-size: var(--text-xs);   }
+  .text-sm   { font-size: var(--text-sm);   }
+  .text-base { font-size: var(--text-base); }
+  .text-md   { font-size: var(--text-md);   }
+  .text-lg   { font-size: var(--text-lg);   }
+  .text-xl   { font-size: var(--text-xl);   }
+  .text-2xl  { font-size: var(--text-2xl);  }
+  .text-3xl  { font-size: var(--text-3xl);  }
+
+  /* أفاتار */
+  .avatar-xs { width:var(--avatar-xs); height:var(--avatar-xs); border-radius:50%; object-fit:cover; flex-shrink:0; }
+  .avatar-sm { width:var(--avatar-sm); height:var(--avatar-sm); border-radius:50%; object-fit:cover; flex-shrink:0; }
+  .avatar-md { width:var(--avatar-md); height:var(--avatar-md); border-radius:50%; object-fit:cover; flex-shrink:0; }
+  .avatar-lg { width:var(--avatar-lg); height:var(--avatar-lg); border-radius:50%; object-fit:cover; flex-shrink:0; }
+  .avatar-xl { width:var(--avatar-xl); height:var(--avatar-xl); border-radius:50%; object-fit:cover; flex-shrink:0; }
+
+  /* أيقونات */
+  .icon-sm { width:var(--icon-sm); height:var(--icon-sm); flex-shrink:0; }
+  .icon-md { width:var(--icon-md); height:var(--icon-md); flex-shrink:0; }
+  .icon-lg { width:var(--icon-lg); height:var(--icon-lg); flex-shrink:0; }
+  .icon-xl { width:var(--icon-xl); height:var(--icon-xl); flex-shrink:0; }
+
+  .animate-float { animation: subtle-float 4s ease-in-out infinite; }
   @keyframes subtle-float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    50%       { transform: translateY(-0.5rem); }
   }
-  .animate-float {
-    animation: subtle-float 4s ease-in-out infinite;
+
+  .animate-slow-shine { animation: slow-shine 8s cubic-bezier(0.4,0,0.2,1) infinite; }
+  @keyframes slow-shine {
+    0%   { transform: translateX(-150%) rotate(25deg); }
+    25%  { transform: translateX(150%)  rotate(25deg); }
+    100% { transform: translateX(150%)  rotate(25deg); }
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* إخفاء الأشرطة عند الدردشة */
+  body.chat-open [data-bottom-nav],
+  body.chat-open nav,
+  body.chat-open header:not(.chat-header) {
+    display: none !important;
   }
 }

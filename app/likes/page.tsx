@@ -1,179 +1,175 @@
-"use client";
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+'use client';
+import { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence }     from 'framer-motion';
+import { formatDistanceToNow }         from 'date-fns';
+import { ar }                          from 'date-fns/locale';
+import { supabase }  from '@/lib/supabase/client';
+import ChatTab       from '@/components/chat/ChatTab';
+import ProfileModal  from '@/components/profile/ProfileModal';
 
-// تعريف أنواع البيانات لضمان عدم حدوث أخطاء
-interface UserProfile {
-  username: string;
-  avatar_url: string;
-  city: string;
-  age: number;
-}
+type TabId = 'outgoing' | 'messages' | 'views' | 'incoming';
+const TABS: { id: TabId; label: string }[] = [
+  { id: 'outgoing', label: 'إعجاباتي' },
+  { id: 'messages', label: 'الرسائل'  },
+  { id: 'views',    label: 'الزيارات' },
+  { id: 'incoming', label: 'المعجبون' },
+];
 
-interface LikeItem {
-  id: string;
-  profiles: UserProfile;
-}
+export default function LikesPage() {
+  const [tab,       setTab]       = useState<TabId>('outgoing');
+  const [userId,    setUserId]    = useState<string | null>(null);
+  const [loading,   setLoading]   = useState(false);
+  const [profileId, setProfileId] = useState<string | null>(null);
+  const [data, setData] = useState<Record<string, any[]>>({ outgoing:[], views:[], incoming:[] });
 
-export default function LikesManager() {
-  const [activeTab, setActiveTab] = useState('incoming');
-  const [likedMe, setLikedMe] = useState<LikeItem[]>([]);
-  const [iLiked, setILiked] = useState<LikeItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const tabIdx = TABS.findIndex(t => t.id === tab);
+  const tx = useRef(0);
 
   useEffect(() => {
-    const initialize = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      }
-    };
-    initialize();
+    supabase.auth.getUser().then(({ data: { user } }) => { if (user) setUserId(user.id); });
   }, []);
 
   useEffect(() => {
     if (!userId) return;
-
-    fetchAllData();
-
-    // الاشتراك في التغييرات الحينية (Real-time)
-    const channel = supabase
-      .channel('likes_realtime_channel')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'likes' 
-      }, () => {
-        fetchAllData();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
+    const cols = 'id, full_name, avatar_url, city, age, is_photos_blurred';
+    const go = async () => {
+      setLoading(true);
+      const [a, b, c] = await Promise.all([
+        supabase.from('likes').select(`id,created_at,profile:profiles!to_user(${cols})`).eq('from_user',userId).eq('action','like').order('created_at',{ascending:false}),
+        supabase.from('likes').select(`id,created_at,profile:profiles!from_user(${cols})`).eq('to_user',userId).eq('action','view').order('created_at',{ascending:false}),
+        supabase.from('likes').select(`id,created_at,profile:profiles!from_user(${cols})`).eq('to_user',userId).eq('action','like').order('created_at',{ascending:false}),
+      ]);
+      const f = (r: any) => (r.data??[]).map((x:any)=>({id:x.id,created_at:x.created_at,profile:x.profile})).filter((x:any)=>x.profile);
+      setData({ outgoing:f(a), views:f(b), incoming:f(c) });
+      setLoading(false);
     };
+    go();
+    const ch = supabase.channel('likes_rt').on('postgres_changes',{event:'*',schema:'public',table:'likes'},go).subscribe();
+    return () => { supabase.removeChannel(ch); };
   }, [userId]);
 
-  const fetchAllData = async () => {
-    if (!userId) return;
-    setLoading(true);
-
-    // 1. جلب الذين أعجبوا بي (Incoming)
-    const { data: incoming } = await supabase
-      .from('likes')
-      .select('id, profiles:from_user(username, avatar_url, city, age)')
-      .eq('to_user', userId);
-
-    // 2. جلب الذين أعجبت بهم (Outgoing)
-    const { data: outgoing } = await supabase
-      .from('likes')
-      .select('id, profiles:to_user(username, avatar_url, city, age)')
-      .eq('from_user', userId);
-
-    setLikedMe((incoming as any) || []);
-    setILiked((outgoing as any) || []);
-    setLoading(false);
+  // ── السوايب ──────────────────────────────────────────────
+  // إصبع يتحرك من اليسار إلى اليمين (dx موجب) = التبويب التالي
+  // إصبع يتحرك من اليمين إلى اليسار (dx سالب) = التبويب السابق
+  const onTS = (e: React.TouchEvent) => { tx.current = e.touches[0].clientX; };
+  const onTE = (e: React.TouchEvent) => {
+    const dx = e.changedTouches[0].clientX - tx.current;
+    if (Math.abs(dx) < 55) return;
+    if (dx > 0 && tabIdx < TABS.length - 1) setTab(TABS[tabIdx + 1].id);
+    if (dx < 0 && tabIdx > 0)              setTab(TABS[tabIdx - 1].id);
   };
 
-  if (!userId) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-[#b20022]"></div>
-      </div>
-    );
-  }
-
-  const tabs = [
-    { id: 'incoming', label: 'المعجبون', count: likedMe.length },
-    { id: 'outgoing', label: 'أعجبت بهم', count: iLiked.length },
-    { id: 'favorites', label: 'المفضلون', count: 0 },
-  ];
+  const count = tab !== 'messages' ? (data[tab]?.length ?? 0) : 0;
 
   return (
-    <div className="w-full max-w-md mx-auto min-h-screen px-4 pt-24 pb-40"> {/* pb-40 لحماية المحتوى من القائمة السفلية */}
-      
-      {/* التبويبات الحمراء الزجاجية اللامعة */}
-      <div className="flex p-1.5 bg-[#b20022]/10 backdrop-blur-2xl rounded-2xl border border-[#b20022]/30 sticky top-20 z-30 shadow-2xl">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`relative w-full py-3.5 text-xs font-bold rounded-xl transition-all duration-500 overflow-hidden ${
-              activeTab === tab.id 
-              ? 'bg-[#b20022] text-white shadow-[0_0_25px_rgba(178,0,34,0.5)] border border-white/20' 
-              : 'text-white/40 hover:text-white/80'
-            }`}
-          >
-            {/* تأثير لمعان فوق الزر النشط */}
-            {activeTab === tab.id && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
-            )}
-            <span className="relative z-10">{tab.label}</span>
-            {tab.count > 0 && (
-              <span className="absolute top-1 left-1 bg-white text-[#b20022] text-[9px] w-4 h-4 flex items-center justify-center rounded-full font-black">
-                {tab.count}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+    <>
+      <div dir="rtl" style={{ minHeight:'100vh', background:'var(--bg-main)', paddingBottom:90 }}
+        onTouchStart={onTS} onTouchEnd={onTE}>
 
-      {/* عرض البطاقات ثنائية التوزيع */}
-      <div className="mt-10 grid grid-cols-2 gap-4">
-        {activeTab === 'incoming' && likedMe.map((item) => (
-          <UserCard key={item.id} profile={item.profiles} />
-        ))}
-        {activeTab === 'outgoing' && iLiked.map((item) => (
-          <UserCard key={item.id} profile={item.profiles} />
-        ))}
-        
-        {/* حالة عدم وجود بيانات */}
-        {!loading && ((activeTab === 'incoming' && likedMe.length === 0) || (activeTab === 'outgoing' && iLiked.length === 0)) && (
-          <div className="col-span-2 text-center py-20 text-white/30 text-sm">
-            لا توجد بيانات لعرضها حالياً
-          </div>
-        )}
-      </div>
-
-      {loading && (
-        <div className="col-span-2 text-center mt-10">
-          <div className="inline-block animate-bounce text-[#b20022] font-bold">... جاري التحديث</div>
+        {/* اسم التبويب + العدد */}
+        <div style={{ padding:'24px 20px 0' }}>
+          <AnimatePresence mode="wait">
+            <motion.h1 key={tab}
+              initial={{opacity:0,y:-5}} animate={{opacity:1,y:0}} exit={{opacity:0,y:5}}
+              transition={{duration:0.13}}
+              style={{ color:'var(--text-main)', fontSize:'calc(var(--base-font-size)*1.5)', fontWeight:900, margin:0 }}>
+              {TABS[tabIdx].label}
+              {count > 0 && (
+                <span style={{ color:'var(--color-primary)', fontSize:'calc(var(--base-font-size)*0.85)', fontWeight:700, marginRight:8 }}>
+                  {count}
+                </span>
+              )}
+            </motion.h1>
+          </AnimatePresence>
         </div>
-      )}
-    </div>
+
+        {/* ── الشريط الرباعي (خطوط فقط) ── */}
+        <div style={{ display:'flex', gap:5, padding:'14px 16px 22px' }}>
+          {TABS.map((_, i) => (
+            <motion.div key={i} onClick={() => setTab(TABS[i].id)}
+              animate={{ background: i===tabIdx ? 'var(--color-primary)' : 'rgba(255,255,255,0.12)' }}
+              style={{ flex:1, height:4, borderRadius:4, cursor:'pointer' }}
+            />
+          ))}
+        </div>
+
+        {/* المحتوى */}
+        <AnimatePresence mode="wait">
+          {tab === 'messages' ? (
+            <motion.div key="msg" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+              {userId
+                ? <ChatTab currentUserId={userId} />
+                : <div style={{textAlign:'center',padding:60,color:'var(--text-tertiary)'}}>جارٍ التحميل...</div>
+              }
+            </motion.div>
+          ) : (
+            <motion.div key={tab}
+              initial={{opacity:0,x:20}} animate={{opacity:1,x:0}} exit={{opacity:0,x:-20}}
+              transition={{duration:0.15}}
+              style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12, padding:'0 12px' }}>
+              {loading ? (
+                <div style={{gridColumn:'span 2',textAlign:'center',padding:60,color:'var(--text-tertiary)'}}>جارٍ التحميل...</div>
+              ) : !data[tab]?.length ? (
+                <div style={{gridColumn:'span 2',textAlign:'center',padding:80,color:'rgba(255,255,255,0.25)'}}>لا يوجد شيء هنا</div>
+              ) : data[tab].map((row,i) => (
+                <Card key={row.id} row={row} i={i} onOpen={setProfileId} />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <AnimatePresence>
+        {profileId && (
+          <ProfileModal userId={profileId} currentUser={userId?{id:userId}:null} onClose={()=>setProfileId(null)} />
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 
-// مكون البطاقة الفخم بنظام الشبكة الثنائية
-function UserCard({ profile }: { profile: UserProfile }) {
+function Card({ row, i, onOpen }: { row:any; i:number; onOpen:(id:string)=>void }) {
+  const p = row.profile;
+  const b = !!p.is_photos_blurred;
   return (
-    <div className="relative group aspect-[3/4.5] rounded-[2.5rem] overflow-hidden border border-white/5 bg-white/5 backdrop-blur-sm shadow-xl transition-all hover:border-[#b20022]/40 hover:scale-[1.02]">
-      <img 
-        src={profile?.avatar_url || 'https://via.placeholder.com/400'} 
-        className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110"
-        alt={profile?.username}
-      />
-      
-      {/* تدرج لوني عميق */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
-      
-      <div className="absolute bottom-4 right-4 left-4 text-right">
-        <h3 className="text-white font-extrabold text-sm tracking-tight">{profile?.username}</h3>
-        <div className="flex items-center justify-end gap-1.5 mt-1">
-           <span className="text-white/50 text-[10px]">{profile?.city}</span>
-           <span className="w-1 h-1 bg-[#b20022] rounded-full shadow-[0_0_5px_#b20022]" />
-           <span className="text-white/50 text-[10px]">{profile?.age} سنة</span>
+    <motion.div
+      initial={{opacity:0,y:12}} animate={{opacity:1,y:0}} transition={{delay:i*0.04}}
+      whileTap={{scale:0.95}} onClick={()=>onOpen(p.id)}
+      style={{
+        borderRadius:20, overflow:'hidden', position:'relative',
+        aspectRatio:'3/4.2', background:'var(--bg-surface)', cursor:'pointer',
+        boxShadow:'0 4px 20px rgba(0,0,0,0.4)', border:'1px solid var(--glass-border)',
+      }}>
+      {/* الصورة — تُضبَّب فقط إذا is_photos_blurred */}
+      <img src={p.avatar_url||'/default-avatar.png'} alt="" loading="lazy"
+        style={{
+          width:'100%', height:'100%', objectFit:'cover', display:'block',
+          filter:    b ? 'blur(22px)' : 'none',
+          transform: b ? 'scale(1.12)' : 'none',
+        }} />
+      {/* وقت */}
+      <div style={{
+        position:'absolute', top:8, right:8,
+        background:'rgba(0,0,0,0.55)', backdropFilter:'blur(4px)',
+        color:'rgba(255,255,255,0.8)', fontSize:10, padding:'2px 8px', borderRadius:10,
+      }}>
+        {formatDistanceToNow(new Date(row.created_at),{addSuffix:true,locale:ar})}
+      </div>
+      {/* معلومات — تظهر دائماً بغض النظر عن التضبيب */}
+      <div style={{
+        position:'absolute', bottom:0, left:0, right:0,
+        padding:'24px 10px 12px',
+        background:'linear-gradient(transparent,rgba(0,0,0,0.92))',
+        textAlign:'right',
+      }}>
+        <div style={{color:'#fff',fontWeight:700,fontSize:13,marginBottom:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+          {p.full_name}
+        </div>
+        <div style={{color:'rgba(255,255,255,0.65)',fontSize:11,display:'flex',gap:4,justifyContent:'flex-end'}}>
+          {p.age  && <span>{p.age} سنة</span>}
+          {p.city && <><span style={{color:'var(--color-primary)',fontSize:8}}>●</span><span>{p.city}</span></>}
         </div>
       </div>
-
-      {/* أيقونة الحالة (مثلاً متصل أو أعجبك) */}
-      <div className="absolute top-4 left-4">
-        <div className="bg-black/40 backdrop-blur-md p-2 rounded-2xl border border-white/10 group-hover:bg-[#b20022] transition-colors duration-500">
-          <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
-        </div>
-      </div>
-    </div>
+    </motion.div>
   );
 }
