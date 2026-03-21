@@ -48,6 +48,7 @@ const SELECT_COLS = [
   'parenting_style', 'relationship_with_family',
   'marriage_type', 'interests', 'health_habits',
   'birth_date', 'is_completed', 'role',
+  'wallets(badge_type)',
 ].join(', ');
 
 export class MatchingEngine {
@@ -146,6 +147,16 @@ export class MatchingEngine {
     }
 
     return data ?? [];
+  }
+
+  // استخراج badge_type من wallets (array أو object)
+  static extractBadge(wallets: any): string | undefined {
+    if (!wallets) return undefined;
+    if (Array.isArray(wallets)) {
+      const w = wallets.find((x: any) => x.badge_type && x.badge_type !== 'none');
+      return w?.badge_type || undefined;
+    }
+    return wallets.badge_type !== 'none' ? wallets.badge_type : undefined;
   }
 
   private static rank(profiles: any[], user: UserProfile): any[] {

@@ -177,6 +177,15 @@ export default function ProfileModal({ userId, currentUser, onClose }: ProfileMo
         if (!exp || new Date(exp) > new Date()) setBadge(walletRes.data.badge_type);
       }
       if (likedRes.data) setLiked(true);
+
+      // ✅ تسجيل الزيارة عند فتح الملف (من مستخدم آخر فقط)
+      if (currentUser && currentUser.id !== userId) {
+        supabase.from('likes').upsert(
+          { from_user: currentUser.id, to_user: userId, action: 'view' },
+          { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
+        );
+      }
+
       setLoading(false);
     };
     run();

@@ -1,19 +1,16 @@
-'use client';
 // 📁 components/layout/StickySubHeader.tsx
-// شريط ثابت تحت PageHeader يحمل اسم التبويب الحالي
-// المحتوى يتمرر تحته — هو يبقى ثابتاً
-interface StickySubHeaderProps {
-  label:    string;   // اسم التبويب الحالي
-  count?:   number;   // عدد العناصر (اختياري)
+// شريط ثابت تحت PageHeader — المحتوى يتمرر تحته
+interface Props {
+  label:  string;
+  count?: number;
 }
 
-export default function StickySubHeader({ label, count }: StickySubHeaderProps) {
+export default function StickySubHeader({ label, count }: Props) {
   return (
     <div
       dir="rtl"
       style={{
         position:   'sticky',
-        // top = ارتفاع PageHeader الثابت
         top:        'var(--header-h)',
         zIndex:     900,
         background: 'var(--bg-main)',
@@ -25,18 +22,17 @@ export default function StickySubHeader({ label, count }: StickySubHeaderProps) 
       }}
     >
       <span style={{
-        color:      'var(--text-main)',
         fontSize:   'var(--text-xl)',
         fontWeight: 900,
+        color:      'var(--text-main)',
       }}>
         {label}
       </span>
-
-      {count != null && count > 0 && (
+      {!!count && count > 0 && (
         <span style={{
-          color:      'var(--color-primary)',
           fontSize:   'var(--text-sm)',
           fontWeight: 700,
+          color:      'var(--color-primary)',
         }}>
           {count}
         </span>

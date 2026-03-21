@@ -353,10 +353,125 @@ html.light {
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* إخفاء الأشرطة عند الدردشة */
-  body.chat-open [data-bottom-nav],
-  body.chat-open nav,
-  body.chat-open header:not(.chat-header) {
+  /* إخفاء الأشرطة عند الدردشة أو أي modal */
+  body.modal-open [data-top-bar],
+  body.modal-open [data-bottom-nav] {
     display: none !important;
   }
+}
+
+/* ═══════════════════════════════
+   REALISTIC METAL BADGES
+═══════════════════════════════ */
+
+.badge-metal {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0.15em 0.65em;
+  margin-inline-start: 0.35em;
+
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  border-radius: 0.45em;
+
+  overflow: hidden;
+
+  /* نحت المعدن */
+  box-shadow:
+    inset 0 0.05em 0.08em rgba(255,255,255,0.7),
+    inset 0 -0.12em 0.25em rgba(0,0,0,0.7),
+    inset 0 0 0 0.06em rgba(255,255,255,0.25),
+    0 0.08em 0.25em rgba(0,0,0,0.45);
+}
+
+/* طبقة اللمعان */
+.badge-metal::before {
+  content: "";
+  position: absolute;
+  inset: ;
+
+  background:
+    linear-gradient(
+      120deg,
+      transparent 25%,
+      rgba(255,255,255,0.6) 50%,
+      transparent 75%
+    );
+
+  transform: translateX(-120%);
+  animation: badge-shine 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* طبقة texture خفيفة */
+.badge-metal::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background-image:
+    radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
+
+  background-size: 3px 3px;
+  opacity: 0.15;
+  mix-blend-mode: overlay;
+
+  pointer-events: none;
+}
+
+@keyframes badge-shine {
+  0%   { transform: translateX(-140%) }
+  20%  { transform: translateX(140%) }
+  100% { transform: translateX(140%) }
+}
+
+/* نقش النص المعدني */
+.badge-engraved {
+  position: relative;
+  z-index: 2;
+
+  text-shadow:
+    0 0.03em 0 rgba(255,255,255,0.7),
+    0 -0.05em 0.08em rgba(0,0,0,0.8);
+}
+
+.love-coin {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+  transition: transform 0.25s ease;
+}
+
+.love-coin:hover {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+.coin-shine {
+  animation: coinShine 4s linear infinite;
+}
+
+@keyframes coinShine {
+
+  0% {
+    transform: translateX(-120px);
+    opacity: 0;
+  }
+
+  30% {
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: translateX(120px);
+    opacity: 0.6;
+  }
+
+  100% {
+    transform: translateX(240px);
+    opacity: 0;
+  }
+
 }

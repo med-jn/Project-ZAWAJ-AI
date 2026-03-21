@@ -9,9 +9,6 @@ import { COUNTRIES_CITIES } from '@/constants/countries';
 import UserCard            from '@/components/cards/usercard';
 import ProfileModal        from '@/components/profile/ProfileModal';
 
-// ── الحقول الخفيفة فقط (8 حقول) ─────────────────────────────
-const LIGHT_FIELDS = 'id, full_name, age, city, avatar_url, is_photos_blurred, gender, religious_commitment';
-
 // ── ذاكرة البطاقات (localStorage) ────────────────────────────
 const CACHE_KEY    = (uid: string) => `zawaj_seen_${uid}`;
 const QUEUE_KEY    = (uid: string) => `zawaj_queue_${uid}`;
@@ -132,7 +129,8 @@ export default function HomePage() {
 
   useEffect(() => { load(DEFAULT_FILTERS); }, [load]);
 
-  // ── الانتقال للبطاقة التالية + تسجيل المشاهدة ─────────────
+  // ── الانتقال للبطاقة التالية ─────────────────────────────
+  // التسجيل والخصم يحدثان في UserCard مباشرة
   const handleNext = () => {
     if (!currentUser) return;
     const current = users[currentIndex];
@@ -225,11 +223,10 @@ export default function HomePage() {
           name:                 c.full_name?.trim() || '—',
           age:                  c.age,
           city:                 c.city,
-          country:              c.country,
           gender:               c.gender,
           mainPhoto:            c.avatar_url || '/default-avatar.png',
           prefersBlur:          c.is_photos_blurred,
-          subscription_type:    c.subscription_type,
+          badge_type:           MatchingEngine.extractBadge(c.wallets),
           religious_commitment: c.religious_commitment,
           currentUser,
         }}

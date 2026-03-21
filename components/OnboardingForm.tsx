@@ -20,11 +20,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ChevronLeft, ChevronRight, ChevronDown,
+  ChevronLeft, ChevronDown, ArrowLeft, Move, MapPin, Loader2,
   Check, Camera, Plus, Eye, EyeOff, ShieldCheck,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { supabase }              from '@/lib/supabase/client';
+import { useRouter }              from 'next/navigation';
+import { toast }                  from 'sonner';
+import { validateText, validateImage } from '@/lib/gemini';
+import { getAutoLocation, saveLocationToProfile } from '@/lib/services/locationService';
 import { OCCUPATIONS } from '@/constants/occupations';
 import { COUNTRIES_CITIES, ALL_COUNTRIES, COUNTRY_DIAL } from '@/constants/countries';
 import {
@@ -82,7 +85,8 @@ interface FD {
   conflict_style: string; affection_style: string; life_priority: string;
   parenting_style: string; relationship_with_family: string;
   interests: string[]; bio: string; partner_requirements: string;
-  avatar_url: string; is_photos_blurred: boolean; phone: string;
+  avatar_url: string; is_photos_blurred: boolean; show_photos: boolean; phone: string;
+  latitude: number | null; longitude: number | null;
 }
 
 const INIT: FD = {
@@ -96,7 +100,8 @@ const INIT: FD = {
   desire_for_children:'', social_type:'', morning_evening:'', home_time:'',
   conflict_style:'', affection_style:'', life_priority:'', parenting_style:'',
   relationship_with_family:'', interests:[], bio:'', partner_requirements:'',
-  avatar_url:'', is_photos_blurred:false, phone:'',
+  avatar_url:'', is_photos_blurred:false, show_photos:true, phone:'',
+  latitude:null, longitude:null,
 };
 
 const DRAFT = 'zawaj_v10';
@@ -108,7 +113,7 @@ const STEPS = ['الأساسيات', 'التكميل', 'الشخصية', 'الإ
 const LINE: React.CSSProperties = {
   width:'100%', background:'transparent', border:'none',
   borderBottom:'1.5px solid var(--input-line)',
-  padding:'11px 0', fontSize:16, fontWeight:500,
+  padding:'var(--sp-3) 0', fontSize:'var(--text-base)', fontWeight:500,
   color:'var(--text-main)', caretColor:'var(--color-primary)',
   outline:'none', fontFamily:'inherit',
   WebkitTapHighlightColor:'transparent', transition:'border-color 0.2s',
@@ -120,8 +125,8 @@ const LINE: React.CSSProperties = {
 function Lbl({ t, err }: { t: string; err?: boolean }) {
   return (
     <p style={{
-      fontSize:10.5, fontWeight:800, letterSpacing:'0.22em',
-      textTransform:'uppercase', marginBottom:10,
+      fontSize:'var(--text-2xs)', fontWeight:800, letterSpacing:'0.22em',
+      textTransform:'uppercase', marginBottom:'var(--sp-2)',
       color: err ? 'var(--error-text)' : 'var(--text-secondary)',
       opacity: err ? 1 : 0.6,
     }}>{t}</p>
@@ -169,7 +174,7 @@ function Field({
           }}
         />
       </div>
-      {error && <p style={{ color:'var(--error-text)', fontSize:11, marginTop:6 }}>{error}</p>}
+      {error && <p style={{ color:'var(--error-text)', fontSize:'var(--text-xs)', marginTop:'var(--sp-1)' }}>{error}</p>}
     </div>
   );
 }
@@ -209,7 +214,7 @@ function Sel({
       >
         <span style={{
           color: value ? 'var(--text-main)' : 'var(--input-placeholder)',
-          fontWeight: value ? 500 : 400, fontSize:16,
+          fontWeight: value ? 500 : 400, fontSize:'var(--text-base)',
         }}>{value || ph}</span>
         <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration:0.2 }}>
           <ChevronDown size={16} style={{ color:'var(--color-primary)', opacity:0.7, flexShrink:0 }} />
@@ -245,7 +250,7 @@ function Sel({
                   background: value===o ? 'var(--color-primary-soft)' : 'transparent',
                   borderBottom: i<safe.length-1 ? '1px solid var(--border-soft)' : 'none',
                   color: value===o ? 'var(--color-primary)' : 'var(--text-main)',
-                  fontSize:14, fontWeight: value===o ? 600 : 400,
+                  fontSize:'var(--text-sm)', fontWeight: value===o ? 600 : 400,
                   fontFamily:'inherit', cursor:'pointer',
                   WebkitTapHighlightColor:'transparent',
                   transition:'background 0.12s',
@@ -258,7 +263,7 @@ function Sel({
           </motion.div>
         )}
       </AnimatePresence>
-      {error && <p style={{ color:'var(--error-text)', fontSize:11, marginTop:6 }}>{error}</p>}
+      {error && <p style={{ color:'var(--error-text)', fontSize:'var(--text-xs)', marginTop:'var(--sp-1)' }}>{error}</p>}
     </div>
   );
 }
@@ -289,26 +294,30 @@ function Pills({
           const active = sel(o);
           const disabled = multi && !active && (value as string[]).length>=(max??999);
           return (
-            <motion.button
-              key={o} type="button" whileTap={{ scale:0.93 }}
+            <button
+              key={o} type="button"
               disabled={disabled} onClick={() => tap(o)}
               style={{
                 padding:'9px 20px', borderRadius:999, border:'none', cursor:'pointer',
-                background: active ? 'var(--color-primary)' : 'transparent',
+                background: active ? 'var(--color-primary)' : 'rgba(0,0,0,0)',
                 outline: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--border-medium)'}`,
                 outlineOffset: 0,
                 color: active ? '#fff' : 'var(--text-secondary)',
-                fontSize:13.5, fontWeight: active ? 600 : 400,
+                fontSize:'var(--text-sm)', fontWeight: active ? 600 : 400,
                 fontFamily:'inherit', opacity: disabled ? 0.28 : 1,
                 boxShadow: active ? `0 4px 18px var(--shadow-red-glow)` : 'none',
                 WebkitTapHighlightColor:'transparent',
-                transition:'all 0.15s',
+                transition:'background 0.15s, color 0.15s, box-shadow 0.15s',
+                transform: 'scale(1)',
               }}
-            >{o}</motion.button>
+              onPointerDown={e=>(e.currentTarget.style.transform='scale(0.93)')}
+              onPointerUp={e=>(e.currentTarget.style.transform='scale(1)')}
+              onPointerLeave={e=>(e.currentTarget.style.transform='scale(1)')}
+            >{o}</button>
           );
         })}
       </div>
-      {error && <p style={{ color:'var(--error-text)', fontSize:11, marginTop:6 }}>{error}</p>}
+      {error && <p style={{ color:'var(--error-text)', fontSize:'var(--text-xs)', marginTop:'var(--sp-1)' }}>{error}</p>}
     </div>
   );
 }
@@ -329,25 +338,29 @@ function IdPills<T extends {id:number}>({
         {items.map(item => {
           const active = value===item.id;
           return (
-            <motion.button
-              key={item.id} type="button" whileTap={{ scale:0.93 }}
+            <button
+              key={item.id} type="button"
               onClick={() => onChange(item.id)}
               style={{
                 padding:'9px 20px', borderRadius:999, border:'none', cursor:'pointer',
-                background: active ? 'var(--color-primary)' : 'transparent',
+                background: active ? 'var(--color-primary)' : 'rgba(0,0,0,0)',
                 outline: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--border-medium)'}`,
                 color: active ? '#fff' : 'var(--text-secondary)',
-                fontSize:13.5, fontWeight: active ? 600 : 400,
+                fontSize:'var(--text-sm)', fontWeight: active ? 600 : 400,
                 fontFamily:'inherit',
                 boxShadow: active ? `0 4px 18px var(--shadow-red-glow)` : 'none',
                 WebkitTapHighlightColor:'transparent',
-                transition:'all 0.15s',
+                transition:'background 0.15s, color 0.15s, box-shadow 0.15s',
+                transform: 'scale(1)',
               }}
-            >{getLabel(item)}</motion.button>
+              onPointerDown={e=>(e.currentTarget.style.transform='scale(0.93)')}
+              onPointerUp={e=>(e.currentTarget.style.transform='scale(1)')}
+              onPointerLeave={e=>(e.currentTarget.style.transform='scale(1)')}
+            >{getLabel(item)}</button>
           );
         })}
       </div>
-      {error && <p style={{ color:'var(--error-text)', fontSize:11, marginTop:6 }}>{error}</p>}
+      {error && <p style={{ color:'var(--error-text)', fontSize:'var(--text-xs)', marginTop:'var(--sp-1)' }}>{error}</p>}
     </div>
   );
 }
@@ -365,25 +378,29 @@ function HousingPills({
         {HOUSING_STATUS.map(h => {
           const active = value===h.id;
           return (
-            <motion.button
-              key={h.id} type="button" whileTap={{ scale:0.93 }}
+            <button
+              key={h.id} type="button"
               onClick={() => onChange(h.id)}
               style={{
                 padding:'9px 20px', borderRadius:999, border:'none', cursor:'pointer',
-                background: active ? 'var(--color-primary)' : 'transparent',
+                background: active ? 'var(--color-primary)' : 'rgba(0,0,0,0)',
                 outline: `1.5px solid ${active ? 'var(--color-primary)' : 'var(--border-medium)'}`,
                 color: active ? '#fff' : 'var(--text-secondary)',
-                fontSize:13.5, fontWeight: active ? 600 : 400,
+                fontSize:'var(--text-sm)', fontWeight: active ? 600 : 400,
                 fontFamily:'inherit',
                 boxShadow: active ? `0 4px 18px var(--shadow-red-glow)` : 'none',
                 WebkitTapHighlightColor:'transparent',
-                transition:'all 0.15s',
+                transition:'background 0.15s, color 0.15s, box-shadow 0.15s',
+                transform: 'scale(1)',
               }}
-            >{h.label}</motion.button>
+              onPointerDown={e=>(e.currentTarget.style.transform='scale(0.93)')}
+              onPointerUp={e=>(e.currentTarget.style.transform='scale(1)')}
+              onPointerLeave={e=>(e.currentTarget.style.transform='scale(1)')}
+            >{h.label}</button>
           );
         })}
       </div>
-      {error && <p style={{ color:'var(--error-text)', fontSize:11, marginTop:6 }}>{error}</p>}
+      {error && <p style={{ color:'var(--error-text)', fontSize:'var(--text-xs)', marginTop:'var(--sp-1)' }}>{error}</p>}
     </div>
   );
 }
@@ -396,7 +413,7 @@ function Divider({ label }: { label:string }) {
     <div style={{ display:'flex', alignItems:'center', gap:14, margin:'22px 0 16px' }}>
       <div style={{ flex:1, height:1, background:'var(--border-soft)' }} />
       <span style={{
-        fontSize:9.5, fontWeight:900, letterSpacing:'0.28em',
+        fontSize:'var(--text-2xs)', fontWeight:900, letterSpacing:'0.28em',
         color:'var(--color-primary)', opacity:0.8, textTransform:'uppercase',
         whiteSpace:'nowrap',
       }}>{label}</span>
@@ -408,25 +425,288 @@ function Divider({ label }: { label:string }) {
 // ════════════════════════════════════════
 //  المكوّن الرئيسي
 // ════════════════════════════════════════
-// ضغط الصورة تلقائياً قبل الرفع (800px · WebP · جودة 82%)
-async function compressImage(file: File): Promise<File> {
+// ضغط الصورة — يضمن ≤ 200KB
+// يبدأ بجودة 0.85 ويخفضها تلقائياً حتى يصل للهدف
+async function compressToMax(canvas: HTMLCanvasElement, maxKB = 200): Promise<Blob> {
+  const maxBytes = maxKB * 1024;
+  let quality = 0.85;
+  let blob: Blob | null = null;
+  while (quality >= 0.20) {
+    blob = await new Promise<Blob | null>(res =>
+      canvas.toBlob(res, 'image/webp', quality)
+    );
+    if (!blob || blob.size <= maxBytes) break;
+    quality -= 0.08;
+  }
+  return blob ?? (await new Promise(res => canvas.toBlob(res, 'image/webp', 0.20)) as Blob);
+}
+
+// اقتصاص + ضغط: يأخذ مصدر الصورة وإحداثيات الـ crop
+async function cropAndCompress(
+  src: string,
+  cropX: number, cropY: number,
+  cropSize: number,
+  outputSize = 600
+): Promise<File> {
   return new Promise(resolve => {
     const img = new Image();
-    img.src = URL.createObjectURL(file);
-    img.onload = () => {
-      const MAX = 800;
-      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
-      const w = Math.round(img.width * scale);
-      const h = Math.round(img.height * scale);
+    img.src = src;
+    img.onload = async () => {
       const canvas = document.createElement('canvas');
-      canvas.width = w;
-      canvas.height = h;
-      canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
-      canvas.toBlob(blob => {
-        resolve(new File([blob!], 'avatar.webp', { type: 'image/webp' }));
-      }, 'image/webp', 0.82);
+      canvas.width = outputSize;
+      canvas.height = outputSize;
+      const ctx = canvas.getContext('2d')!;
+      // رسم القسم المقتطع مربعاً
+      ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, outputSize, outputSize);
+      const blob = await compressToMax(canvas, 200);
+      resolve(new File([blob], 'avatar.webp', { type: 'image/webp' }));
     };
   });
+}
+
+
+// ════════════════════════════════════════
+//  مكوّن: CropModal — اقتصاص الصورة
+//  المستخدم يسحب الصورة داخل الدائرة
+// ════════════════════════════════════════
+function CropModal({
+  src, onConfirm, onCancel, validating = false,
+}: {
+  src: string;
+  onConfirm: (cropX:number, cropY:number, cropSize:number) => void;
+  onCancel: () => void;
+  validating?: boolean;
+}) {
+  const canvasRef  = useRef<HTMLCanvasElement>(null);
+  const imgRef     = useRef<HTMLImageElement | null>(null);
+  const [loaded,   setLoaded]   = useState(false);
+  const [offset,   setOffset]   = useState({ x: 0, y: 0 });
+  const [scale,    setScale]    = useState(1);
+  const [dragging, setDragging] = useState(false);
+  const lastTouch  = useRef<{ x:number; y:number; dist?:number } | null>(null);
+
+  // حجم الـ canvas = 320 × 320
+  const SIZE = 320;
+
+  useEffect(() => {
+    const img = new Image();
+    img.src = src;
+    img.onload = () => {
+      imgRef.current = img;
+      // ابدأ بتمركز الصورة
+      const s = Math.max(SIZE / img.width, SIZE / img.height);
+      setScale(s);
+      setOffset({
+        x: (SIZE - img.width * s) / 2,
+        y: (SIZE - img.height * s) / 2,
+      });
+      setLoaded(true);
+    };
+  }, [src]);
+
+  // رسم الصورة مع overlay الدائرة
+  useEffect(() => {
+    if (!loaded || !imgRef.current) return;
+    const canvas = canvasRef.current!;
+    const ctx    = canvas.getContext('2d')!;
+    const img    = imgRef.current;
+
+    // خلفية داكنة
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    // الصورة
+    ctx.drawImage(img, offset.x, offset.y, img.width * scale, img.height * scale);
+    // ✅ تعتيم خارج الدائرة بـ evenodd — الصورة تظهر دائماً
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.65)';
+    ctx.beginPath();
+    ctx.rect(0, 0, SIZE, SIZE);
+    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 4, 0, Math.PI * 2, true);
+    ctx.fill('evenodd');
+    ctx.restore();
+
+    // حلقة الدائرة
+    ctx.save();
+    ctx.strokeStyle = '#B3334B';
+    ctx.lineWidth   = 2.5;
+    ctx.beginPath();
+    ctx.arc(SIZE/2, SIZE/2, SIZE/2 - 4, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }, [loaded, offset, scale]);
+
+  // ── الحركة بالأصبع ──────────────────────────────────────────
+  const onTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+      setDragging(true);
+      lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      lastTouch.current = {
+        x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        y: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+        dist: Math.sqrt(dx*dx + dy*dy),
+      };
+    }
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (!lastTouch.current || !imgRef.current) return;
+    const img = imgRef.current;
+
+    if (e.touches.length === 1 && dragging) {
+      const dx = e.touches[0].clientX - lastTouch.current.x;
+      const dy = e.touches[0].clientY - lastTouch.current.y;
+      setOffset(o => clampOffset({ x: o.x + dx, y: o.y + dy }, img, scale));
+      lastTouch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    } else if (e.touches.length === 2 && lastTouch.current.dist) {
+      const dx   = e.touches[0].clientX - e.touches[1].clientX;
+      const dy   = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const ratio = dist / lastTouch.current.dist;
+      const newScale = Math.min(4, Math.max(SIZE / Math.max(img.width, img.height), scale * ratio));
+      setScale(newScale);
+      setOffset(o => clampOffset(o, img, newScale));
+      lastTouch.current = { ...lastTouch.current, dist };
+    }
+  };
+
+  const onTouchEnd = () => { setDragging(false); lastTouch.current = null; };
+
+  // ── الحركة بالماوس (ديسكتوب) ────────────────────────────────
+  const onMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    lastTouch.current = { x: e.clientX, y: e.clientY };
+  };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging || !lastTouch.current || !imgRef.current) return;
+    const dx = e.clientX - lastTouch.current.x;
+    const dy = e.clientY - lastTouch.current.y;
+    setOffset(o => clampOffset({ x: o.x + dx, y: o.y + dy }, imgRef.current!, scale));
+    lastTouch.current = { x: e.clientX, y: e.clientY };
+  };
+  const onMouseUp = () => { setDragging(false); lastTouch.current = null; };
+
+  // ── تكبير بعجلة الماوس ──────────────────────────────────────
+  const onWheel = (e: React.WheelEvent) => {
+    if (!imgRef.current) return;
+    const newScale = Math.min(4, Math.max(SIZE / Math.max(imgRef.current.width, imgRef.current.height), scale - e.deltaY * 0.001));
+    setScale(newScale);
+    setOffset(o => clampOffset(o, imgRef.current!, newScale));
+  };
+
+  // تأكيد — نحسب إحداثيات الـ crop بالنسبة للصورة الأصلية
+  const confirm = () => {
+    if (!imgRef.current) return;
+    const img    = imgRef.current;
+    const cropX  = Math.max(0, -offset.x / scale);
+    const cropY  = Math.max(0, -offset.y / scale);
+    const cropSz = Math.min(
+      SIZE / scale,
+      Math.min(img.width - cropX, img.height - cropY)
+    );
+    onConfirm(cropX, cropY, cropSz);
+  };
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:2000,
+      background:'rgba(0,0,0,0.88)',
+      display:'flex', flexDirection:'column',
+      alignItems:'center', justifyContent:'center',
+      padding:'var(--sp-4)',
+    }}>
+      <p style={{
+        color:'var(--text-secondary)', fontSize:'var(--text-sm)',
+        marginBottom:'var(--sp-4)', textAlign:'center',
+      }}>
+        اسحب الصورة لتحديد موضع الوجه داخل الدائرة
+      </p>
+
+      {/* Canvas الاقتصاص */}
+      <canvas
+        ref={canvasRef}
+        width={SIZE} height={SIZE}
+        style={{
+          borderRadius:'50%',
+          cursor: dragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          maxWidth:'90vw', maxHeight:'90vw',
+        }}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onWheel={onWheel}
+      />
+
+      <p style={{
+        color:'rgba(255,255,255,0.35)', fontSize:'var(--text-2xs)',
+        margin:'var(--sp-3) 0', textAlign:'center',
+      }}>
+        قرّب أو بعّد بالأصبعين أو عجلة الماوس
+      </p>
+
+      {/* overlay تحميل Gemini */}
+      {validating && (
+        <div style={{
+          position:'absolute', inset:0, zIndex:10,
+          background:'rgba(0,0,0,0.75)',
+          display:'flex', flexDirection:'column',
+          alignItems:'center', justifyContent:'center', gap:'var(--sp-3)',
+        }}>
+          <div style={{
+            width:40, height:40, borderRadius:'50%',
+            border:'3px solid var(--color-primary)',
+            borderTopColor:'transparent',
+            animation:'spin 0.8s linear infinite',
+          }}/>
+          <p style={{color:'#fff', fontSize:'var(--text-sm)', fontWeight:600}}>
+            جارٍ فحص الصورة...
+          </p>
+        </div>
+      )}
+
+      {/* الأزرار */}
+      <div style={{ display:'flex', gap:'var(--sp-3)', width:'100%', maxWidth:320 }}>
+        <button onClick={onCancel} style={{
+          flex:1, height:'var(--btn-h)', borderRadius:'var(--radius-md)',
+          background:'var(--bg-soft)', border:'1px solid var(--border-medium)',
+          color:'var(--text-secondary)', fontSize:'var(--text-sm)', fontWeight:600,
+          fontFamily:'inherit', cursor:'pointer',
+        }}>إلغاء</button>
+
+        <button onClick={confirm} style={{
+          flex:2, height:'var(--btn-h)', borderRadius:'var(--radius-md)',
+          background:'var(--color-primary)', border:'none',
+          color:'#fff', fontSize:'var(--text-base)', fontWeight:800,
+          fontFamily:'inherit', cursor:'pointer',
+          boxShadow:`0 4px 16px var(--shadow-red-glow)`,
+        }}>تأكيد الصورة</button>
+      </div>
+    </div>
+  );
+}
+
+// منع الصورة من الخروج خارج الدائرة
+function clampOffset(
+  offset: { x:number; y:number },
+  img: HTMLImageElement,
+  scale: number,
+  SIZE = 320
+) {
+  const w = img.width  * scale;
+  const h = img.height * scale;
+  return {
+    x: Math.min(0, Math.max(SIZE - w, offset.x)),
+    y: Math.min(0, Math.max(SIZE - h, offset.y)),
+  };
 }
 
 export default function OnboardingForm() {
@@ -439,8 +719,11 @@ export default function OnboardingForm() {
   const [agreed, setAgreed] = useState(false);
   const [imgFile, setImgFile] = useState<File|null>(null);
   const [imgPreview, setImgPreview] = useState('');
+  const [cropSrc,  setCropSrc]  = useState('');       // الصورة الأصلية للاقتصاص
   const [intOpts, setIntOpts] = useState<{id:string;label:string}[]>([]);
-  const [tag, setTag] = useState('');
+  const [tag,           setTag]          = useState('');
+  const [locating,      setLocating]     = useState(false);
+  const [validatingImg, setValidatingImg] = useState(false);
 
   // مشتقات
   const isMale   = form.gender==='male';
@@ -507,6 +790,21 @@ export default function OnboardingForm() {
     try{
       const{data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('غير مسجّل');
 
+      // فحص Gemini للنصوص
+      const textToCheck = [
+        form.full_name && `الاسم: ${form.full_name}`,
+        form.bio && `النبذة: ${form.bio}`,
+        form.partner_requirements && `المواصفات: ${form.partner_requirements}`,
+      ].filter(Boolean).join('\n');
+      if(textToCheck){
+        const aiCheck = await validateText(textToCheck);
+        if(!aiCheck.valid){
+          toast.error(aiCheck.reason || 'المحتوى يخالف معايير المنصة');
+          setSaving(false);
+          return;
+        }
+      }
+
       // حساب العمر من تاريخ الميلاد
       let age:number|null=null;
       if(form.birth_date){
@@ -516,22 +814,20 @@ export default function OnboardingForm() {
         if(today.getMonth()<born.getMonth()||(today.getMonth()===born.getMonth()&&today.getDate()<born.getDate()))age--;
       }
 
-      // رفع الصورة — اختياري، لا يوقف الحفظ إن فشل
-      let avatar_url=form.avatar_url;
+      // رفع الصورة — لا تُعدِّل العمود إن لم يكن هناك ملف أو فشل الرفع
+      let avatar_url_update: string | undefined = undefined;
       if(imgFile){
         try{
-          // الامتداد دائماً webp بعد الضغط
           const path=`${user.id}_avatar.webp`;
-          const{error:upErr,data:upData}=await supabase.storage
+          const{error:upErr}=await supabase.storage
             .from('Avatars').upload(path,imgFile,{upsert:true,cacheControl:'3600'});
           if(!upErr){
-            avatar_url=supabase.storage.from('Avatars').getPublicUrl(path).data.publicUrl;
+            avatar_url_update=supabase.storage.from('Avatars').getPublicUrl(path).data.publicUrl;
           }else{
-            console.warn('تحذير رفع الصورة:',upErr.message);
-            // نكمل الحفظ بدون صورة
+            toast.error('تعذّر رفع الصورة، سيتم الحفظ بدونها');
           }
         }catch(imgErr){
-          console.warn('خطأ رفع الصورة (تم تجاهله):',imgErr);
+          toast.error('خطأ في رفع الصورة');
         }
       }
 
@@ -566,10 +862,14 @@ export default function OnboardingForm() {
         interests:form.interests, bio:form.bio,
         partner_requirements:form.partner_requirements,
         is_photos_blurred:form.is_photos_blurred,
+        show_photos:form.show_photos,
         phone: form.phone ? `${COUNTRY_DIAL[form.country]??''}${form.phone}` : '',
-        avatar_url, age,
+        ...(avatar_url_update ? {avatar_url: avatar_url_update} : {}),
+        age,
         is_completed:true,
         updated_at:new Date().toISOString(),
+        ...(form.latitude  ? {latitude:  form.latitude}  : {}),
+        ...(form.longitude ? {longitude: form.longitude} : {}),
       };
 
       const{error}=await supabase.from('profiles').update(payload).eq('id',user.id);
@@ -578,6 +878,7 @@ export default function OnboardingForm() {
       router.replace('/home');
     }catch(err:any){
       console.error('submit error:',err);
+      toast.error(err.message ?? 'حدث خطأ، حاول مجدداً');
       setErrs({bio:err.message??'حدث خطأ، حاول مجدداً'});
     }finally{setSaving(false);}
   };
@@ -628,9 +929,46 @@ export default function OnboardingForm() {
         }}
         error={errs.nationality}/>
 
+      {/* زر تحديد الموقع التلقائي */}
+      <div style={{marginBottom:'var(--sp-4)'}}>
+        <motion.button type="button" whileTap={{scale:0.97}}
+          onClick={async()=>{
+            if(locating)return;
+            setLocating(true);
+            try{
+              const loc = await getAutoLocation();
+              set('country', loc.country);
+              set('city',    loc.city);
+              setForm(p=>({...p, latitude:loc.lat, longitude:loc.lon}));
+            }catch{
+              // toast موجود في getAutoLocation
+            }finally{ setLocating(false); }
+          }}
+          style={{
+            width:'100%', padding:'var(--sp-3)',
+            borderRadius:'var(--radius-md)',
+            background:'var(--color-primary-xsoft)',
+            border:'1.5px solid var(--color-primary-soft)',
+            color:'var(--color-primary)', fontWeight:700,
+            fontSize:'var(--text-sm)', fontFamily:'inherit',
+            cursor:locating?'not-allowed':'pointer',
+            display:'flex', alignItems:'center', justifyContent:'center',
+            gap:'var(--sp-2)', opacity: locating ? 0.7 : 1,
+            WebkitTapHighlightColor:'transparent',
+          }}>
+          {locating
+            ? <><Loader2 size={16} style={{animation:'spin 0.8s linear infinite'}}/><span>جارٍ التحديد...</span></>
+            : <><MapPin size={16}/><span>تحديد موقعي تلقائياً</span></>
+          }
+        </motion.button>
+        <p style={{fontSize:'var(--text-2xs)',color:'var(--text-tertiary)',marginTop:'var(--sp-1)',textAlign:'center'}}>
+          أو اختر يدوياً أدناه
+        </p>
+      </div>
+
       <Sel label="بلد الإقامة" value={form.country}
         options={ALL_COUNTRIES}
-        onChange={v=>{set('country',v);set('city','');}} error={errs.country}/>
+        onChange={v=>{set('country',v);set('city','');set('latitude' as any,null);set('longitude' as any,null);}} error={errs.country}/>
 
       {form.country&&(
         <Sel label="المدينة" value={form.city}
@@ -644,7 +982,7 @@ export default function OnboardingForm() {
           <Lbl t="رقم الهاتف (اختياري)"/>
           <div dir="ltr" style={{display:'flex',alignItems:'center',borderBottom:'1.5px solid var(--input-line)'}}>
             <span style={{
-              color:'var(--text-tertiary)',fontSize:14,fontWeight:700,
+              color:'var(--text-tertiary)',fontSize:'var(--text-sm)',fontWeight:700,
               padding:'11px 0',paddingRight:10,flexShrink:0,letterSpacing:'0.02em',
               borderRight:'1.5px solid var(--border-soft)',marginRight:10,
             }}>
@@ -791,7 +1129,7 @@ export default function OnboardingForm() {
   // ════════════════════════════════════════
   const S2=(
     <div dir="rtl">
-      <p style={{ fontSize:13, color:'var(--text-secondary)', opacity:0.55, marginBottom:28, lineHeight:1.75 }}>
+      <p style={{ fontSize:'var(--text-sm)', color:'var(--text-secondary)', opacity:0.55, marginBottom:'var(--sp-6)', lineHeight:'var(--lh-relaxed)' }}>
         اختيارية — تزيد من دقة التوافق
       </p>
       <Pills label="الشخصية الاجتماعية" options={SOCIAL_TYPE}
@@ -812,7 +1150,7 @@ export default function OnboardingForm() {
         value={form.relationship_with_family} onChange={v=>set('relationship_with_family',v as string)}/>
 
       <Divider label="الاهتمامات"/>
-      <p style={{ fontSize:11.5, color:'var(--text-secondary)', opacity:0.45, marginBottom:14 }}>حتى 5 اهتمامات</p>
+      <p style={{ fontSize:'var(--text-xs)', color:'var(--text-secondary)', opacity:0.45, marginBottom:'var(--sp-3)' }}>حتى 5 اهتمامات</p>
       <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
         {intOpts.map(opt=>{
           const sel=form.interests.includes(opt.label);
@@ -827,7 +1165,7 @@ export default function OnboardingForm() {
                 background:sel?'var(--color-primary)':'transparent',
                 outline:`1.5px solid ${sel?'var(--color-primary)':'var(--border-medium)'}`,
                 color:sel?'#fff':'var(--text-secondary)',
-                fontSize:13, fontWeight:sel?600:400,
+                fontSize:'var(--text-sm)', fontWeight:sel?600:400,
                 fontFamily:'inherit', opacity:!sel&&form.interests.length>=5?0.28:1,
                 boxShadow:sel?`0 4px 16px var(--shadow-red-glow)`:'none',
                 WebkitTapHighlightColor:'transparent',
@@ -872,7 +1210,7 @@ export default function OnboardingForm() {
               ...LINE, resize:'none', lineHeight:1.75,
               display:'block',
             }}/>
-          <p style={{ fontSize:10.5,color:'var(--text-tertiary)',textAlign:'left',marginTop:4 }}>
+          <p style={{ fontSize:'var(--text-2xs)',color:'var(--text-tertiary)',textAlign:'left',marginTop:'var(--sp-1)' }}>
             {(form[k] as string).length}/300
           </p>
         </div>
@@ -888,11 +1226,9 @@ export default function OnboardingForm() {
       {/* رفع الصورة */}
       <label style={{ display:'block', cursor:'pointer', marginBottom:24 }}>
         <input type="file" accept="image/*" style={{ display:'none' }}
-          onChange={async e=>{
+          onChange={e=>{
             const f=e.target.files?.[0]; if(!f)return;
-            const compressed = await compressImage(f);
-            setImgFile(compressed);
-            setImgPreview(URL.createObjectURL(compressed));
+            setCropSrc(URL.createObjectURL(f));
             setErrs(p=>({...p,avatar_url:''}));
           }}/>
         <motion.div whileTap={{scale:0.98}} style={{
@@ -929,13 +1265,52 @@ export default function OnboardingForm() {
               }}>
                 <Camera size={26} style={{color:'var(--color-primary)',opacity:0.8}}/>
               </div>
-              <p style={{fontSize:15,fontWeight:500,color:'var(--text-secondary)',marginBottom:4}}>اضغط لاختيار صورة</p>
-              <p style={{fontSize:11.5,color:'var(--text-tertiary)'}}>JPG · PNG · WEBP</p>
+              <p style={{fontSize:'var(--text-md)',fontWeight:500,color:'var(--text-secondary)',marginBottom:'var(--sp-1)'}}>اضغط لاختيار صورة</p>
+              <p style={{fontSize:'var(--text-xs)',color:'var(--text-tertiary)'}}>JPG · PNG · WEBP</p>
             </>
           )}
         </motion.div>
       </label>
-      {errs.avatar_url&&<p style={{color:'var(--error-text)',fontSize:11,marginBottom:16}}>{errs.avatar_url}</p>}
+      {errs.avatar_url&&<p style={{color:'var(--error-text)',fontSize:'var(--text-xs)',marginBottom:'var(--sp-4)'}}>{ errs.avatar_url}</p>}
+
+      {/* ── Crop Modal ── */}
+      {cropSrc && (
+        <CropModal
+          src={cropSrc}
+          onConfirm={async (cropX, cropY, cropSize) => {
+            setValidatingImg(true);
+            try {
+              const file = await cropAndCompress(cropSrc, cropX, cropY, cropSize, 600);
+              // تحويل لـ base64 بـ Promise نظيف
+              const b64 = await new Promise<string>((res, rej) => {
+                const reader = new FileReader();
+                reader.onload  = () => res((reader.result as string).split(',')[1]);
+                reader.onerror = () => rej(new Error('فشل قراءة الصورة'));
+                reader.readAsDataURL(file);
+              });
+              // فحص Gemini
+              const check = await validateImage(b64, 'image/webp');
+              if (!check.valid) {
+                toast.error(check.reason || 'الصورة لا تلبي معايير المنصة');
+                setCropSrc('');
+                setValidatingImg(false);
+                return;
+              }
+              setImgFile(file);
+              setImgPreview(URL.createObjectURL(file));
+              setCropSrc('');
+              toast.success('تم قبول الصورة ✅');
+            } catch (e: any) {
+              toast.error(e?.message || 'حدث خطأ في معالجة الصورة');
+              setCropSrc('');
+            } finally {
+              setValidatingImg(false);
+            }
+          }}
+          onCancel={() => { setCropSrc(''); setValidatingImg(false); }}
+          validating={validatingImg}
+        />
+      )}
 
       {/* إرشادات */}
       <div style={{
@@ -943,7 +1318,7 @@ export default function OnboardingForm() {
         background:'var(--color-primary-xsoft)',
         border:'1px solid var(--color-primary-soft)',
       }}>
-        <p style={{fontSize:12.5,color:'var(--text-secondary)',opacity:0.85,lineHeight:1.85}}>
+        <p style={{fontSize:'var(--text-xs)',color:'var(--text-secondary)',opacity:0.85,lineHeight:'var(--lh-relaxed)'}}>
           صورة واضحة · إضاءة جيدة · بدون نظارة شمسية · بدون فلتر يغير الملامح
         </p>
       </div>
@@ -974,13 +1349,13 @@ export default function OnboardingForm() {
           </motion.div>
           <div style={{textAlign:'right'}}>
             <p style={{
-              fontSize:14,fontWeight:600,margin:0,
+              fontSize:'var(--text-sm)',fontWeight:600,margin:0,
               color: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--text-main)',
               transition:'color 0.2s',
             }}>
               تضبيب الصورة
             </p>
-            <p style={{fontSize:11.5,color:'var(--text-tertiary)',margin:'2px 0 0',lineHeight:1.4}}>
+            <p style={{fontSize:'var(--text-xs)',color:'var(--text-tertiary)',margin:'2px 0 0',lineHeight:'var(--lh-snug)'}}>
               {form.is_photos_blurred ? 'مفعّل — صورتك محمية' : 'اضغط لحماية خصوصيتك'}
             </p>
           </div>
@@ -1000,6 +1375,63 @@ export default function OnboardingForm() {
         >
           <AnimatePresence>
             {form.is_photos_blurred&&(
+              <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}} transition={{duration:0.14}}>
+                <Check size={12} color="#fff"/>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </motion.button>
+
+      {/* هل تريد رؤية صور الأعضاء الآخرين */}
+      <motion.button type="button" whileTap={{scale:0.96}}
+        onClick={()=>set('show_photos',!form.show_photos)}
+        style={{
+          width:'100%',background:!form.show_photos?'var(--color-primary-xsoft)':'transparent',
+          border:`1.5px solid ${!form.show_photos?'var(--color-primary-soft)':'var(--border-medium)'}`,
+          borderRadius:16,padding:'14px 18px',
+          display:'flex',alignItems:'center',justifyContent:'space-between',
+          cursor:'pointer',transition:'all 0.22s',
+          WebkitTapHighlightColor:'transparent',marginBottom:'var(--sp-6)',
+          direction:'rtl',
+        }}>
+        <div style={{display:'flex',alignItems:'center',gap:12}}>
+          <motion.div
+            animate={{color: !form.show_photos?'var(--color-primary)':'var(--text-tertiary)'}}
+            transition={{duration:0.2}}
+            style={{display:'flex',alignItems:'center',flexShrink:0}}>
+            {form.show_photos
+              ? <Eye size={22} color="var(--text-tertiary)"/>
+              : <EyeOff size={22} color="var(--color-primary)"/>
+            }
+          </motion.div>
+          <div style={{textAlign:'right'}}>
+            <p style={{
+              fontSize:'var(--text-sm)',fontWeight:600,margin:0,
+              color: !form.show_photos?'var(--color-primary)':'var(--text-main)',
+              transition:'color 0.2s',
+            }}>
+              {form.show_photos ? 'رؤية صور الأعضاء' : 'إخفاء صور الأعضاء'}
+            </p>
+            <p style={{fontSize:'var(--text-2xs)',color:'var(--text-tertiary)',margin:'2px 0 0',lineHeight:1.4}}>
+              {form.show_photos ? 'ستظهر صور الأعضاء عادياً' : 'مفعّل — ستُضبَّب كل الصور'}
+            </p>
+          </div>
+        </div>
+        {/* مؤشر */}
+        <motion.div
+          animate={{
+            background: !form.show_photos?'var(--color-primary)':'transparent',
+            borderColor: !form.show_photos?'var(--color-primary)':'var(--border-medium)',
+          }}
+          transition={{duration:0.2}}
+          style={{
+            width:22,height:22,borderRadius:6,flexShrink:0,
+            border:'1.5px solid var(--border-medium)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+          }}>
+          <AnimatePresence>
+            {!form.show_photos&&(
               <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}} transition={{duration:0.14}}>
                 <Check size={12} color="#fff"/>
               </motion.div>
@@ -1038,11 +1470,11 @@ export default function OnboardingForm() {
             )}
           </AnimatePresence>
         </motion.div>
-        <p style={{fontSize:13,lineHeight:1.8,color:'var(--text-secondary)',textAlign:'right',flex:1}}>
+        <p style={{fontSize:'var(--text-sm)',lineHeight:'var(--lh-relaxed)',color:'var(--text-secondary)',textAlign:'right',flex:1}}>
           أقر بصحة المعلومات وأتعهد بالجدية والصدق، وغرضي الزواج الشرعي.
         </p>
       </motion.button>
-      {errs.bio&&<p style={{color:'var(--error-text)',fontSize:11,marginTop:8}}>{errs.bio}</p>}
+      {errs.bio&&<p style={{color:'var(--error-text)',fontSize:'var(--text-xs)',marginTop:'var(--sp-2)'}}>{ errs.bio}</p>}
     </div>
   );
 
@@ -1056,64 +1488,97 @@ export default function OnboardingForm() {
   return (
     <div style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', background:'var(--bg-luxury-gradient)f' }}>
 
-      {/* ── هيدر ثابت ── */}
-      <div style={{
-        position:'sticky',top:0,zIndex:50,
-        background:'var(--bg-main)',
-        borderBottom:'1px solid var(--border-soft)',
+      {/* ── PageHeader ثابت ── */}
+      <div data-top-bar dir="rtl" style={{
+        position:'fixed',top:0,right:0,left:0,zIndex:1000,
+        height:'var(--header-h)',
+        display:'flex',alignItems:'center',
+        padding:'0 var(--sp-2)',
+        background:'var(--bg-surface)',
+        borderBottom:'1px solid var(--glass-border)',
+        backdropFilter:'blur(20px)',
+        WebkitBackdropFilter:'blur(20px)',
       }}>
-        {/* شريط التقدم */}
-        <div style={{ display:'flex', gap:5, padding:'14px 20px 0' }}>
+        {/* اسم الواجهة — يمين */}
+        <span style={{
+          flex:1,color:'var(--text-main)',
+          fontSize:'var(--text-lg)',fontWeight:800,
+          paddingRight:'var(--sp-2)',
+        }}>إعداد الملف</span>
+
+        {/* سهم الرجوع — يسار */}
+        {step>0 ? (
+          <motion.button whileTap={{scale:0.9}} onClick={goBack} style={{
+            width:'var(--btn-h)',height:'var(--btn-h)',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            borderRadius:'var(--radius-full)',background:'transparent',
+            border:'none',cursor:'pointer',color:'var(--text-main)',flexShrink:0,
+          }}>
+            <ArrowLeft size={20}/>
+          </motion.button>
+        ) : (
+          <div style={{width:'var(--btn-h)'}}/>
+        )}
+      </div>
+
+      {/* ── StickySubHeader — اسم الخطوة + الشريط الرباعي ── */}
+      <div style={{
+        position:'sticky',top:'var(--header-h)',zIndex:900,
+        background:'var(--bg-surface)',
+        borderBottom:'1px solid var(--glass-border)',
+        padding:'0 var(--sp-4) var(--sp-2)',
+      }}>
+        {/* اسم الخطوة الحالية */}
+        <AnimatePresence mode="wait">
+          <motion.div key={step}
+            initial={{opacity:0,y:-4}} animate={{opacity:1,y:0}} exit={{opacity:0,y:4}}
+            transition={{duration:0.13}}
+            style={{
+              display:'flex',alignItems:'baseline',gap:'var(--sp-2)',
+              marginBottom:'var(--sp-2)',paddingTop:'var(--sp-3)',
+            }}>
+            <span style={{
+              fontSize:'var(--text-xl)',fontWeight:900,color:'var(--text-main)',
+            }}>{TITLE[step]}</span>
+            <span style={{fontSize:'var(--text-sm)',color:'var(--text-tertiary)'}}>
+              {step+1}/{STEPS.length}
+            </span>
+          </motion.div>
+        </AnimatePresence>
+
+        {/* الشريط الرباعي */}
+        <div style={{display:'flex',gap:5}}>
           {STEPS.map((_,i)=>(
             <motion.div key={i}
               animate={{
-                background: i<=step ? 'var(--color-primary)' : 'var(--border-soft)',
-                opacity: i<step ? 1 : i===step ? 1 : 0.3,
+                background: i<=step ? 'var(--color-primary)' : 'rgba(255,255,255,0.12)',
+                opacity: i<step ? 1 : i===step ? 1 : 0.4,
               }}
-              transition={{ duration:0.35 }}
-              style={{ flex:1, height:2.5, borderRadius:99 }}/>
+              transition={{duration:0.35}}
+              style={{flex:1,height:4,borderRadius:'var(--radius-full)'}}/>
           ))}
-        </div>
-        {/* عنوان الخطوة */}
-        <div style={{
-          display:'flex',alignItems:'center',justifyContent:'space-between',
-          padding:'8px 20px 12px',
-        }}>
-          <p style={{
-            fontSize:10,fontWeight:900,letterSpacing:'0.2em',
-            color:'var(--color-primary)',textTransform:'uppercase',
-          }}>{STEPS[step]}</p>
-          <p style={{ fontSize:11,color:'var(--text-tertiary)' }}>
-            {step+1}<span style={{opacity:0.5}}> / {STEPS.length}</span>
-          </p>
         </div>
       </div>
 
       {/* ── المحتوى ── */}
-      <div style={{ flex:1, overflow:'hidden' }}>
+      <div style={{ flex:1, overflow:'hidden', paddingTop:'var(--header-h)' }}>
         <AnimatePresence mode="wait">
           <motion.div key={step}
             initial={{ x:slideDir*32, opacity:0 }}
             animate={{ x:0, opacity:1 }}
             exit={{ x:slideDir*-32, opacity:0 }}
             transition={{ duration:0.22, ease:[0.4,0,0.2,1] }}
-            style={{ padding:'18px 18px 148px' }}>
+            style={{ padding:'var(--sp-4) var(--sp-4) 9rem' }}>
 
-            {/* عنوان المرحلة */}
-            <motion.div style={{ marginBottom:20, direction:'rtl' }}
-              initial={{ y:10, opacity:0 }}
-              animate={{ y:0, opacity:1 }}
-              transition={{ delay:0.06, duration:0.24 }}>
-              <h1 style={{
-                fontSize:28, fontWeight:900, lineHeight:1.2,
-                color:'var(--text-main)', letterSpacing:'-0.02em',
-                margin:0,
-              }}>{TITLE[step]}</h1>
-              <p style={{
-                fontSize:14, marginTop:8,
-                color:'var(--text-secondary)', opacity:0.55, lineHeight:1.65,
-              }}>{SUB[step]}</p>
-            </motion.div>
+            {/* وصف المرحلة */}
+            <motion.p
+              initial={{y:8,opacity:0}} animate={{y:0,opacity:1}}
+              transition={{delay:0.06,duration:0.22}}
+              style={{
+                fontSize:'var(--text-sm)',marginBottom:'var(--sp-5)',
+                color:'var(--text-secondary)',opacity:0.6,lineHeight:'var(--lh-relaxed)',
+                direction:'rtl',margin:'0 0 var(--sp-5)',
+              }}>{SUB[step]}</motion.p>
 
             {CONTENT[step]}
           </motion.div>
@@ -1128,27 +1593,15 @@ export default function OnboardingForm() {
       }}>
         <div style={{ display:'flex', gap:12, alignItems:'center' }}>
 
-          {/* رجوع */}
-          {step>0&&(
-            <motion.button whileTap={{scale:0.92}} onClick={goBack}
-              style={{
-                width:54,height:56,borderRadius:18,flexShrink:0,
-                background:'var(--bg-soft)',
-                border:'1px solid var(--border-medium)',
-                display:'flex',alignItems:'center',justifyContent:'center',
-                cursor:'pointer',WebkitTapHighlightColor:'transparent',
-              }}>
-              <ChevronRight size={21} style={{color:'var(--text-secondary)'}}/>
-            </motion.button>
-          )}
+          {/* الرجوع في الهيدر العلوي فقط */}
 
           {/* التالي / إرسال */}
           <motion.button whileTap={{scale:0.97}}
             onClick={step===3?submit:goNext} disabled={saving}
             style={{
-              flex:1,height:56,borderRadius:18,border:'none',cursor:'pointer',
-              display:'flex',alignItems:'center',justifyContent:'center',gap:8,
-              color:'#fff',fontSize:15.5,fontWeight:800,letterSpacing:'0.01em',fontFamily:'inherit',
+              flex:1,height:'var(--btn-h-lg)',borderRadius:'var(--radius-lg)',border:'none',cursor:'pointer',
+              display:'flex',alignItems:'center',justifyContent:'center',gap:'var(--sp-2)',
+              color:'#fff',fontSize:'var(--text-base)',fontWeight:800,letterSpacing:'0.01em',fontFamily:'inherit',
               background:saving?'rgba(164,22,26,0.45)':'var(--color-primary)',
               boxShadow:saving?'none':`0 6px 24px var(--shadow-red-glow)`,
               WebkitTapHighlightColor:'transparent',
@@ -1171,10 +1624,10 @@ export default function OnboardingForm() {
           {step===2&&(
             <motion.button whileTap={{scale:0.93}} onClick={goNext}
               style={{
-                height:56,padding:'0 20px',borderRadius:18,flexShrink:0,
+                height:'var(--btn-h-lg)',padding:'0 var(--sp-5)',borderRadius:'var(--radius-lg)',flexShrink:0,
                 background:'var(--bg-soft)',
                 border:'1px solid var(--border-medium)',
-                color:'var(--text-tertiary)',fontSize:14,fontWeight:600,
+                color:'var(--text-tertiary)',fontSize:'var(--text-sm)',fontWeight:600,
                 fontFamily:'inherit',cursor:'pointer',
                 WebkitTapHighlightColor:'transparent',
               }}>

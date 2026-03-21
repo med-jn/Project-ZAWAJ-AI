@@ -14,8 +14,8 @@ interface WalletRow {
   id:                string;   // = user_id
   balance:           number;   // النقاط المشتراة  (paid)
   balance_free:      number;   // النقاط المجانية  (bonus)
-  last_daily_reward: string | null; // آخر مكافأة يومية (date)
-  last_activity_at:  string | null;
+  last_daily_login: string | null; // آخر مكافأة يومية (date)
+  last_active_at:  string | null;
 }
 
 // ══════════════════════════════════════════
@@ -25,7 +25,7 @@ interface WalletRow {
 export async function getWallet(userId: string): Promise<WalletRow> {
   const { data, error } = await supabase
     .from(DATABASE.TABLE_WALLETS)
-    .select('id, balance, balance_free, last_daily_reward, last_activity_at')
+    .select('id, balance, balance_free, last_daily_login, last_active_at')
     .eq(DATABASE.WALLET_KEY, userId)   // ✅ 'id' = userId
     .single();
 
@@ -53,7 +53,6 @@ export function hasEnoughBalance(
 async function logTransaction(
   userId: string,
   amount: number,
-  type: 'deposit' | 'withdrawal',
   reason: string
 ): Promise<void> {
   const { error } = await supabase
@@ -61,7 +60,6 @@ async function logTransaction(
     .insert({
       [DATABASE.TRANSACTION_USER_KEY]: userId,  // ✅ 'id' = userId
       amount,
-      transaction_type: type,
       reason,
     });
 
@@ -111,7 +109,7 @@ export async function deductPoints(
   if (error) throw new Error(`فشل تحديث المحفظة: ${error.message}`);
 
   // تسجيل المعاملة
-  await logTransaction(userId, -cost, 'withdrawal', reason);
+  await logTransaction(userId, -cost, 'subtract', reason);
 
   return { success: true, message: 'تم الخصم بنجاح' };
 }
@@ -136,7 +134,7 @@ export async function addBonusPoints(
 
   if (error) throw new Error(`فشل إضافة النقاط: ${error.message}`);
 
-  await logTransaction(userId, amount, 'deposit', reason);
+  await logTransaction(userId, amount, 'add', reason);
 }
 
 // ══════════════════════════════════════════
@@ -164,7 +162,7 @@ export const sendGiftToMediator = (userId: string) =>
 
 // ══════════════════════════════════════════
 //  مكافأة التسجيل اليومي
-//  ✅ إصلاح BUG-02: COLUMN_DAILY_CLAIM='last_daily_reward'
+//  ✅ إصلاح BUG-02: COLUMN_DAILY_CLAIM='last_daily_login'
 // ══════════════════════════════════════════
 export async function claimDailyBonus(
   userId: string
@@ -176,9 +174,9 @@ export async function claimDailyBonus(
   const todayReset = new Date();
   todayReset.setUTCHours(UI_LOGIC.RESET_HOUR_UTC, 0, 0, 0);
 
-  // ✅ last_daily_reward نوعه date في Supabase، نقرأه كـ string ثم نحوّله
-  const lastClaim = wallet.last_daily_reward
-    ? new Date(wallet.last_daily_reward)
+  // ✅ last_daily_login نوعه date في Supabase، نقرأه كـ string ثم نحوّله
+  const lastClaim = wallet.last_daily_login
+    ? new Date(wallet.last_daily_login)
     : null;
 
   if (lastClaim && lastClaim >= todayReset) {

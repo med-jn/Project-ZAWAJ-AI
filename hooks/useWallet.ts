@@ -1,68 +1,80 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase/client';
+/**
+ * 📁 hooks/useWallet.ts — ZAWAJ AI
+ * ✅ badge_type: none|bronze|silver|gold|diamond
+ * ✅ Realtime
+ */
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase/client";
 
-// تعريف الواجهة بناءً على هيكل الجداول الأخير
-interface Wallet {
-  id: string;
-  balance: number;       // النقاط المدفوعة (حسب ملفك)
-  balance_free: number;  // النقاط المجانية (التي أضفناها)
-  last_daily_reward: string | null;
+export interface WalletData {
+  balance:          number;
+  balance_free:     number;
+  totalBalance:     number;
+  badge_type:       'none' | 'bronze' | 'silver' | 'gold' | 'diamond';
+  badge_expires_at: string | null;
+  badge_active:     boolean;
+  last_daily_login: string | null;
 }
 
+const DEFAULT: WalletData = {
+  balance: 0, balance_free: 0, totalBalance: 0,
+  badge_type: 'none', badge_expires_at: null,
+  badge_active: false, last_daily_login: null,
+};
+
 export function useWallet() {
-  const [wallet, setWallet] = useState<Wallet | null>(null);
+  const [wallet,  setWallet]  = useState<WalletData>(DEFAULT);
   const [loading, setLoading] = useState(true);
+  const [userId,  setUserId]  = useState<string | null>(null);
 
-  // دالة جلب البيانات (Memoized لضمان الأداء)
-  const fetchWallet = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('wallets')
-      .select('id, balance, balance_free, last_daily_reward')
-      .eq('id', user.id) // في ملفك id المحفظة هو نفسه user_id
-      .single();
-
-    if (!error && data) {
-      setWallet(data);
-    }
-    setLoading(false);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) setUserId(user.id);
+      else setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
-    fetchWallet();
+    if (!userId) return;
 
-    // تفعيل التحديث اللحظي (Real-time) 
-    // إذا تغير الرصيد في قاعدة البيانات، يتحدث في واجهة المستخدم فوراً
-    const walletSubscription = supabase
-      .channel('wallet_changes')
-      .on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'wallets' }, 
-        (payload) => {
-          setWallet(payload.new as Wallet);
-        }
-      )
+    const load = async () => {
+      const { data } = await supabase
+        .from("wallets")
+        .select("balance, balance_free, badge_type, badge_expires_at, last_daily_login")
+        .eq("id", userId)
+        .single();
+
+      if (data) {
+        const badgeActive =
+          data.badge_type !== "none" &&
+          (!data.badge_expires_at || new Date(data.badge_expires_at) > new Date());
+
+        setWallet({
+          balance:          data.balance          ?? 0,
+          balance_free:     data.balance_free      ?? 0,
+          totalBalance:     (data.balance ?? 0) + (data.balance_free ?? 0),
+          badge_type:       data.badge_type ?? "none",
+          badge_expires_at: data.badge_expires_at  ?? null,
+          badge_active:     badgeActive,
+          last_daily_login: data.last_daily_login  ?? null,
+        });
+      }
+      setLoading(false);
+    };
+
+    load();
+
+    const channel = supabase
+      .channel(`wallet:${userId}`)
+      .on("postgres_changes", {
+        event: "*", schema: "public",
+        table: "wallets", filter: `id=eq.${userId}`,
+      }, load)
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(walletSubscription);
-    };
-  }, [fetchWallet]);
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
 
-  // حساب الرصيد الإجمالي
-  const totalBalance = wallet 
-    ? (wallet.balance || 0) + (wallet.balance_free || 0) 
-    : 0;
-
-  return { 
-    wallet, 
-    totalBalance, 
-    loading, 
-    refreshWallet: fetchWallet // للسماح بتحديث الرصيد يدوياً عند فتح السايد بار
-  };
+  return { ...wallet, loading };
 }

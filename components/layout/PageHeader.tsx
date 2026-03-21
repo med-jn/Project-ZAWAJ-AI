@@ -1,34 +1,31 @@
 'use client';
 // 📁 components/layout/PageHeader.tsx
-// شريط علوي موحّد لكل الواجهات الداخلية
-// اسم الصفحة يمين — سهم الرجوع يسار
 import { useRouter } from 'next/navigation';
 import { ArrowLeft  } from 'lucide-react';
 
-interface PageHeaderProps {
-  title:      string;
-  onBack?:    () => void;   // اختياري — إذا لم يُمرَّر يرجع للخلف تلقائياً
-  actions?:   React.ReactNode; // أيقونات إضافية يسار (اختياري)
+interface Props {
+  title:    string;
+  onBack?:  () => void;
+  actions?: React.ReactNode;
+  [key: string]: any; // لقبول data-top-bar وغيره
 }
 
-export default function PageHeader({ title, onBack, actions }: PageHeaderProps) {
+export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
   const router = useRouter();
-  const handleBack = onBack ?? (() => router.back());
+  const back   = onBack ?? (() => router.back());
 
   return (
     <header
-      data-top-bar
+      {...rest}
       dir="rtl"
       style={{
         position:   'fixed',
         top: 0, right: 0, left: 0,
         zIndex:     1000,
         height:     'var(--header-h)',
-        minHeight:  'var(--header-h)',
         display:    'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding:    '0 var(--sp-4)',
+        padding:    '0 var(--sp-2)',
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--glass-border)',
         backdropFilter: 'blur(20px)',
@@ -37,40 +34,35 @@ export default function PageHeader({ title, onBack, actions }: PageHeaderProps) 
     >
       {/* اسم الصفحة — يمين */}
       <span style={{
+        flex: 1,
         color:      'var(--text-main)',
         fontSize:   'var(--text-lg)',
         fontWeight: 800,
-        flex: 1,
+        paddingRight: 'var(--sp-2)',
       }}>
         {title}
       </span>
 
-      {/* أيقونات إضافية اختيارية */}
-      {actions && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', marginLeft: 'var(--sp-2)' }}>
-          {actions}
-        </div>
-      )}
+      {actions}
 
       {/* سهم الرجوع — يسار */}
       <button
-        onClick={handleBack}
+        onClick={back}
         style={{
-          display:    'flex',
+          width:  'var(--btn-h)',
+          height: 'var(--btn-h)',
+          display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          width:      'var(--btn-h)',
-          height:     'var(--btn-h)',
           borderRadius: 'var(--radius-full)',
           background: 'transparent',
-          border:     'none',
-          cursor:     'pointer',
-          color:      'var(--text-main)',
+          border: 'none',
+          cursor: 'pointer',
+          color: 'var(--text-main)',
           flexShrink: 0,
-          marginRight: 'calc(var(--sp-2) * -1)', // محاذاة بصرية
         }}
       >
-        <ArrowLeft size="var(--icon-lg)" />
+        <ArrowLeft size={20} />
       </button>
     </header>
   );

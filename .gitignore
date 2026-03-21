@@ -5,3 +5,8 @@ build/
 .env
 .env.local
 .DS_StoreSs
+
+.vercel
+.env*.local
+
+certificates
