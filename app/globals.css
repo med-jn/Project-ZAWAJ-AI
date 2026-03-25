@@ -8,13 +8,16 @@
    الثيم الداكن — افتراضي
 ══════════════════════════════════════════ */
 :root {
+  /* ✅ مضاف — كان مفقوداً */
+  color-scheme: dark;
+
   /* ── الألوان ──────────────────────────── */
   --color-primary:        #B3334B;
   --color-primary-hover:  #962B3F;
   --color-primary-soft:   rgba(179,51,75,0.20);
   --color-primary-xsoft:  rgba(179,51,75,0.10);
   --color-secondary:      #ffffff;
-  --color-gold:           #D4AF37;
+  --color-gold:           linear-gradient(to right, #7a5c00 0%, #c9a227 35%, #ffd700 55%, #fff4b0 65%, #d4af37 85%, #6b5100 100%);
   --color-gold-hover:     #C49B2E;
   --color-accent:         #A4161A;
 
@@ -34,7 +37,7 @@
 
   --glass-bg:     rgba(255,255,255,0.05);
   --glass-border: rgba(255,255,255,0.11);
-  --glass-blur:   blur(32px);
+  --glass-blur:   blur(12px);
 
   --shadow-soft:      0 8px 32px rgba(0,0,0,0.55);
   --shadow-deep:      0 24px 64px rgba(0,0,0,0.70);
@@ -47,62 +50,57 @@
 
   /* ══════════════════════════════════════════
      نظام الأحجام العالمي — rem + clamp
-     ────────────────────────────────────────
-     html يرث حجم الخط من النظام (100% = 16px)
-     clamp(min, مفضّل, max) يضمن:
-       • النص لا يختفي عند أصغر حجم
-       • العناصر لا تتداخل عند أكبر حجم
   ══════════════════════════════════════════ */
 
   /* ── أحجام النص ──────────────────────── */
-  --text-2xs:  clamp(0.625rem,  0.6875rem, 0.75rem);   /* 10→11→12px */
-  --text-xs:   clamp(0.6875rem, 0.75rem,   0.875rem);  /* 11→12→14px */
-  --text-sm:   clamp(0.75rem,   0.8125rem, 0.9375rem); /* 12→13→15px */
-  --text-base: clamp(0.875rem,  1rem,      1.125rem);  /* 14→16→18px */
-  --text-md:   clamp(0.9375rem, 1.0625rem, 1.1875rem); /* 15→17→19px */
-  --text-lg:   clamp(1rem,      1.125rem,  1.3125rem); /* 16→18→21px */
-  --text-xl:   clamp(1.125rem,  1.3125rem, 1.5rem);    /* 18→21→24px */
-  --text-2xl:  clamp(1.25rem,   1.5rem,    1.875rem);  /* 20→24→30px */
-  --text-3xl:  clamp(1.5rem,    1.875rem,  2.25rem);   /* 24→30→36px */
+  --text-2xs:  clamp(0.625rem,  0.6875rem, 0.75rem);
+  --text-xs:   clamp(0.6875rem, 0.75rem,   0.875rem);
+  --text-sm:   clamp(0.75rem,   0.8125rem, 0.9375rem);
+  --text-base: clamp(0.875rem,  1rem,      1.125rem);
+  --text-md:   clamp(0.9375rem, 1.0625rem, 1.1875rem);
+  --text-lg:   clamp(1rem,      1.125rem,  1.3125rem);
+  --text-xl:   clamp(1.125rem,  1.3125rem, 1.5rem);
+  --text-2xl:  clamp(1.25rem,   1.5rem,    1.875rem);
+  --text-3xl:  clamp(1.5rem,    1.875rem,  2.25rem);
 
   /* ── المسافات — نظام 4px ──────────────── */
-  --sp-1:  0.25rem;   /*  4px */
-  --sp-2:  0.5rem;    /*  8px */
-  --sp-3:  0.75rem;   /* 12px */
-  --sp-4:  1rem;      /* 16px */
-  --sp-5:  1.25rem;   /* 20px */
-  --sp-6:  1.5rem;    /* 24px */
-  --sp-8:  2rem;      /* 32px */
-  --sp-10: 2.5rem;    /* 40px */
-  --sp-12: 3rem;      /* 48px */
-  --sp-16: 4rem;      /* 64px */
+  --sp-1:  0.25rem;
+  --sp-2:  0.5rem;
+  --sp-3:  0.75rem;
+  --sp-4:  1rem;
+  --sp-5:  1.25rem;
+  --sp-6:  1.5rem;
+  --sp-8:  2rem;
+  --sp-10: 2.5rem;
+  --sp-12: 3rem;
+  --sp-16: 4rem;
 
   /* ── مكونات ──────────────────────────── */
-  --nav-h:    3.875rem;  /* 62px — شريط التنقل  */
-  --header-h: 3.5rem;    /* 56px — الهيدر        */
-  --btn-h:    2.75rem;   /* 44px — زر (touch target الموصى به) */
-  --btn-h-lg: 3.25rem;   /* 52px — زر كبير       */
+  --nav-h:    3.875rem;
+  --header-h: 3.5rem;
+  --btn-h:    2.75rem;
+  --btn-h-lg: 3.25rem;
 
   /* ── أيقونات ─────────────────────────── */
-  --icon-sm: 1rem;       /* 16px */
-  --icon-md: 1.25rem;    /* 20px */
-  --icon-lg: 1.5rem;     /* 24px */
-  --icon-xl: 2rem;       /* 32px */
+  --icon-sm: 1rem;
+  --icon-md: 1.25rem;
+  --icon-lg: 1.5rem;
+  --icon-xl: 2rem;
 
   /* ── الأفاتار ─────────────────────────── */
-  --avatar-xs: 1.75rem;  /* 28px */
-  --avatar-sm: 2.5rem;   /* 40px */
-  --avatar-md: 3.25rem;  /* 52px */
-  --avatar-lg: 4rem;     /* 64px */
-  --avatar-xl: 6rem;     /* 96px */
+  --avatar-xs: 1.75rem;
+  --avatar-sm: 2.5rem;
+  --avatar-md: 3.25rem;
+  --avatar-lg: 4rem;
+  --avatar-xl: 6rem;
 
   /* ── نصف الأقطار ─────────────────────── */
-  --radius-xs:  0.375rem;
-  --radius-sm:  0.5rem;
-  --radius-md:  0.75rem;
-  --radius-lg:  1rem;
-  --radius-xl:  1.5rem;
-  --radius-2xl: 2rem;
+  --radius-xs:   0.75rem;
+  --radius-sm:   1.0rem;
+  --radius-md:   1.5rem;
+  --radius-lg:   2rem;
+  --radius-xl:   3rem;
+  --radius-2xl:  4rem;
   --radius-full: 9999px;
 
   /* ── التباعد بين الأسطر ──────────────── */
@@ -111,7 +109,6 @@
   --lh-normal:  1.5;
   --lh-relaxed: 1.625;
 
-  /* للتوافق مع الكود القديم */
   --base-font-size: 1rem;
 }
 
@@ -119,19 +116,21 @@
    الثيم النهاري
 ══════════════════════════════════════════ */
 html.light {
+  color-scheme: light;
+
   --color-primary:        #B3334B;
   --color-primary-hover:  #962B3F;
   --color-primary-soft:   rgba(179,51,75,0.25);
   --color-primary-xsoft:  rgba(179,51,75,0.40);
   --color-secondary:      #B3334B;
-  --color-gold:           #D4AF37;
+  --color-gold:           linear-gradient(to right, #7a5c00 0%, #c9a227 35%, #ffd700 55%, #fff4b0 65%, #d4af37 85%, #6b5100 100%);
   --color-gold-hover:     #A07830;
   --color-accent:         #962B3F;
 
   --bg-main:     #FFFFFF;
   --bg-surface:  #FFFFFF;
   --bg-soft:     #F5F5F5;
-  --bg-elevated: #F5F5F5;
+  --bg-elevated: #F0F0F0;
 
   --text-main:       #000000;
   --text-secondary:  #101010;
@@ -142,9 +141,9 @@ html.light {
   --border-medium: rgba(179,51,75,0.35);
   --border-gold:   rgba(184,150,62,0.4);
 
-  --glass-bg:     rgba(255,255,255,0.72);
-  --glass-border: rgba(0,0,0,0.09);
-  --glass-blur:   blur(32px);
+  --glass-bg:     rgba(255,255,255,0.4);
+  --glass-border: rgba(0,0,0,0.2);
+  --glass-blur:   blur(12px);
 
   --shadow-soft:      0 4px 20px rgba(0,0,0,0.08);
   --shadow-deep:      0 16px 48px rgba(0,0,0,0.14);
@@ -154,8 +153,6 @@ html.light {
   --input-line:        rgba(0,0,0,0.35);
   --input-line-focus:  #8B1E3F;
   --input-placeholder: rgba(0,0,0,0.25);
-
-  color-scheme: light;
 }
 
 /* ══════════════════════════════════════════
@@ -163,22 +160,16 @@ html.light {
 ══════════════════════════════════════════ */
 @layer base {
   * {
-    font-family: 'Cairo', sans-serif;
+    font-family: var(--font-cairo), 'Cairo', sans-serif;
     box-sizing: border-box;
-    min-width: 0; /* يمنع تجاوز الـ flexbox */
+    min-width: 0;
   }
 
   html {
-    /* ✅ يرث حجم الخط من إعدادات الجهاز
-       المستخدم يتحكم بالحجم من إعدادات هاتفه
-       100% = 16px افتراضي، clamp تمنع التطرف */
     font-size: 100%;
-    color-scheme: dark;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
   }
-
-  html.light { color-scheme: light; }
 
   body {
     @apply antialiased;
@@ -189,7 +180,6 @@ html.light {
     margin: 0;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
-    /* لا font-size ثابت — يرث من html */
   }
 
   h1 { font-size: var(--text-3xl); line-height: var(--lh-tight);   font-weight: 900; margin: 0; }
@@ -215,7 +205,15 @@ html.light {
 /* ══════════════════════════════════════════
    المكوّنات
 ══════════════════════════════════════════ */
-@layer components {
+
+  @layer components {
+
+    .text-gold-luxury {
+    -webkit-text-stroke: 0.3px #d4af37;
+    text-shadow: 
+      0 0 15px var(--shadow-gold-glow),
+      inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  }
 
   .glass-panel {
     backdrop-filter: var(--glass-blur);
@@ -228,28 +226,36 @@ html.light {
   }
 
   .btn-premium {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--sp-2);
-    padding: 0 var(--sp-5);
-    height: var(--btn-h);
-    min-height: var(--btn-h);
-    border-radius: var(--radius-md);
-    font-size: var(--text-base);
-    font-weight: 700;
-    color: var(--text-on-primary);
-    background: var(--color-primary);
-    box-shadow: 0 0.5rem 1.5rem var(--shadow-red-glow);
-    transition: all 0.3s ease;
-    -webkit-tap-highlight-color: transparent;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
-  }
-  .btn-premium:active { transform: scale(0.97); }
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 0 var(--sp-6);
+  height: 2.4rem;
+  border-radius: 1.75rem;
+  font-size: var(--text-sm);
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+  
+  /* التأثير ثلاثي الأبعاد والعمق */
+  background: var(--color-primary);
+  color: white;
+  box-shadow: 0 px 1px rgb(129,01,25,0.7);
+  top: 0;
+}
+
+.btn-premium:hover {
+  filter: brightness(1.1);
+}
+
+.btn-premium:active {
+  top: 3px;
+  box-shadow: 0 1px 0px #852638;
+}
+  .btn-premium:active { transform: scale(0.98); }
 
   :root:not(html.light) .btn-premium::after {
     content: '';
@@ -264,13 +270,13 @@ html.light {
 
   .bg-luxury-gradient {
     background: radial-gradient(ellipse at 50% 0%,
-      rgba(179,51,75,0.35) 0%, var(--bg-main) 70%);
+      rgba(179,51,75,0.5) 0%, var(--bg-main) 90%);
     min-height: 100dvh;
     width: 100%;
   }
   html.light .bg-luxury-gradient {
     background: radial-gradient(ellipse at 50% 0%,
-      rgba(179,51,75,0.5) 0%, var(--bg-main) 33%);
+      rgba(179,51,75,0.7) 50%, var(--bg-main) 100%);
   }
 
   .snap-container {
@@ -314,7 +320,6 @@ html.light {
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  /* أحجام النص */
   .text-2xs  { font-size: var(--text-2xs);  }
   .text-xs   { font-size: var(--text-xs);   }
   .text-sm   { font-size: var(--text-sm);   }
@@ -325,14 +330,12 @@ html.light {
   .text-2xl  { font-size: var(--text-2xl);  }
   .text-3xl  { font-size: var(--text-3xl);  }
 
-  /* أفاتار */
   .avatar-xs { width:var(--avatar-xs); height:var(--avatar-xs); border-radius:50%; object-fit:cover; flex-shrink:0; }
   .avatar-sm { width:var(--avatar-sm); height:var(--avatar-sm); border-radius:50%; object-fit:cover; flex-shrink:0; }
   .avatar-md { width:var(--avatar-md); height:var(--avatar-md); border-radius:50%; object-fit:cover; flex-shrink:0; }
   .avatar-lg { width:var(--avatar-lg); height:var(--avatar-lg); border-radius:50%; object-fit:cover; flex-shrink:0; }
   .avatar-xl { width:var(--avatar-xl); height:var(--avatar-xl); border-radius:50%; object-fit:cover; flex-shrink:0; }
 
-  /* أيقونات */
   .icon-sm { width:var(--icon-sm); height:var(--icon-sm); flex-shrink:0; }
   .icon-md { width:var(--icon-md); height:var(--icon-md); flex-shrink:0; }
   .icon-lg { width:var(--icon-lg); height:var(--icon-lg); flex-shrink:0; }
@@ -353,7 +356,6 @@ html.light {
 
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  /* إخفاء الأشرطة عند الدردشة أو أي modal */
   body.modal-open [data-top-bar],
   body.modal-open [data-bottom-nav] {
     display: none !important;
@@ -363,25 +365,18 @@ html.light {
 /* ═══════════════════════════════
    REALISTIC METAL BADGES
 ═══════════════════════════════ */
-
 .badge-metal {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-
   padding: 0.15em 0.65em;
   margin-inline-start: 0.35em;
-
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-
   border-radius: 0.45em;
-
   overflow: hidden;
-
-  /* نحت المعدن */
   box-shadow:
     inset 0 0.05em 0.08em rgba(255,255,255,0.7),
     inset 0 -0.12em 0.25em rgba(0,0,0,0.7),
@@ -389,52 +384,42 @@ html.light {
     0 0.08em 0.25em rgba(0,0,0,0.45);
 }
 
-/* طبقة اللمعان */
 .badge-metal::before {
   content: "";
   position: absolute;
-  inset: ;
-
-  background:
-    linear-gradient(
-      120deg,
-      transparent 25%,
-      rgba(255,255,255,0.6) 50%,
-      transparent 75%
-    );
-
+  /* ✅ إصلاح: كان inset: ; فارغاً — خطأ CSS */
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    transparent 25%,
+    rgba(255,255,255,0.6) 50%,
+    transparent 75%
+  );
   transform: translateX(-120%);
   animation: badge-shine 7s ease-in-out infinite;
   pointer-events: none;
 }
 
-/* طبقة texture خفيفة */
 .badge-metal::after {
   content: "";
   position: absolute;
   inset: 0;
-
-  background-image:
-    radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
-
+  background-image: radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px);
   background-size: 3px 3px;
   opacity: 0.15;
   mix-blend-mode: overlay;
-
   pointer-events: none;
 }
 
 @keyframes badge-shine {
-  0%   { transform: translateX(-140%) }
-  20%  { transform: translateX(140%) }
-  100% { transform: translateX(140%) }
+  0%   { transform: translateX(-140%); }
+  20%  { transform: translateX(140%);  }
+  100% { transform: translateX(140%);  }
 }
 
-/* نقش النص المعدني */
 .badge-engraved {
   position: relative;
   z-index: 2;
-
   text-shadow:
     0 0.03em 0 rgba(255,255,255,0.7),
     0 -0.05em 0.08em rgba(0,0,0,0.8);
@@ -444,7 +429,6 @@ html.light {
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
   transition: transform 0.25s ease;
 }
-
 .love-coin:hover {
   transform: scale(1.08) rotate(-3deg);
 }
@@ -454,24 +438,8 @@ html.light {
 }
 
 @keyframes coinShine {
-
-  0% {
-    transform: translateX(-120px);
-    opacity: 0;
-  }
-
-  30% {
-    opacity: 0.8;
-  }
-
-  50% {
-    transform: translateX(120px);
-    opacity: 0.6;
-  }
-
-  100% {
-    transform: translateX(240px);
-    opacity: 0;
-  }
-
+  0%   { transform: translateX(-120px); opacity: 0;   }
+  30%  {                                opacity: 0.8; }
+  50%  { transform: translateX(120px);  opacity: 0.6; }
+  100% { transform: translateX(240px);  opacity: 0;   }
 }

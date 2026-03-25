@@ -13,7 +13,7 @@ import {
   Users, BookOpen, ShieldCheck, Smile, Ruler, Activity,
   Flame, Globe, HandHeart, LogOut,
 } from 'lucide-react';
-import  { CoinBalance } from '@/components//CoinBalance';
+import  { CoinBalance } from '@/components/ui/CoinBalance';
 import { supabase }  from '@/lib/supabase/client';
 import { AutoBadge } from '@/components/auto-badge';
 import { useWallet } from '@/hooks/useWallet';
@@ -23,7 +23,6 @@ import {
   READINESS_LEVEL_NOW,
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
-import { CoinBalance } from '@/components/ui/CoinBalance';
 
 // ── حالة التواجد ───────────────────────────────────────────────
 function getOnlineStatus(last?: string, gender?: string) {

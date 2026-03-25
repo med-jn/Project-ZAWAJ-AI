@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'ZAWAJ AI',
   webDir: 'out',
   server: {
-    url: 'http://192.168.1.16:3000',
+    url: 'http://192.168.1.15:3000',
     cleartext: true
   }
 };

@@ -160,7 +160,7 @@ export default function HomePage() {
 
   // ── حالات التحميل ─────────────────────────────────────────
   if (loading) return (
-    <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--bg-main)' }}>
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--bg-luxury-gradient)' }}>
       <motion.div animate={{ scale: [1, 1.12, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}
         className="text-5xl">💍</motion.div>
     </div>
@@ -168,7 +168,7 @@ export default function HomePage() {
 
   if (users.length === 0) return (
     <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-8"
-      style={{ background: 'var(--bg-main)' }}>
+      style={{ background: 'var(--bg-luxury-gradient)' }}>
       <div className="text-7xl">🔍</div>
       <p className="text-white font-black text-xl text-center">لا توجد نتائج</p>
       <p style={{ color: 'rgba(255,255,255,0.4)' }} className="text-sm text-center">
@@ -186,7 +186,7 @@ export default function HomePage() {
 
   if (currentIndex >= users.length) return (
     <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 px-8"
-      style={{ background: 'var(--bg-main)' }}>
+      style={{ background: 'var(--bg-luxury-gradient)' }}>
       <div className="text-7xl">✨</div>
       <p className="text-white font-black text-xl text-center">شاهدت كل البطاقات المتاحة</p>
       <p style={{ color: 'rgba(255,255,255,0.4)' }} className="text-sm text-center">

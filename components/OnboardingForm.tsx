@@ -26,7 +26,7 @@ import {
 import { supabase }              from '@/lib/supabase/client';
 import { useRouter }              from 'next/navigation';
 import { toast }                  from 'sonner';
-import { validateText, validateImage } from '@/lib/gemini';
+import { moderateText, moderateImage } from '@/lib/moderate';
 import { getAutoLocation, saveLocationToProfile } from '@/lib/services/locationService';
 import { OCCUPATIONS } from '@/constants/occupations';
 import { COUNTRIES_CITIES, ALL_COUNTRIES, COUNTRY_DIAL } from '@/constants/countries';
@@ -448,18 +448,23 @@ async function cropAndCompress(
   cropSize: number,
   outputSize = 600
 ): Promise<File> {
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = src;
+    // ✅ إضافة onerror لمنع التعليق الصامت
+    img.onerror = () => reject(new Error('فشل تحميل الصورة'));
     img.onload = async () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = outputSize;
-      canvas.height = outputSize;
-      const ctx = canvas.getContext('2d')!;
-      // رسم القسم المقتطع مربعاً
-      ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, outputSize, outputSize);
-      const blob = await compressToMax(canvas, 200);
-      resolve(new File([blob], 'avatar.webp', { type: 'image/webp' }));
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width  = outputSize;
+        canvas.height = outputSize;
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, outputSize, outputSize);
+        const blob = await compressToMax(canvas, 200);
+        resolve(new File([blob], 'avatar.webp', { type: 'image/webp' }));
+      } catch(e) {
+        reject(e);
+      }
     };
   });
 }
@@ -719,11 +724,13 @@ export default function OnboardingForm() {
   const [agreed, setAgreed] = useState(false);
   const [imgFile, setImgFile] = useState<File|null>(null);
   const [imgPreview, setImgPreview] = useState('');
-  const [cropSrc,  setCropSrc]  = useState('');       // الصورة الأصلية للاقتصاص
+  const [cropSrc,  setCropSrc]  = useState('');
   const [intOpts, setIntOpts] = useState<{id:string;label:string}[]>([]);
   const [tag,           setTag]          = useState('');
   const [locating,      setLocating]     = useState(false);
   const [validatingImg, setValidatingImg] = useState(false);
+  // ✅ نجلب userId مبكراً حتى يكون متاحاً عند فحص الصورة
+  const [userId, setUserId] = useState<string>('');
 
   // مشتقات
   const isMale   = form.gender==='male';
@@ -745,6 +752,12 @@ export default function OnboardingForm() {
   useEffect(()=>{
     supabase.from('interests_options').select('id,label').eq('is_active',true)
       .then(({data})=>{if(data)setIntOpts(data);});
+  },[]);
+  // ✅ جلب userId مبكراً
+  useEffect(()=>{
+    supabase.auth.getUser().then(({data})=>{
+      if(data?.user) setUserId(data.user.id);
+    });
   },[]);
 
   const set = useCallback(<K extends keyof FD>(k:K,v:FD[K])=>{
@@ -797,7 +810,7 @@ export default function OnboardingForm() {
         form.partner_requirements && `المواصفات: ${form.partner_requirements}`,
       ].filter(Boolean).join('\n');
       if(textToCheck){
-        const aiCheck = await validateText(textToCheck);
+        const aiCheck = await moderateText(user.id, textToCheck);
         if(!aiCheck.valid){
           toast.error(aiCheck.reason || 'المحتوى يخالف معايير المنصة');
           setSaving(false);
@@ -1162,7 +1175,7 @@ export default function OnboardingForm() {
                 :[...form.interests,opt.label])}
               style={{
                 padding:'8px 18px', borderRadius:999, border:'none', cursor:'pointer',
-                background:sel?'var(--color-primary)':'transparent',
+                background:sel?'var(--color-primary)':'rgba(179,51,75,0)',
                 outline:`1.5px solid ${sel?'var(--color-primary)':'var(--border-medium)'}`,
                 color:sel?'#fff':'var(--text-secondary)',
                 fontSize:'var(--text-sm)', fontWeight:sel?600:400,
@@ -1219,59 +1232,117 @@ export default function OnboardingForm() {
   );
 
   // ════════════════════════════════════════
-  //  المرحلة 3 — الصورة والتأكيد
+  //  المرحلة 3 — الصورة والتأكيد (Premium)
   // ════════════════════════════════════════
   const S3=(
     <div dir="rtl">
-      {/* رفع الصورة */}
-      <label style={{ display:'block', cursor:'pointer', marginBottom:24 }}>
+
+      {/* ── بطاقة رفع الصورة ── */}
+      <label style={{ display:'block', cursor:'pointer', marginBottom:'var(--sp-5)' }}>
         <input type="file" accept="image/*" style={{ display:'none' }}
           onChange={e=>{
             const f=e.target.files?.[0]; if(!f)return;
             setCropSrc(URL.createObjectURL(f));
             setErrs(p=>({...p,avatar_url:''}));
           }}/>
-        <motion.div whileTap={{scale:0.98}} style={{
-          display:'flex',flexDirection:'column',alignItems:'center',
-          justifyContent:'center',padding:'44px 20px',
-          border:`1.5px dashed ${errs.avatar_url?'var(--color-accent)':imgPreview?'var(--color-primary)':'var(--border-medium)'}`,
-          borderRadius:24,background:imgPreview?'transparent':'var(--bg-soft)',
-          transition:'border-color 0.2s',
+
+        <motion.div whileTap={{scale:0.97}} style={{
+          position:'relative',
+          display:'flex', flexDirection:'column', alignItems:'center',
+          justifyContent:'center', padding:'var(--sp-8) var(--sp-4)',
+          borderRadius:'var(--radius-xl)',
+          background: imgPreview
+            ? 'var(--color-primary-xsoft)'
+            : 'var(--glass-bg)',
+          backdropFilter:'var(--glass-blur)',
+          WebkitBackdropFilter:'var(--glass-blur)',
+          border: `1.5px solid ${
+            errs.avatar_url ? 'var(--color-accent)'
+            : imgPreview    ? 'var(--color-primary)'
+            : 'var(--glass-border)'
+          }`,
+          boxShadow: imgPreview
+            ? `0 0 40px var(--shadow-red-glow), inset 0 1px 0 rgba(255,255,255,0.08)`
+            : `var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,0.05)`,
+          transition:'all 0.3s ease',
+          overflow:'hidden',
         }}>
-          {imgPreview?(
-            <div style={{ position:'relative' }}>
-              <img src={imgPreview} alt="" style={{
-                width:148,height:148,borderRadius:'50%',objectFit:'cover',
-                border:'3px solid var(--color-primary)',
-                boxShadow:`0 8px 32px var(--shadow-red-glow)`,
-              }}/>
+
+          {/* بريق خلفي */}
+          {!imgPreview && (
+            <div style={{
+              position:'absolute', top:'-50%', left:'50%',
+              transform:'translateX(-50%)',
+              width:'60%', height:'100%',
+              background:'radial-gradient(ellipse, rgba(179,51,75,0.12) 0%, transparent 70%)',
+              pointerEvents:'none',
+            }}/>
+          )}
+
+          {imgPreview ? (
+            <div style={{ position:'relative', zIndex:1 }}>
+              {/* الأفاتار مع حلقة ذهبية */}
               <div style={{
-                position:'absolute',bottom:4,right:4,
-                width:36,height:36,borderRadius:'50%',
+                position:'relative',
+                padding:3,
+                borderRadius:'50%',
+                background:'linear-gradient(135deg, var(--color-primary), #D4AF37)',
+                boxShadow:`0 8px 32px var(--shadow-red-glow), 0 0 0 1px rgba(212,175,55,0.3)`,
+              }}>
+                <img src={imgPreview} alt="" style={{
+                  width:140, height:140, borderRadius:'50%',
+                  objectFit:'cover', display:'block',
+                }}/>
+              </div>
+              {/* زر التغيير */}
+              <div style={{
+                position:'absolute', bottom:4, right:4,
+                width:36, height:36, borderRadius:'50%',
                 background:'var(--color-primary)',
-                display:'flex',alignItems:'center',justifyContent:'center',
+                display:'flex', alignItems:'center', justifyContent:'center',
                 boxShadow:`0 4px 12px var(--shadow-red-glow)`,
+                border:'2px solid var(--bg-main)',
               }}>
                 <Camera size={15} color="#fff"/>
               </div>
+              <p style={{
+                textAlign:'center', marginTop:'var(--sp-3)',
+                fontSize:'var(--text-sm)', fontWeight:600,
+                color:'var(--color-primary)',
+              }}>اضغط لتغيير الصورة</p>
             </div>
-          ):(
-            <>
+          ) : (
+            <div style={{ textAlign:'center', position:'relative', zIndex:1 }}>
+              {/* أيقونة الكاميرا */}
               <div style={{
-                width:64,height:64,borderRadius:'50%',marginBottom:14,
+                width:80, height:80, borderRadius:'50%',
+                margin:'0 auto var(--sp-4)',
                 background:'var(--color-primary-soft)',
                 border:'1.5px solid var(--color-primary-soft)',
-                display:'flex',alignItems:'center',justifyContent:'center',
+                display:'flex', alignItems:'center', justifyContent:'center',
+                boxShadow:`0 8px 24px var(--shadow-red-glow)`,
               }}>
-                <Camera size={26} style={{color:'var(--color-primary)',opacity:0.8}}/>
+                <Camera size={32} style={{color:'var(--color-primary)'}}/>
               </div>
-              <p style={{fontSize:'var(--text-md)',fontWeight:500,color:'var(--text-secondary)',marginBottom:'var(--sp-1)'}}>اضغط لاختيار صورة</p>
-              <p style={{fontSize:'var(--text-xs)',color:'var(--text-tertiary)'}}>JPG · PNG · WEBP</p>
-            </>
+              <p style={{
+                fontSize:'var(--text-lg)', fontWeight:700,
+                color:'var(--text-main)', marginBottom:'var(--sp-1)',
+              }}>أضف صورتك</p>
+              <p style={{
+                fontSize:'var(--text-xs)', color:'var(--text-tertiary)',
+                lineHeight:'var(--lh-relaxed)',
+              }}>JPG · PNG · WEBP · حتى 5MB</p>
+            </div>
           )}
         </motion.div>
       </label>
-      {errs.avatar_url&&<p style={{color:'var(--error-text)',fontSize:'var(--text-xs)',marginBottom:'var(--sp-4)'}}>{ errs.avatar_url}</p>}
+
+      {errs.avatar_url && (
+        <p style={{
+          color:'var(--error-text)', fontSize:'var(--text-xs)',
+          marginBottom:'var(--sp-4)', marginTop:'-var(--sp-2)',
+        }}>{errs.avatar_url}</p>
+      )}
 
       {/* ── Crop Modal ── */}
       {cropSrc && (
@@ -1281,20 +1352,16 @@ export default function OnboardingForm() {
             setValidatingImg(true);
             try {
               const file = await cropAndCompress(cropSrc, cropX, cropY, cropSize, 600);
-              // تحويل لـ base64 بـ Promise نظيف
               const b64 = await new Promise<string>((res, rej) => {
                 const reader = new FileReader();
                 reader.onload  = () => res((reader.result as string).split(',')[1]);
                 reader.onerror = () => rej(new Error('فشل قراءة الصورة'));
                 reader.readAsDataURL(file);
               });
-              // فحص Gemini
-              const check = await validateImage(b64, 'image/webp');
+              const check = await moderateImage(userId || 'anonymous', b64, 'image/webp');
               if (!check.valid) {
                 toast.error(check.reason || 'الصورة لا تلبي معايير المنصة');
-                setCropSrc('');
-                setValidatingImg(false);
-                return;
+                setCropSrc(''); setValidatingImg(false); return;
               }
               setImgFile(file);
               setImgPreview(URL.createObjectURL(file));
@@ -1303,178 +1370,224 @@ export default function OnboardingForm() {
             } catch (e: any) {
               toast.error(e?.message || 'حدث خطأ في معالجة الصورة');
               setCropSrc('');
-            } finally {
-              setValidatingImg(false);
-            }
+            } finally { setValidatingImg(false); }
           }}
           onCancel={() => { setCropSrc(''); setValidatingImg(false); }}
           validating={validatingImg}
         />
       )}
 
-      {/* إرشادات */}
+      {/* ── إرشادات الصورة ── */}
       <div style={{
-        padding:'14px 18px',borderRadius:16,marginBottom:24,
-        background:'var(--color-primary-xsoft)',
-        border:'1px solid var(--color-primary-soft)',
+        borderRadius:'var(--radius-lg)',
+        marginBottom:'var(--sp-4)',
+        padding:'var(--sp-4)',
+        background:'var(--glass-bg)',
+        backdropFilter:'var(--glass-blur)',
+        border:'1px solid var(--glass-border)',
       }}>
-        <p style={{fontSize:'var(--text-xs)',color:'var(--text-secondary)',opacity:0.85,lineHeight:'var(--lh-relaxed)'}}>
-          صورة واضحة · إضاءة جيدة · بدون نظارة شمسية · بدون فلتر يغير الملامح
-        </p>
+        <p style={{
+          fontSize:'var(--text-2xs)', fontWeight:800,
+          letterSpacing:'0.15em', textTransform:'uppercase',
+          color:'var(--color-primary)', marginBottom:'var(--sp-2)',
+          opacity:0.8,
+        }}>معايير الصورة</p>
+        <div style={{ display:'flex', flexDirection:'column', gap:'var(--sp-1)' }}>
+          {['وجه واضح وإضاءة جيدة','بدون نظارة شمسية أو فلتر','لباس محتشم'].map(txt => (
+            <div key={txt} style={{
+              display:'flex', alignItems:'center', gap:'var(--sp-2)',
+            }}>
+              <div style={{
+                width:6, height:6, borderRadius:'50%', flexShrink:0,
+                background:'var(--color-primary)',
+              }}/>
+              <p style={{
+                fontSize:'var(--text-xs)', color:'var(--text-secondary)',
+                lineHeight:'var(--lh-normal)', margin:0,
+              }}>{txt}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* تبديل التضبيب — أيقونة درع تتغير لوناً */}
-      <motion.button type="button" whileTap={{scale:0.96}}
-        onClick={()=>set('is_photos_blurred',!form.is_photos_blurred)}
-        style={{
-          width:'100%',background:form.is_photos_blurred?'var(--color-primary-xsoft)':'transparent',
-          border:`1.5px solid ${form.is_photos_blurred?'var(--color-primary-soft)':'var(--border-medium)'}`,
-          borderRadius:16,padding:'14px 18px',
-          display:'flex',alignItems:'center',justifyContent:'space-between',
-          cursor:'pointer',transition:'all 0.22s',
-          WebkitTapHighlightColor:'transparent',marginBottom:24,
-          direction:'rtl',
-        }}>
-        <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <motion.div
-            animate={{
-              color: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--text-tertiary)',
-            }}
-            transition={{duration:0.2}}
-            style={{display:'flex',alignItems:'center',flexShrink:0}}
-          >
-            <ShieldCheck size={22}
-              color={form.is_photos_blurred ? 'var(--color-primary)' : 'var(--text-tertiary)'}
-            />
-          </motion.div>
-          <div style={{textAlign:'right'}}>
-            <p style={{
-              fontSize:'var(--text-sm)',fontWeight:600,margin:0,
-              color: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--text-main)',
-              transition:'color 0.2s',
-            }}>
-              تضبيب الصورة
-            </p>
-            <p style={{fontSize:'var(--text-xs)',color:'var(--text-tertiary)',margin:'2px 0 0',lineHeight:'var(--lh-snug)'}}>
-              {form.is_photos_blurred ? 'مفعّل — صورتك محمية' : 'اضغط لحماية خصوصيتك'}
-            </p>
-          </div>
-        </div>
-        {/* مؤشر الحالة */}
-        <motion.div
-          animate={{
-            background: form.is_photos_blurred ? 'var(--color-primary)' : 'transparent',
-            borderColor: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--border-medium)',
-          }}
-          transition={{duration:0.2}}
+      {/* ── خيارات الخصوصية ── */}
+      <div style={{
+        display:'flex', flexDirection:'column', gap:'var(--sp-3)',
+        marginBottom:'var(--sp-5)',
+      }}>
+        {/* تضبيب الصورة */}
+        <motion.button type="button" whileTap={{scale:0.97}}
+          onClick={()=>set('is_photos_blurred',!form.is_photos_blurred)}
           style={{
-            width:22,height:22,borderRadius:6,flexShrink:0,
-            border:'1.5px solid var(--border-medium)',
-            display:'flex',alignItems:'center',justifyContent:'center',
-          }}
-        >
-          <AnimatePresence>
-            {form.is_photos_blurred&&(
-              <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}} transition={{duration:0.14}}>
-                <Check size={12} color="#fff"/>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </motion.button>
-
-      {/* هل تريد رؤية صور الأعضاء الآخرين */}
-      <motion.button type="button" whileTap={{scale:0.96}}
-        onClick={()=>set('show_photos',!form.show_photos)}
-        style={{
-          width:'100%',background:!form.show_photos?'var(--color-primary-xsoft)':'transparent',
-          border:`1.5px solid ${!form.show_photos?'var(--color-primary-soft)':'var(--border-medium)'}`,
-          borderRadius:16,padding:'14px 18px',
-          display:'flex',alignItems:'center',justifyContent:'space-between',
-          cursor:'pointer',transition:'all 0.22s',
-          WebkitTapHighlightColor:'transparent',marginBottom:'var(--sp-6)',
-          direction:'rtl',
-        }}>
-        <div style={{display:'flex',alignItems:'center',gap:12}}>
-          <motion.div
-            animate={{color: !form.show_photos?'var(--color-primary)':'var(--text-tertiary)'}}
-            transition={{duration:0.2}}
-            style={{display:'flex',alignItems:'center',flexShrink:0}}>
-            {form.show_photos
-              ? <Eye size={22} color="var(--text-tertiary)"/>
-              : <EyeOff size={22} color="var(--color-primary)"/>
-            }
-          </motion.div>
-          <div style={{textAlign:'right'}}>
-            <p style={{
-              fontSize:'var(--text-sm)',fontWeight:600,margin:0,
-              color: !form.show_photos?'var(--color-primary)':'var(--text-main)',
-              transition:'color 0.2s',
-            }}>
-              {form.show_photos ? 'رؤية صور الأعضاء' : 'إخفاء صور الأعضاء'}
-            </p>
-            <p style={{fontSize:'var(--text-2xs)',color:'var(--text-tertiary)',margin:'2px 0 0',lineHeight:1.4}}>
-              {form.show_photos ? 'ستظهر صور الأعضاء عادياً' : 'مفعّل — ستُضبَّب كل الصور'}
-            </p>
-          </div>
-        </div>
-        {/* مؤشر */}
-        <motion.div
-          animate={{
-            background: !form.show_photos?'var(--color-primary)':'transparent',
-            borderColor: !form.show_photos?'var(--color-primary)':'var(--border-medium)',
-          }}
-          transition={{duration:0.2}}
-          style={{
-            width:22,height:22,borderRadius:6,flexShrink:0,
-            border:'1.5px solid var(--border-medium)',
-            display:'flex',alignItems:'center',justifyContent:'center',
+            width:'100%',
+            background: form.is_photos_blurred ? 'var(--color-primary-soft)' : 'var(--glass-bg)',
+            backdropFilter:'var(--glass-blur)',
+            border:`1.5px solid ${form.is_photos_blurred ? 'var(--color-primary)' : 'var(--glass-border)'}`,
+            borderRadius:'var(--radius-lg)',
+            padding:'var(--sp-4)',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            cursor:'pointer', transition:'all 0.22s',
+            WebkitTapHighlightColor:'transparent',
+            boxShadow: form.is_photos_blurred ? `0 4px 16px var(--shadow-red-glow)` : 'none',
+            direction:'rtl',
           }}>
-          <AnimatePresence>
-            {!form.show_photos&&(
-              <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}} transition={{duration:0.14}}>
-                <Check size={12} color="#fff"/>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </motion.button>
+          <div style={{ display:'flex', alignItems:'center', gap:'var(--sp-3)' }}>
+            <div style={{
+              width:40, height:40, borderRadius:'var(--radius-md)',
+              background: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--bg-soft)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              flexShrink:0, transition:'all 0.2s',
+              boxShadow: form.is_photos_blurred ? `0 4px 12px var(--shadow-red-glow)` : 'none',
+            }}>
+              <ShieldCheck size={20} color={form.is_photos_blurred ? '#fff' : 'var(--text-tertiary)'}/>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <p style={{
+                fontSize:'var(--text-sm)', fontWeight:700, margin:0,
+                color: form.is_photos_blurred ? 'var(--text-main)' : 'var(--text-secondary)',
+              }}>تضبيب الصورة</p>
+              <p style={{
+                fontSize:'var(--text-2xs)', color:'var(--text-tertiary)',
+                margin:'2px 0 0',
+              }}>
+                {form.is_photos_blurred ? 'مفعّل — صورتك محمية' : 'اضغط لحماية خصوصيتك'}
+              </p>
+            </div>
+          </div>
+          {/* Toggle */}
+          <div style={{
+            width:44, height:24, borderRadius:99, flexShrink:0,
+            background: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--bg-elevated)',
+            border:'1.5px solid var(--border-soft)',
+            position:'relative', transition:'background 0.2s',
+          }}>
+            <motion.div
+              animate={{ x: form.is_photos_blurred ? 20 : 2 }}
+              transition={{ type:'spring', stiffness:500, damping:30 }}
+              style={{
+                position:'absolute', top:2,
+                width:16, height:16, borderRadius:'50%',
+                background:'#fff',
+                boxShadow:'0 1px 4px rgba(0,0,0,0.3)',
+              }}/>
+          </div>
+        </motion.button>
 
-      {/* الموافقة */}
+        {/* إظهار صور الأعضاء */}
+        <motion.button type="button" whileTap={{scale:0.97}}
+          onClick={()=>set('show_photos',!form.show_photos)}
+          style={{
+            width:'100%',
+            background: !form.show_photos ? 'var(--color-primary-soft)' : 'var(--glass-bg)',
+            backdropFilter:'var(--glass-blur)',
+            border:`1.5px solid ${!form.show_photos ? 'var(--color-primary)' : 'var(--glass-border)'}`,
+            borderRadius:'var(--radius-lg)',
+            padding:'var(--sp-4)',
+            display:'flex', alignItems:'center', justifyContent:'space-between',
+            cursor:'pointer', transition:'all 0.22s',
+            WebkitTapHighlightColor:'transparent',
+            direction:'rtl',
+          }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'var(--sp-3)' }}>
+            <div style={{
+              width:40, height:40, borderRadius:'var(--radius-md)',
+              background: !form.show_photos ? 'var(--color-primary)' : 'var(--bg-soft)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              flexShrink:0, transition:'all 0.2s',
+            }}>
+              {form.show_photos
+                ? <Eye size={20} color="var(--text-tertiary)"/>
+                : <EyeOff size={20} color="#fff"/>
+              }
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <p style={{
+                fontSize:'var(--text-sm)', fontWeight:700, margin:0,
+                color: !form.show_photos ? 'var(--text-main)' : 'var(--text-secondary)',
+              }}>
+                {form.show_photos ? 'رؤية صور الأعضاء' : 'إخفاء صور الأعضاء'}
+              </p>
+              <p style={{
+                fontSize:'var(--text-2xs)', color:'var(--text-tertiary)',
+                margin:'2px 0 0',
+              }}>
+                {form.show_photos ? 'ستظهر الصور عادياً' : 'مفعّل — ستُضبَّب كل الصور'}
+              </p>
+            </div>
+          </div>
+          <div style={{
+            width:44, height:24, borderRadius:99, flexShrink:0,
+            background: !form.show_photos ? 'var(--color-primary)' : 'var(--bg-elevated)',
+            border:'1.5px solid var(--border-soft)',
+            position:'relative', transition:'background 0.2s',
+          }}>
+            <motion.div
+              animate={{ x: !form.show_photos ? 20 : 2 }}
+              transition={{ type:'spring', stiffness:500, damping:30 }}
+              style={{
+                position:'absolute', top:2,
+                width:16, height:16, borderRadius:'50%',
+                background:'#fff',
+                boxShadow:'0 1px 4px rgba(0,0,0,0.3)',
+              }}/>
+          </div>
+        </motion.button>
+      </div>
+
+      {/* ── الموافقة على الشروط ── */}
       <motion.button type="button" whileTap={{scale:0.99}}
         onClick={()=>{setAgreed(v=>!v);setErrs(p=>({...p,bio:''}));}}
         style={{
-          width:'100%',background:agreed?'var(--color-primary-xsoft)':'transparent',
-          border:`1.5px solid ${agreed?'var(--color-primary-soft)':errs.bio?'var(--color-accent)':'var(--border-medium)'}`,
-          borderRadius:16,padding:'16px 18px',
-          display:'flex',alignItems:'flex-start',gap:14,
-          cursor:'pointer',transition:'all 0.2s',
+          width:'100%',
+          background: agreed ? 'var(--color-primary-soft)' : 'var(--glass-bg)',
+          backdropFilter:'var(--glass-blur)',
+          border:`1.5px solid ${agreed ? 'var(--color-primary)' : errs.bio ? 'var(--color-accent)' : 'var(--glass-border)'}`,
+          borderRadius:'var(--radius-lg)',
+          padding:'var(--sp-4)',
+          display:'flex', alignItems:'flex-start', gap:'var(--sp-3)',
+          cursor:'pointer', transition:'all 0.2s',
           WebkitTapHighlightColor:'transparent',
+          boxShadow: agreed ? `0 4px 16px var(--shadow-red-glow)` : 'none',
         }}>
         <motion.div
           animate={{
-            background:agreed?'var(--color-primary)':'transparent',
-            borderColor:agreed?'var(--color-primary)':'var(--border-medium)',
+            background: agreed ? 'var(--color-primary)' : 'rgba(179,51,75,0)',
+            borderColor: agreed ? 'var(--color-primary)' : 'var(--border-medium)',
+            scale: agreed ? 1.05 : 1,
           }}
           transition={{duration:0.18}}
           style={{
-            width:20,height:20,borderRadius:6,flexShrink:0,marginTop:2,
+            width:22, height:22, borderRadius:'var(--radius-sm)',
+            flexShrink:0, marginTop:2,
             border:'1.5px solid var(--border-medium)',
-            display:'flex',alignItems:'center',justifyContent:'center',
+            display:'flex', alignItems:'center', justifyContent:'center',
           }}>
           <AnimatePresence>
-            {agreed&&(
-              <motion.div initial={{scale:0}} animate={{scale:1}} exit={{scale:0}} transition={{duration:0.14}}>
-                <Check size={11} color="#fff"/>
+            {agreed && (
+              <motion.div
+                initial={{scale:0, rotate:-10}}
+                animate={{scale:1, rotate:0}}
+                exit={{scale:0}}
+                transition={{duration:0.14}}>
+                <Check size={13} color="#fff" strokeWidth={3}/>
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
-        <p style={{fontSize:'var(--text-sm)',lineHeight:'var(--lh-relaxed)',color:'var(--text-secondary)',textAlign:'right',flex:1}}>
+        <p style={{
+          fontSize:'var(--text-sm)', lineHeight:'var(--lh-relaxed)',
+          color: agreed ? 'var(--text-main)' : 'var(--text-secondary)',
+          textAlign:'right', flex:1, transition:'color 0.2s',
+        }}>
           أقر بصحة المعلومات وأتعهد بالجدية والصدق، وغرضي الزواج الشرعي.
         </p>
       </motion.button>
-      {errs.bio&&<p style={{color:'var(--error-text)',fontSize:'var(--text-xs)',marginTop:'var(--sp-2)'}}>{ errs.bio}</p>}
+      {errs.bio && (
+        <p style={{
+          color:'var(--error-text)', fontSize:'var(--text-xs)',
+          marginTop:'var(--sp-2)',
+        }}>{errs.bio}</p>
+      )}
     </div>
   );
 
@@ -1486,7 +1599,7 @@ export default function OnboardingForm() {
   //  الواجهة الرئيسية
   // ════════════════════════════════════════
   return (
-    <div style={{ minHeight:'100dvh', display:'flex', flexDirection:'column', background:'var(--bg-luxury-gradient)f' }}>
+    <div className="bg-luxury-gradient" style={{ minHeight:'100dvh', display:'flex', flexDirection:'column' }}>
 
       {/* ── PageHeader ثابت ── */}
       <div data-top-bar dir="rtl" style={{
@@ -1551,7 +1664,7 @@ export default function OnboardingForm() {
           {STEPS.map((_,i)=>(
             <motion.div key={i}
               animate={{
-                background: i<=step ? 'var(--color-primary)' : 'rgba(255,255,255,0.12)',
+                background: i<=step ? 'var(--color-primary)' : 'var(--border-soft)',
                 opacity: i<step ? 1 : i===step ? 1 : 0.4,
               }}
               transition={{duration:0.35}}
@@ -1588,46 +1701,53 @@ export default function OnboardingForm() {
       {/* ── أزرار التنقل الثابتة ── */}
       <div style={{
         position:'fixed',bottom:0,left:0,right:0,zIndex:50,
-        padding:'16px 24px 36px',
-        background:`linear-gradient(to top, var(--bg-main) 62%, transparent)`,
+        padding:'var(--sp-4) var(--sp-5) var(--sp-8)',
+        background:`linear-gradient(to top, var(--bg-main) 55%, transparent)`,
+        backdropFilter:'blur(4px)',
       }}>
-        <div style={{ display:'flex', gap:12, alignItems:'center' }}>
+        <div style={{ display:'flex', gap:'var(--sp-3)', alignItems:'center' }}>
 
-          {/* الرجوع في الهيدر العلوي فقط */}
-
-          {/* التالي / إرسال */}
-          <motion.button whileTap={{scale:0.97}}
-            onClick={step===3?submit:goNext} disabled={saving}
+          {/* التالي / إرسال — btn-premium */}
+          <motion.button
+            className="btn-premium"
+            whileTap={{scale:0.97}}
+            onClick={step===3?submit:goNext}
+            disabled={saving}
             style={{
-              flex:1,height:'var(--btn-h-lg)',borderRadius:'var(--radius-lg)',border:'none',cursor:'pointer',
-              display:'flex',alignItems:'center',justifyContent:'center',gap:'var(--sp-2)',
-              color:'#fff',fontSize:'var(--text-base)',fontWeight:800,letterSpacing:'0.01em',fontFamily:'inherit',
-              background:saving?'rgba(164,22,26,0.45)':'var(--color-primary)',
-              boxShadow:saving?'none':`0 6px 24px var(--shadow-red-glow)`,
-              WebkitTapHighlightColor:'transparent',
-              transition:'box-shadow 0.2s',
+              flex:1,
+              height:'var(--btn-h-lg)',
+              fontSize:'var(--text-base)',
+              fontWeight:800,
+              letterSpacing:'0.01em',
+              opacity: saving ? 0.6 : 1,
+              boxShadow: saving ? 'none' : `0 6px 24px var(--shadow-red-glow)`,
             }}>
             {saving
-              ?<div style={{
+              ? <div style={{
                   width:20,height:20,borderRadius:'50%',
                   border:'2.5px solid rgba(255,255,255,0.3)',
                   borderTopColor:'#fff',
                   animation:'spin 0.8s linear infinite',
                 }}/>
-              :step===3
-                ?<><Check size={18}/><span>إرسال وابدأ</span></>
-                :<><span>التالي</span><ChevronLeft size={18}/></>
+              : step===3
+                ? <><Check size={18}/><span>إرسال وابدأ</span></>
+                : <><span>التالي</span><ChevronLeft size={18}/></>
             }
           </motion.button>
 
           {/* تخطي */}
-          {step===2&&(
+          {step===2 && (
             <motion.button whileTap={{scale:0.93}} onClick={goNext}
               style={{
-                height:'var(--btn-h-lg)',padding:'0 var(--sp-5)',borderRadius:'var(--radius-lg)',flexShrink:0,
-                background:'var(--bg-soft)',
-                border:'1px solid var(--border-medium)',
-                color:'var(--text-tertiary)',fontSize:'var(--text-sm)',fontWeight:600,
+                height:'var(--btn-h-lg)',
+                padding:'0 var(--sp-5)',
+                borderRadius:'var(--radius-lg)',
+                flexShrink:0,
+                background:'var(--glass-bg)',
+                backdropFilter:'var(--glass-blur)',
+                border:'1px solid var(--glass-border)',
+                color:'var(--text-tertiary)',
+                fontSize:'var(--text-sm)',fontWeight:600,
                 fontFamily:'inherit',cursor:'pointer',
                 WebkitTapHighlightColor:'transparent',
               }}>

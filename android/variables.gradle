@@ -1,7 +1,13 @@
 ext {
+    // إصدارات الأندرويد (يفضل استخدام 34 أو 35 حالياً لضمان الاستقرار)
     minSdkVersion = 24
-    compileSdkVersion = 36
-    targetSdkVersion = 36
+    compileSdkVersion = 35
+    targetSdkVersion = 35
+
+    // هذا هو السطر "السحري" الذي يفتقده مشروعك لحل مشكلة AdMob و Kotlin
+    kotlin_version = '1.9.20'
+
+    // بقية الإصدارات كما هي
     androidxActivityVersion = '1.11.0'
     androidxAppCompatVersion = '1.7.1'
     androidxCoordinatorLayoutVersion = '1.3.0'

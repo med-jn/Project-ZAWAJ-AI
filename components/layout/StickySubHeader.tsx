@@ -30,7 +30,7 @@ export default function StickySubHeader({ label, count }: Props) {
       </span>
       {!!count && count > 0 && (
         <span style={{
-          fontSize:   'var(--text-sm)',
+          fontSize:   'var(--text-xm)',
           fontWeight: 700,
           color:      'var(--color-primary)',
         }}>

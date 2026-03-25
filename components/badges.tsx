@@ -1,6 +1,6 @@
 import React from "react"
 
-type Level = "bronze" | "silver" | "gold" | "diamond"
+type Level = "bronze" | "silver" | "gold" | "platine"
 
 const LEVELS: Record<Level, {
   label: string
@@ -10,28 +10,28 @@ const LEVELS: Record<Level, {
 }> = {
 
   bronze: {
-    label: "BRONZE",
+    label: "BRNZ",
     bg: "bg-bronze-metallic",
     text: "text-bronze-text",
     border: "#6e3f23"
   },
 
   silver: {
-    label: "SILVER",
+    label: "SLVR",
     bg: "bg-silver-metallic",
     text: "text-silver-text",
     border: "#8e8e8e"
   },
 
   gold: {
-    label: " G O L D ",
+    label: "GOLD",
     bg: "bg-gold-metallic",
-    text: "text-gold-text",
+    text:   "#c7a329",
     border: "#c7a329"
   },
 
-  diamond: {
-    label: "DIAMOND",
+  platine: {
+    label: "PLTN",
     bg: "bg-diamond-metallic",
     text: "text-diamond-text",
     border: "#9edfff"
