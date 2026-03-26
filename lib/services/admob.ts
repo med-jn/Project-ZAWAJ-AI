@@ -1,28 +1,29 @@
-/**
- * 📁 lib/admob.ts — ZAWAJ AI
- * AdMob Core Service — Capacitor
- */
-import { AdMob } from "@admob-plus/capacitor";
-import { toast } from "sonner";
+import { AdMobPlus } from "@admob-plus/capacitor";
 
-export const initializeAdMob = async (): Promise<void> => {
+// دالة التحميل المسبق (Preload)
+export const preloadRewardedAd = async (): Promise<void> => {
+  const adUnitId = "ca-app-pub-3940256099942544/5224354917"; // المعرف التجريبي
   try {
-    await AdMob.start();
-  } catch {
-    toast.error("فشل تهيئة نظام الإعلانات");
+    await AdMobPlus.rewardVideoPrepare({ adUnitId });
+    console.log("إعلان الفيديو جاهز في الخلفية");
+  } catch (e) {
+    console.error("فشل تجهيز الإعلان:", e);
   }
 };
 
+// دالة العرض عند الضغط على الزر
 export const showRewardedAd = async (): Promise<void> => {
-  const adUnitId = process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID;
-  if (!adUnitId) {
-    toast.error("خطأ في الإعداد: معرّف الإعلان مفقود");
-    return;
-  }
   try {
-    await AdMob.rewardVideoPrepare({ adUnitId });
-    await AdMob.rewardVideoShow();
+    await AdMobPlus.rewardVideoShow();
+    // بعد العرض، نقوم بالتحميل مرة أخرى للمرة القادمة
+    preloadRewardedAd();
   } catch {
-    toast.error("تعذّر تحميل الفيديو، حاول مجدداً");
+    // إذا لم يكن جاهزاً، نحاول التحميل والعرض فوراً كحل أخير
+    await preloadRewardedAd();
+    try {
+       await AdMobPlus.rewardVideoShow();
+    } catch {
+       throw new Error("No Ad Ready");
+    }
   }
 };

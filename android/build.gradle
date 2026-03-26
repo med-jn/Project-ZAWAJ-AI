@@ -1,19 +1,20 @@
-// 1. تحميل المتغيرات
+// 1. تحميل المتغيرات الأساسية من ملف variables.gradle
 apply from: "variables.gradle"
 
 buildscript {
-    // تعريف النسخة هنا مباشرة لحل مشكلة "unknown property"
-    ext.kotlin_version = '1.9.20'
+    // تحديث المحرك الرئيسي لـ Kotlin إلى 2.1.0 لحل مشكلة 'kotlin.Unit' نهائياً
+    ext.kotlin_version = '2.1.0'
 
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.13.0'
-        classpath 'com.google.gms:google-services:4.4.4'
+        // الإصدار المتوافق مع متطلبات المكتبات الحديثة في 2026
+        classpath 'com.android.tools.build:gradle:8.9.1'
+        classpath 'com.google.gms:google-services:4.4.0'
 
-        // استخدام المتغير المعرف أعلاه مباشرة
+        // ربط محرك Kotlin بالمشروع باستخدام النسخة المعرفة أعلاه
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -25,21 +26,38 @@ allprojects {
     }
 }
 
-// الحل الجذري لمشكلة AAR metadata: رفع الإصدار إلى 36
+// 2. إعدادات توافق جميع أجزاء المشروع (Subprojects) مع المعايير الجديدة
 subprojects {
     afterEvaluate { project ->
         if (project.hasProperty('android')) {
             project.android {
-                // قمنا بتغيير الإصدار من 35 إلى 36 لتلبية طلب المكتبات الحديثة
+                // الالتزام بـ SDK 36 كما طلبت مكتبات Capacitor و AdMob الحديثة
                 compileSdkVersion 36
-
-                // إضافة هذا الجزء للتأكد من توافق الـ build tools أيضاً
                 buildToolsVersion "36.0.0"
+
+                defaultConfig {
+                    // جعل التطبيق يستهدف أحدث ميزات الأمان والأداء في أندرويد
+                    targetSdkVersion 36
+                }
+
+                // ضمان توافق لغة الجافا مع محرك Kotlin 2.1.0 (ضروري جداً لنجاح البناء)
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+
+                // إخبار المترجم أن الهدف هو Java 17
+                if (project.plugins.hasPlugin('kotlin-android')) {
+                    kotlinOptions {
+                        jvmTarget = "17"
+                    }
+                }
             }
         }
     }
 }
 
+// 3. مهمة تنظيف المشروع
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

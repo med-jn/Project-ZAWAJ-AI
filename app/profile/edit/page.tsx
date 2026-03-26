@@ -1,20 +1,22 @@
 'use client';
 /**
  * 📁 app/profile/edit/page.tsx — ZAWAJ AI
- * تعديل البيانات — نفس نظام OnboardingForm
+ * تعديل البيانات — مع مراقبة Gemini وتنبيهات Sonner بالعربية
  * الحقول المقفولة: full_name, gender, birth_date, nationality
  * باقي الحقول قابلة للتعديل
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence }                   from 'framer-motion';
 import {
   ChevronLeft, ChevronDown, Check, Camera,
   Plus, Eye, EyeOff, ShieldCheck, Lock, ArrowLeft,
 } from 'lucide-react';
-import { supabase }  from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
-import { OCCUPATIONS } from '@/constants/occupations';
+import { toast }        from 'sonner';                          // ✅ Sonner
+import { moderateText, moderateImage } from '@/lib/moderate';  // ✅ مراقبة Gemini
+import { supabase }     from '@/lib/supabase/client';
+import { useRouter }    from 'next/navigation';
+import { OCCUPATIONS }  from '@/constants/occupations';
 import { COUNTRIES_CITIES, ALL_COUNTRIES, COUNTRY_DIAL } from '@/constants/countries';
 import {
   MARITAL_STATUS, EDUCATION_LEVELS, HOUSING_STATUS,
@@ -63,7 +65,6 @@ function Divider({ label }: { label: string }) {
   );
 }
 
-// حقل مقفول — يُعرض لكن لا يُعدَّل
 function LockedField({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ marginBottom: 'var(--sp-6)', position: 'relative' }}>
@@ -218,7 +219,7 @@ function HousingPills({ value, onChange }: { value: number | null; onChange: (id
 }
 
 // ══════════════════════════════════════════
-//  CropModal مُصلح
+//  أدوات الصورة
 // ══════════════════════════════════════════
 async function compressToMax(canvas: HTMLCanvasElement, maxKB = 200): Promise<Blob> {
   const maxBytes = maxKB * 1024;
@@ -245,6 +246,19 @@ async function cropAndCompress(src: string, cropX: number, cropY: number, cropSi
   });
 }
 
+/** تحويل File إلى base64 لإرساله إلى Gemini */
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// ══════════════════════════════════════════
+//  CropModal
+// ══════════════════════════════════════════
 function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (x: number, y: number, s: number) => void; onCancel: () => void }) {
   const ref  = useRef<HTMLCanvasElement>(null);
   const img  = useRef<HTMLImageElement | null>(null);
@@ -267,7 +281,6 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (x: n
     };
   }, [src]);
 
-  // ✅ evenodd — الصورة مرئية داخل الدائرة دائماً
   useEffect(() => {
     if (!ready || !img.current || !ref.current) return;
     const ctx = ref.current.getContext('2d')!;
@@ -298,13 +311,10 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (x: n
 
   const confirm = () => {
     if (!img.current) return;
-    const im   = img.current;
+    const im    = img.current;
     const cropX = Math.max(0, -offset.x / scale);
     const cropY = Math.max(0, -offset.y / scale);
-    const cropSz = Math.min(
-      SIZE / scale,
-      Math.min(im.width - cropX, im.height - cropY)
-    );
+    const cropSz = Math.min(SIZE / scale, Math.min(im.width - cropX, im.height - cropY));
     onConfirm(cropX, cropY, cropSz);
   };
 
@@ -353,18 +363,17 @@ function CropModal({ src, onConfirm, onCancel }: { src: string; onConfirm: (x: n
 // ══════════════════════════════════════════
 export default function ProfileEditPage() {
   const router = useRouter();
-  const [step,      setStep]     = useState(0);
-  const [slideDir,  setSlideDir] = useState<1 | -1>(1);
-  const [profile,   setProfile]  = useState<any>(null);
-  const [form,      setForm]     = useState<any>({});
-  const [saving,    setSaving]   = useState(false);
-  const [saved,     setSaved]    = useState(false);
-  const [imgFile,   setImgFile]  = useState<File | null>(null);
-  const [imgPreview,setPreview]  = useState('');
-  const [cropSrc,   setCropSrc]  = useState('');
-  const [intOpts,   setIntOpts]  = useState<{ id: string; label: string }[]>([]);
-  const [tag,       setTag]      = useState('');
-  const [uploading, setUploading]= useState(false);
+  const [step,       setStep]     = useState(0);
+  const [slideDir,   setSlideDir] = useState<1 | -1>(1);
+  const [profile,    setProfile]  = useState<any>(null);
+  const [form,       setForm]     = useState<any>({});
+  const [saving,     setSaving]   = useState(false);
+  const [saved,      setSaved]    = useState(false);
+  const [imgFile,    setImgFile]  = useState<File | null>(null);
+  const [imgPreview, setPreview]  = useState('');
+  const [cropSrc,    setCropSrc]  = useState('');
+  const [intOpts,    setIntOpts]  = useState<{ id: string; label: string }[]>([]);
+  const [tag,        setTag]      = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -383,92 +392,186 @@ export default function ProfileEditPage() {
   }, []);
 
   // مشتقات
-  const isMale       = form.gender === 'male';
-  const isFemale     = form.gender === 'female';
-  const isDivorced   = form.marital_status === 12 || form.marital_status === 13;
-  const isCommitted  = form.religious_commitment !== null && COMMITTED_LEVELS.includes(form.religious_commitment);
-  const specialties  = OCCUPATIONS.find(o => o.id === form.occupation_category_id)?.specialties ?? [];
-  const cities       = form.country ? (COUNTRIES_CITIES[form.country] ?? []) : [];
-  const educLabel    = form.education_level
-    ? (Array.isArray ? EDUCATION_LEVELS.find((e: any) => e.id === form.education_level)?.label ?? '' : '')
+  const isMale      = form.gender === 'male';
+  const isFemale    = form.gender === 'female';
+  const isDivorced  = form.marital_status === 12 || form.marital_status === 13;
+  const isCommitted = form.religious_commitment !== null && COMMITTED_LEVELS.includes(form.religious_commitment);
+  const specialties = OCCUPATIONS.find(o => o.id === form.occupation_category_id)?.specialties ?? [];
+  const cities      = form.country ? (COUNTRIES_CITIES[form.country] ?? []) : [];
+  const educLabel   = form.education_level
+    ? (EDUCATION_LEVELS.find((e: any) => e.id === form.education_level)?.label ?? '')
     : '';
 
-  const goNext = () => { setSlideDir(1); setStep(s => Math.min(s + 1, 3)); window.scrollTo({ top: 0, behavior: 'instant' as any }); };
+  const goNext = () => {
+    setSlideDir(1);
+    setStep(s => Math.min(s + 1, 3));
+    window.scrollTo({ top: 0, behavior: 'instant' as any });
+  };
   const goBack = () => {
     if (step === 0) { router.back(); return; }
-    setSlideDir(-1); setStep(s => Math.max(s - 1, 0)); window.scrollTo({ top: 0, behavior: 'instant' as any });
+    setSlideDir(-1);
+    setStep(s => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: 'instant' as any });
   };
 
-  // حفظ — payload نظيف بدون حقول النظام والحقول المقفولة
+  // ══════════════════════════════════════════
+  //  حفظ مع مراقبة Gemini وتنبيهات Sonner
+  // ══════════════════════════════════════════
   const save = async () => {
     if (!profile?.id) return;
     setSaving(true);
+
+    // ── تنبيه "جارٍ الفحص" ────────────────────────────────────
+    const toastId = toast.loading('🔍 جارٍ فحص المحتوى...', { duration: Infinity });
+
     try {
-      // رفع الصورة أولاً إن وجدت
-      let avatar_url_update: string | undefined;
-      if (imgFile) {
-        const path = `${profile.id}_avatar.webp`;
-        const { error: upErr } = await supabase.storage.from('Avatars').upload(path, imgFile, { upsert: true, cacheControl: '3600' });
-        if (!upErr) avatar_url_update = supabase.storage.from('Avatars').getPublicUrl(path).data.publicUrl;
+
+      // ── 1. فحص النصوص (النبذة + المواصفات) ──────────────────
+      const textParts: string[] = [];
+      if (form.bio?.trim())                  textParts.push(`النبذة: ${form.bio}`);
+      if (form.partner_requirements?.trim()) textParts.push(`المواصفات: ${form.partner_requirements}`);
+
+      if (textParts.length > 0) {
+        toast.loading('📝 فحص النصوص...', { id: toastId, duration: Infinity });
+        const textResult = await moderateText(profile.id, textParts.join('\n'));
+
+        if (!textResult.valid) {
+          // ❌ نص مرفوض — نوقف الحفظ ونعرض السبب
+          toast.error(textResult.reason || 'المحتوى يخالف معايير المنصة.', {
+            id:          toastId,
+            duration:    5000,
+            description: 'يرجى مراجعة النبذة أو مواصفات الشريك.',
+          });
+          setSaving(false);
+          return;
+        }
       }
 
-      // الحقول القابلة للتعديل فقط
+      // ── 2. فحص الصورة إن وُجدت ────────────────────────────────
+      let avatar_url_update: string | undefined;
+
+      if (imgFile) {
+        toast.loading('🖼️ فحص الصورة...', { id: toastId, duration: Infinity });
+
+        try {
+          const base64Data = await fileToBase64(imgFile);
+          const imgResult  = await moderateImage(profile.id, base64Data, 'image/webp');
+
+          if (!imgResult.valid) {
+            // ❌ صورة مرفوضة
+            toast.error(imgResult.reason || 'الصورة لا تلبي معايير المنصة.', {
+              id:          toastId,
+              duration:    5000,
+              description: 'يرجى اختيار صورة أخرى تمتثل لشروط الاستخدام.',
+            });
+            setSaving(false);
+            return;
+          }
+        } catch (imgErr) {
+          // فشل تحويل/فحص الصورة — نكمل بدونها
+          console.warn('[edit] image moderation skipped:', imgErr);
+          toast.warning('تعذّر فحص الصورة، سيتم تجاهلها.', {
+            id:       toastId,
+            duration: 3000,
+          });
+          // نعيد toastId لـ "جارٍ الحفظ"
+          setTimeout(() => toast.loading('💾 جارٍ الحفظ...', { id: toastId, duration: Infinity }), 500);
+        }
+
+        // ── رفع الصورة بعد الموافقة ──────────────────────────
+        if (imgFile) {
+          toast.loading('⬆️ جارٍ رفع الصورة...', { id: toastId, duration: Infinity });
+          const path = `${profile.id}_avatar.webp`;
+          const { error: upErr } = await supabase.storage
+            .from('Avatars')
+            .upload(path, imgFile, { upsert: true, cacheControl: '3600' });
+
+          if (upErr) {
+            toast.error('فشل رفع الصورة، تحقق من اتصالك.', {
+              id:       toastId,
+              duration: 4000,
+            });
+            setSaving(false);
+            return;
+          }
+          avatar_url_update = supabase.storage.from('Avatars').getPublicUrl(path).data.publicUrl;
+        }
+      }
+
+      // ── 3. بناء الـ payload وحفظه ─────────────────────────────
+      toast.loading('💾 جارٍ حفظ البيانات...', { id: toastId, duration: Infinity });
+
       const payload: Record<string, unknown> = {
-        country:               form.country,
-        city:                  form.city,
-        marital_status:        form.marital_status,
-        education_level:       form.education_level,
-        occupation_category_id:form.occupation_category_id,
-        occupation_id:         form.occupation_id,
-        financial_status:      form.financial_status,
-        religious_commitment:  form.religious_commitment,
-        readiness_level:       form.readiness_level,
-        children_count:        form.children_count,
-        children_custody:      form.children_custody,
-        quran_memorization:    form.quran_memorization,
-        beard_style:           form.beard_style,
-        prayer_commitment:     form.prayer_commitment,
-        hijab_style:           form.hijab_style,
-        work_after_marriage:   form.work_after_marriage,
-        polygamy_acceptance:   form.polygamy_acceptance,
-        housing_type:          form.housing_type,
-        preferred_housing:     form.preferred_housing,
-        health_status:         form.health_status,
-        health_habits:         form.health_habits,
-        height:                form.height ? parseFloat(form.height) : null,
-        weight:                form.weight ? parseFloat(form.weight) : null,
-        smoking:               form.smoking,
-        skin_color:            form.skin_color,
-        travel_willingness:    form.travel_willingness,
-        desire_for_children:   form.desire_for_children,
-        social_type:           form.social_type,
-        morning_evening:       form.morning_evening,
-        home_time:             form.home_time,
-        conflict_style:        form.conflict_style,
-        affection_style:       form.affection_style,
-        life_priority:         form.life_priority,
-        parenting_style:       form.parenting_style,
+        country:                  form.country,
+        city:                     form.city,
+        marital_status:           form.marital_status,
+        education_level:          form.education_level,
+        occupation_category_id:   form.occupation_category_id,
+        occupation_id:            form.occupation_id,
+        financial_status:         form.financial_status,
+        religious_commitment:     form.religious_commitment,
+        readiness_level:          form.readiness_level,
+        children_count:           form.children_count,
+        children_custody:         form.children_custody,
+        quran_memorization:       form.quran_memorization,
+        beard_style:              form.beard_style,
+        prayer_commitment:        form.prayer_commitment,
+        hijab_style:              form.hijab_style,
+        work_after_marriage:      form.work_after_marriage,
+        polygamy_acceptance:      form.polygamy_acceptance,
+        housing_type:             form.housing_type,
+        preferred_housing:        form.preferred_housing,
+        health_status:            form.health_status,
+        health_habits:            form.health_habits,
+        height:                   form.height ? parseFloat(form.height) : null,
+        weight:                   form.weight ? parseFloat(form.weight) : null,
+        smoking:                  form.smoking,
+        skin_color:               form.skin_color,
+        travel_willingness:       form.travel_willingness,
+        desire_for_children:      form.desire_for_children,
+        social_type:              form.social_type,
+        morning_evening:          form.morning_evening,
+        home_time:                form.home_time,
+        conflict_style:           form.conflict_style,
+        affection_style:          form.affection_style,
+        life_priority:            form.life_priority,
+        parenting_style:          form.parenting_style,
         relationship_with_family: form.relationship_with_family,
-        interests:             form.interests,
-        bio:                   form.bio,
-        partner_requirements:  form.partner_requirements,
-        is_photos_blurred:     form.is_photos_blurred,
-        show_photos:           form.show_photos,
-        phone:                 form.phone ? `${COUNTRY_DIAL[form.country] ?? ''}${form.phone}` : '',
-        updated_at:            new Date().toISOString(),
+        interests:                form.interests,
+        bio:                      form.bio,
+        partner_requirements:     form.partner_requirements,
+        is_photos_blurred:        form.is_photos_blurred,
+        show_photos:              form.show_photos,
+        phone:                    form.phone ? `${COUNTRY_DIAL[form.country] ?? ''}${form.phone}` : '',
+        updated_at:               new Date().toISOString(),
         ...(avatar_url_update ? { avatar_url: avatar_url_update } : {}),
       };
 
       const { error } = await supabase.from('profiles').update(payload).eq('id', profile.id);
       if (error) throw error;
+
+      // ✅ نجاح
+      toast.success('تم حفظ التعديلات بنجاح ✅', {
+        id:          toastId,
+        duration:    2500,
+        description: 'سيتم توجيهك إلى ملفك الشخصي.',
+      });
       setSaved(true);
-      setTimeout(() => { setSaved(false); router.back(); }, 1200);
+      setTimeout(() => { setSaved(false); router.back(); }, 1400);
+
     } catch (e: any) {
       console.error('[edit] save:', e.message);
+      toast.error('حدث خطأ فني أثناء الحفظ.', {
+        id:          toastId,
+        duration:    4000,
+        description: 'تحقق من اتصالك بالإنترنت وحاول مجدداً.',
+      });
     }
+
     setSaving(false);
   };
 
+  // ── تحميل ──────────────────────────────────────────────────────
   if (!profile) return (
     <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
@@ -476,14 +579,15 @@ export default function ProfileEditPage() {
     </div>
   );
 
-  // ── المراحل ────────────────────────────────────────────────────
+  // ══════════════════════════════════════════
+  //  مراحل النموذج
+  // ══════════════════════════════════════════
   const S0 = (
     <div dir="rtl">
-      {/* حقول مقفولة */}
-      <LockedField label="الاسم الكامل" value={form.full_name} />
-      <LockedField label="الجنس" value={form.gender === 'male' ? 'ذكر' : 'أنثى'} />
-      <LockedField label="تاريخ الميلاد" value={form.birth_date} />
-      <LockedField label="الجنسية" value={form.nationality} />
+      <LockedField label="الاسم الكامل"   value={form.full_name} />
+      <LockedField label="الجنس"           value={form.gender === 'male' ? 'ذكر' : 'أنثى'} />
+      <LockedField label="تاريخ الميلاد"   value={form.birth_date} />
+      <LockedField label="الجنسية"         value={form.nationality} />
 
       <Divider label="الإقامة" />
       <Sel label="بلد الإقامة" value={form.country ?? ''} options={ALL_COUNTRIES}
@@ -493,7 +597,6 @@ export default function ProfileEditPage() {
           onChange={v => set('city', v)} ph="اختر المدينة..." />
       )}
 
-      {/* رقم الهاتف */}
       {form.country && (
         <div style={{ marginBottom: 'var(--sp-6)' }}>
           <Lbl t="رقم الهاتف (اختياري)" />
@@ -593,14 +696,14 @@ export default function ProfileEditPage() {
 
   const S2 = (
     <div dir="rtl">
-      <Pills label="الشخصية الاجتماعية" options={SOCIAL_TYPE} value={form.social_type ?? ''} onChange={v => set('social_type', v)} />
-      <Pills label="صباحي أم مسائي" options={MORNING_EVENING} value={form.morning_evening ?? ''} onChange={v => set('morning_evening', v)} />
-      <Pills label="البيت أم الخروج" options={HOME_TIME} value={form.home_time ?? ''} onChange={v => set('home_time', v)} />
-      <Sel label="أسلوب حل الخلافات" value={form.conflict_style ?? ''} options={CONFLICT_STYLE} onChange={v => set('conflict_style', v)} />
-      <Pills label="التعبير عن المشاعر" options={AFFECTION_STYLE} value={form.affection_style ?? ''} onChange={v => set('affection_style', v)} />
-      <Sel label="أولويات الحياة" value={form.life_priority ?? ''} options={LIFE_PRIORITY} onChange={v => set('life_priority', v)} />
-      <Pills label="أسلوب التربية" options={PARENTING_STYLE} value={form.parenting_style ?? ''} onChange={v => set('parenting_style', v)} />
-      <Pills label="العلاقة مع العائلة" options={RELATIONSHIP_WITH_FAMILY} value={form.relationship_with_family ?? ''} onChange={v => set('relationship_with_family', v)} />
+      <Pills label="الشخصية الاجتماعية"    options={SOCIAL_TYPE}             value={form.social_type ?? ''}              onChange={v => set('social_type', v)} />
+      <Pills label="صباحي أم مسائي"         options={MORNING_EVENING}         value={form.morning_evening ?? ''}          onChange={v => set('morning_evening', v)} />
+      <Pills label="البيت أم الخروج"         options={HOME_TIME}               value={form.home_time ?? ''}                onChange={v => set('home_time', v)} />
+      <Sel   label="أسلوب حل الخلافات"      value={form.conflict_style ?? ''}  options={CONFLICT_STYLE}                    onChange={v => set('conflict_style', v)} />
+      <Pills label="التعبير عن المشاعر"      options={AFFECTION_STYLE}          value={form.affection_style ?? ''}          onChange={v => set('affection_style', v)} />
+      <Sel   label="أولويات الحياة"          value={form.life_priority ?? ''}   options={LIFE_PRIORITY}                     onChange={v => set('life_priority', v)} />
+      <Pills label="أسلوب التربية"           options={PARENTING_STYLE}          value={form.parenting_style ?? ''}          onChange={v => set('parenting_style', v)} />
+      <Pills label="العلاقة مع العائلة"      options={RELATIONSHIP_WITH_FAMILY} value={form.relationship_with_family ?? ''} onChange={v => set('relationship_with_family', v)} />
 
       <Divider label="الاهتمامات" />
       <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', opacity: 0.45, marginBottom: 'var(--sp-3)' }}>حتى 5 اهتمامات</p>
@@ -630,8 +733,8 @@ export default function ProfileEditPage() {
       </div>
 
       <Divider label="نبذة" />
-      <Field label="نبذة عنك" value={form.bio ?? ''} onChange={v => set('bio', v)} rows={4} />
-      <Field label="مواصفات الشريك" value={form.partner_requirements ?? ''} onChange={v => set('partner_requirements', v)} rows={3} />
+      <Field label="نبذة عنك"         value={form.bio ?? ''}                  onChange={v => set('bio', v)}                  rows={4} />
+      <Field label="مواصفات الشريك"   value={form.partner_requirements ?? ''} onChange={v => set('partner_requirements', v)} rows={3} />
     </div>
   );
 
@@ -708,6 +811,9 @@ export default function ProfileEditPage() {
 
   const CONTENT = [S0, S1, S2, S3];
 
+  // ══════════════════════════════════════════
+  //  Render
+  // ══════════════════════════════════════════
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)' }}>
 
@@ -765,7 +871,7 @@ export default function ProfileEditPage() {
             </motion.button>
           ) : (
             <motion.button whileTap={{ scale: 0.97 }} onClick={save} disabled={saving}
-              style={{ flex: 1, height: 'var(--btn-h-lg)', borderRadius: 'var(--radius-lg)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-2)', color: '#fff', fontSize: 'var(--text-base)', fontWeight: 800, background: saved ? '#22c55e' : saving ? 'rgba(179,51,75,0.45)' : 'var(--color-primary)', fontFamily: 'inherit' }}>
+              style={{ flex: 1, height: 'var(--btn-h-lg)', borderRadius: 'var(--radius-lg)', border: 'none', cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-2)', color: '#fff', fontSize: 'var(--text-base)', fontWeight: 800, background: saved ? '#22c55e' : saving ? 'rgba(179,51,75,0.45)' : 'var(--color-primary)', fontFamily: 'inherit', transition: 'background 0.3s' }}>
               {saving ? (
                 <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }} style={{ width: 20, height: 20, borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.3)', borderTopColor: '#fff' }} />
               ) : saved ? (

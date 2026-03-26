@@ -8,79 +8,70 @@ export const LoveCoin = ({ size = 24, className = "" }: LoveCoinProps) => {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 120 120"
+      viewBox="0 0 24 24" // استخدام viewBox قياسي مطابق لمكتبة Lucide لضمان التوسط
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
       className={`love-coin ${className}`}
     >
-
       <defs>
-
-        {/* الذهب الواقعي */}
-        <radialGradient id="coinGold" cx="35%" cy="30%">
-          <stop offset="0%" stopColor="#fff7c2"/>
-          <stop offset="35%" stopColor="#ffd65a"/>
-          <stop offset="65%" stopColor="#e6b325"/>
-          <stop offset="100%" stopColor="#8a5c07"/>
-        </radialGradient>
-
-        {/* لمعان العملة */}
-        <linearGradient id="coinShine" x1="0%" x2="100%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0)" />
-          <stop offset="50%" stopColor="rgba(255,255,255,0.7)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        {/* التدرج الذهبي المعتمد في مشروعك (Gold Metallic) */}
+        <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#7a5c00" />
+          <stop offset="25%" stopColor="#c9a227" />
+          <stop offset="45%" stopColor="#ffd700" />
+          <stop offset="55%" stopColor="#fff4b0" />
+          <stop offset="75%" stopColor="#d4af37" />
+          <stop offset="100%" stopColor="#6b5100" />
         </linearGradient>
 
-        {/* ظل داخلي */}
-        <filter id="coinShadow">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.4"/>
+        {/* لمعان خفيف جداً للحواف */}
+        <filter id="lightGlow">
+          <feGaussianBlur stdDeviation="0.5" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
         </filter>
-
       </defs>
 
-      {/* جسم العملة */}
-      <circle
-        cx="60"
-        cy="60"
-        r="54"
-        fill="url(#coinGold)"
-        stroke="#6d4a06"
-        strokeWidth="4"
-        filter="url(#coinShadow)"
+      {/* 1. الدائرة الخارجية (جسم العملة) */}
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="11" 
+        fill="url(#goldGradient)" 
+        stroke="#5e3e02" 
+        strokeWidth="0.5" 
       />
 
-      {/* الحافة الداخلية */}
-      <circle
-        cx="60"
-        cy="60"
-        r="44"
-        fill="none"
-        stroke="#f3c544"
-        strokeWidth="4"
+      {/* 2. حلقة داخلية تعطي عمق (Bevel) */}
+      <circle 
+        cx="12" 
+        cy="12" 
+        r="9" 
+        fill="none" 
+        stroke="#ffffff" 
+        strokeOpacity="0.2" 
+        strokeWidth="0.5" 
       />
 
-      {/* نقش القلب */}
+      {/* 3. قلب Lucide في المركز تماماً (نقش ذهبي متدرج) */}
+      {/* تم أخذ الـ Path مباشرة من أيقونة Heart في Lucide */}
       <path
-        d="
-        M60 78
-        L38 55
-        A12 12 0 0 1 60 40
-        A12 12 0 0 1 82 55
-        Z
-        "
-        fill="#b8860b"
-        stroke="#7a5208"
-        strokeWidth="3"
+        d="M19 14c1.49-1.46 3-1.9 4.5-1.9 2.5 0 4.5 2 4.5 4.5s-1.93 3.3-3.08 4.75L19 28l-5.92-6.65C11.93 19.9 10 18.15 10 15.65 10 13.15 12 11.15 14.5 11.15c1.5 0 3.01.44 4.5 1.9Z"
+        transform="translate(12, 12.5) scale(0.45) translate(-19, -20.5)"
+        stroke="url(#goldGradient)" 
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="rgba(0,0,0,0.15)" /* ظل خفيف جداً داخل النقش ليبدو محفوراً */
       />
 
-      {/* لمعان */}
-      <rect
-        x="-120"
-        y="0"
-        width="120"
-        height="120"
-        fill="url(#coinShine)"
-        className="coin-shine"
+      {/* 4. لمعة انعكاس (Shine) */}
+      <path
+        d="M4 8C4 8 7 5 12 5C17 5 20 8 20 8"
+        stroke="white"
+        strokeOpacity="0.3"
+        strokeWidth="0.5"
+        strokeLinecap="round"
       />
-
     </svg>
   )
 }

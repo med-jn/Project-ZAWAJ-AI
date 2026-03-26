@@ -4,8 +4,9 @@
  * Server Actions لتحديث الملف الشخصي مع مراقبة Gemini
  */
 
-import { validateText } from "@/lib/gemini";
-import { createClient }  from "@/utils/supabase/server";
+// ✅ الاستيراد الصحيح من moderate وليس gemini
+import { moderateText, moderateImage } from "@/lib/moderate";
+import { createClient } from "@/utils/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export type ActionResponse = {
@@ -19,7 +20,8 @@ export async function updateProfileText(formData: {
   partner_requirements?: string;
   full_name?:            string;
 }): Promise<ActionResponse> {
-  const supabase = createClient();
+  // ✅ await هنا ضروري مع @supabase/ssr
+  const supabase = await createClient();
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -32,21 +34,19 @@ export async function updateProfileText(formData: {
     if (formData.partner_requirements) parts.push(`المواصفات: ${formData.partner_requirements}`);
 
     if (parts.length > 0) {
-      const aiResult = await validateText(parts.join("\n"));
+      // ✅ moderateText من moderate.ts — مع تمرير userId
+      const aiResult = await moderateText(user.id, parts.join("\n"));
       if (!aiResult.valid) {
-        // تسجيل قرار الرفض
-        await logModeration(supabase, user.id, 'text', 'rejected', aiResult.reason);
+        await logModeration(supabase, user.id, "text", "rejected", aiResult.reason);
         return { success: false, message: aiResult.reason || "المحتوى يخالف معايير المنصة." };
       }
-      await logModeration(supabase, user.id, 'text', 'approved', '');
+      await logModeration(supabase, user.id, "text", "approved", "");
     }
 
-    // الحقول الصحيحة في profiles
     const payload: Record<string, any> = { updated_at: new Date().toISOString() };
-    if (formData.full_name)            payload.full_name            = formData.full_name;
-    if (formData.bio !== undefined)    payload.bio                  = formData.bio;
-    if (formData.partner_requirements !== undefined)
-      payload.partner_requirements = formData.partner_requirements;
+    if (formData.full_name)                          payload.full_name            = formData.full_name;
+    if (formData.bio !== undefined)                  payload.bio                  = formData.bio;
+    if (formData.partner_requirements !== undefined) payload.partner_requirements = formData.partner_requirements;
 
     const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
     if (error) throw error;
@@ -62,12 +62,13 @@ export async function updateProfileText(formData: {
 
 // ── تحديث رابط الصورة بعد فحصها ─────────────────────────────
 export async function updateProfileAvatar(
-  userId:     string,
-  avatarUrl:  string,
-  approved:   boolean,
-  reason:     string
+  userId:   string,
+  avatarUrl: string,
+  approved:  boolean,
+  reason:    string
 ): Promise<ActionResponse> {
-  const supabase = createClient();
+  // ✅ await هنا أيضاً
+  const supabase = await createClient();
 
   try {
     const { data: { user } } = await supabase.auth.getUser();
@@ -75,7 +76,7 @@ export async function updateProfileAvatar(
       return { success: false, message: "غير مصرح." };
 
     if (!approved) {
-      await logModeration(supabase, userId, 'image', 'rejected', reason);
+      await logModeration(supabase, userId, "image", "rejected", reason);
       return { success: false, message: reason || "الصورة لا تلبي معايير المنصة." };
     }
 
@@ -85,7 +86,7 @@ export async function updateProfileAvatar(
       .eq("id", userId);
     if (error) throw error;
 
-    await logModeration(supabase, userId, 'image', 'approved', '');
+    await logModeration(supabase, userId, "image", "approved", "");
     revalidatePath("/profile");
     return { success: true, message: "تم تحديث الصورة بنجاح ✅" };
 
@@ -99,17 +100,16 @@ export async function updateProfileAvatar(
 async function logModeration(
   supabase:    any,
   userId:      string,
-  contentType: 'text' | 'image',
-  decision:    'approved' | 'rejected',
+  contentType: "text" | "image",
+  decision:    "approved" | "rejected",
   reason:      string
 ) {
-  await supabase.from("content_moderation_logs").insert({
+  const { error } = await supabase.from("content_moderation_logs").insert({
     user_id:      userId,
     content_type: contentType,
     decision,
     reason,
     created_at:   new Date().toISOString(),
-  }).then(({ error }: any) => {
-    if (error) console.error("[moderation log]", error.message);
   });
+  if (error) console.error("[moderation log]", error.message);
 }

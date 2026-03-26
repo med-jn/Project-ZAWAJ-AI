@@ -1,9 +1,5 @@
 'use client';
-/**
- * 📁 app/page.tsx — ZAWAJ AI
- * ✅ إصلاح: loading تنتهي دائماً حتى عند الخطأ
- * ✅ إصلاح: timeout يمنع الـ splash اللانهائي
- */
+
 import { useState, useEffect } from 'react';
 import { useRouter }           from 'next/navigation';
 import { supabase }            from '@/lib/supabase/client';
@@ -19,12 +15,10 @@ export default function LandingPage() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        // timeout يمنع التعليق اللانهائي إذا فشل Supabase
         const timeout = new Promise<null>(res => setTimeout(() => res(null), 5000));
         const authPromise = supabase.auth.getUser();
         const result = await Promise.race([authPromise, timeout]);
 
-        // إذا انتهى الـ timeout
         if (!result || !('data' in result)) {
           setLoading(false);
           return;
@@ -35,13 +29,12 @@ export default function LandingPage() {
           const { data: profile } = await supabase
             .from('profiles').select('is_completed')
             .eq('id', data.user.id).maybeSingle();
+          
           router.push(profile?.is_completed ? '/home' : '/onboarding');
-          // لا نضع setLoading(false) هنا — الصفحة ستتغير
         } else {
           setLoading(false);
         }
       } catch {
-        // أي خطأ — أظهر الصفحة
         setLoading(false);
       }
     };
@@ -78,14 +71,20 @@ export default function LandingPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      const isMobileApp = window.location.protocol === 'capacitor:';
-      const redirectUrl  = isMobileApp
+      // التحقق مما إذا كان التشغيل يتم من داخل تطبيق أندرويد (Capacitor)
+      const isAndroidApp = window.location.origin.includes('localhost') && 
+                           window.location.protocol === 'http:';
+      
+      const redirectUrl = isAndroidApp
         ? 'com.zawaj.ai://auth/callback'
         : window.location.origin + '/auth/callback';
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: redirectUrl, skipBrowserRedirect: false },
+        options: { 
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: false 
+        },
       });
       if (error) throw error;
     } catch (error: any) {

@@ -1,10 +1,12 @@
 /**
  * 📁 lib/locationService.ts — ZAWAJ AI
+ * ✅ يدعم المتصفح (Web) والتطبيق (Capacitor) معاً
  * ✅ يحفظ lat/lon + coords (PostGIS) تلقائياً عبر Trigger
  * ✅ Sonner للإشعارات
- * ✅ calcDistance يستخدم coords في SQL
  */
 import { toast } from "sonner";
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 export interface LocationResult {
   city:    string;
@@ -13,63 +15,67 @@ export interface LocationResult {
   lon:     number;
 }
 
-// ── تحديد الموقع تلقائياً ─────────────────────────────────────
-export const getAutoLocation = (): Promise<LocationResult> => {
-  return new Promise((resolve, reject) => {
-    // HTTPS مطلوب على الأجهزة الحقيقية
-    if (typeof window !== 'undefined' &&
-        window.location.protocol !== 'https:' &&
-        !window.location.hostname.includes('localhost')) {
-      const msg = "تحديد الموقع يتطلب اتصالاً آمناً (HTTPS)";
-      toast.error(msg);
-      return reject(new Error(msg));
-    }
+// ── تحديد الموقع (هجين: أندرويد + متصفح) ──────────────────────────
+export const getAutoLocation = async (): Promise<LocationResult> => {
+  toast.loading("جارٍ تحديد موقعك...", { id: "location" });
 
-    if (!navigator.geolocation) {
-      const msg = "جهازك لا يدعم تحديد الموقع";
-      toast.error(msg);
-      return reject(new Error(msg));
-    }
+  try {
+    let lat: number;
+    let lon: number;
 
-    toast.loading("جارٍ تحديد موقعك...", { id: "location" });
-
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords: { latitude: lat, longitude: lon } }) => {
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ar`,
-            { headers: { "User-Agent": "Zawaj-AI-App" } }
-          );
-          if (!res.ok) throw new Error();
-          const data = await res.json();
-          const city = data.address.city || data.address.town
-            || data.address.village || data.address.state || "غير محدد";
-          const country = data.address.country || "تونس";
-          toast.success("تم تحديد موقعك ✅", { id: "location" });
-          resolve({ city, country, lat, lon });
-        } catch {
-          toast.dismiss("location");
-          toast.error("تعذّر جلب تفاصيل العنوان");
-          reject(new Error("تعذّر جلب تفاصيل العنوان"));
+    // 1. الفحص: هل نحن داخل تطبيق موبايل (Capacitor)؟
+    if (Capacitor.isNativePlatform()) {
+      const position = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 15000
+      });
+      lat = position.coords.latitude;
+      lon = position.coords.longitude;
+    } 
+    // 2. إذا كنا على متصفح الكمبيوتر
+    else {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error("جهازك لا يدعم تحديد الموقع"));
         }
-      },
-      (err) => {
-        toast.dismiss("location");
-        const msgs: Record<number, string> = {
-          1: "فعّل إذن الموقع في إعدادات هاتفك",
-          2: "إشارة GPS ضعيفة، حاول في مكان مفتوح",
-          3: "انتهى وقت المحاولة، أعد المحاولة",
-        };
-        toast.error(msgs[err.code] ?? "خطأ في تحديد الموقع");
-        reject(new Error(msgs[err.code]));
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0
+        });
+      });
+      lat = position.coords.latitude;
+      lon = position.coords.longitude;
+    }
+
+    // 3. جلب تفاصيل العنوان (المدينة والدولة) - تعمل في الجهتين
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=ar`,
+      { headers: { "User-Agent": "Zawaj-AI-App" } }
     );
-  });
+
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    
+    const city = data.address.city || data.address.town || data.address.village || data.address.state || "غير محدد";
+    const country = data.address.country || "تونس";
+
+    toast.success("تم تحديد موقعك بنجاح ✅", { id: "location" });
+    return { city, country, lat, lon };
+
+  } catch (error: any) {
+    toast.dismiss("location");
+    let errorMsg = "تعذر تحديد الموقع، تأكد من تفعيل الـ GPS";
+    
+    if (error.code === 1) errorMsg = "يرجى تفعيل إذن الموقع في الإعدادات";
+    if (error.code === 3) errorMsg = "انتهى وقت المحاولة، حاول مرة أخرى";
+    
+    toast.error(errorMsg);
+    throw error;
+  }
 };
 
 // ── حفظ الموقع في profiles ────────────────────────────────────
-// Trigger يُحدّث coords تلقائياً من lat/lon
 export async function saveLocationToProfile(
   supabase: any,
   userId:   string,
@@ -80,7 +86,7 @@ export async function saveLocationToProfile(
     .update({
       city:       result.city,
       country:    result.country,
-      latitude:   result.lat,   // Trigger يبني coords تلقائياً
+      latitude:   result.lat,
       longitude:  result.lon,
       updated_at: new Date().toISOString(),
     })

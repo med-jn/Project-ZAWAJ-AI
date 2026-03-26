@@ -1,10 +1,14 @@
 'use client';
 import { useState } from 'react';
-import { Zap, Sliders } from 'lucide-react';
+import { Zap, Sliders, PlayCircle, History } from 'lucide-react';
+import Link from 'next/link';
 import { useWallet } from '@/hooks/useWallet';
+import { CoinBalance } from '@/components/ui/CoinBalance';
+import { LoveCoin } from '@/components/ui/LoveCoin';
+import { showRewardedAd } from '@/lib/services/admob';
 
-// 1 نقطة = 0.01 د.ت (أي 100 نقطة = 1 د.ت)
 const RATE = 0.01;
+const AD_REWARD_AMOUNT = 5;
 
 const FIXED_PACKAGES = [
   { points: 1000, bonus: 0,   label: '⚡ أساسي'    },
@@ -16,52 +20,73 @@ const FIXED_PACKAGES = [
 
 export default function PackagesPage() {
   const { wallet, totalBalance } = useWallet();
-
-  // القسم النشط: باقة ثابتة أو مخصص
   const [mode, setMode]           = useState<'fixed' | 'custom'>('fixed');
-  const [selected, setSelected]   = useState(1); // index الباقة المختارة
+  const [selected, setSelected]   = useState(1);
   const [customPts, setCustomPts] = useState(500);
   const [buying, setBuying]       = useState(false);
 
-  /* ── حساب الكميات ─────────────────── */
   const fixedPkg   = FIXED_PACKAGES[selected];
   const buyPoints  = mode === 'fixed' ? fixedPkg.points  : customPts;
   const bonusPts   = mode === 'fixed' ? fixedPkg.bonus   : 0;
   const totalPts   = buyPoints + bonusPts;
   const price      = (buyPoints * RATE).toFixed(2);
 
-  const handleBuy = async () => {
-    setBuying(true);
-    await new Promise(r => setTimeout(r, 1200));
-    setBuying(false);
-    alert('سيتم تفعيل بوابة الدفع قريباً 🚀');
-  };
-
   return (
-    <div className="min-h-full px-4 py-6" dir="rtl">
-      <h1 className="text-2xl font-black text-white mb-1">الباقات والاشتراكات</h1>
-      <p className="text-white/40 text-sm mb-6">اختر باقة أو حدد كميتك بنفسك</p>
-
-      {/* ── الرصيد الحالي ───────────────────── */}
-      <div className="glass-panel p-5 mb-6 flex items-center justify-between">
+    <div className="min-h-screen bg-luxury-gradient px-4 py-8 pb-24" dir="rtl">
+      {/* الهيدر */}
+      <div className="flex justify-between items-center mb-6">
         <div>
-          <p className="text-white/40 text-xs mb-1">رصيدك الحالي</p>
-          <p className="text-white font-black text-2xl">
-            {totalBalance} <span className="text-sm text-white/50">نقطة</span>
-          </p>
+          <h1 className="text-3xl font-black text-white mb-1">متجر العملات</h1>
+          <p className="text-white/40 text-sm">اشحن رصيدك أو احصل على عملات مجانية</p>
         </div>
-        <div className="text-left space-y-1">
-          <p className="text-[10px] text-white/30">مشترى: <span className="text-white/60">{wallet?.paid_balance || 0}</span></p>
-          <p className="text-[10px] text-white/30">مكافآت: <span className="text-white/60">{wallet?.bonus_balance || 0}</span></p>
+        <Link href="/packages/history" className="w-12 h-12 rounded-2xl glass-panel flex items-center justify-center text-gold shadow-gold-glow hover:scale-105 transition-transform border border-white/5">
+          <History size={24} />
+        </Link>
+      </div>
+
+      {/* الرصيد الحالي */}
+      <div className="glass-panel p-6 mb-6 flex items-center justify-between border-gold relative overflow-hidden">
+        <div className="relative z-10">
+          <p className="text-white/40 text-xs mb-1 font-bold">رصيدك الحالي</p>
+          <CoinBalance amount={totalBalance} iconSize={32} className="text-4xl" />
+        </div>
+        <div className="relative z-10 bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/5 text-left space-y-1">
+          <div className="flex items-center gap-2 justify-end text-[10px]">
+            <span className="text-white/50">رصيد الشراء:</span>
+            <span className="font-bold text-white">{wallet?.balance || 0}</span>
+            <LoveCoin size={12} />
+          </div>
+          <div className="flex items-center gap-2 justify-end text-[10px]">
+            <span className="text-white/50">رصيد الهدايا:</span>
+            <span className="font-bold text-green-400">{wallet?.balance_free || 0}</span>
+            <LoveCoin size={12} />
+          </div>
         </div>
       </div>
 
-      {/* ── مفتاح الوضع ─────────────────────── */}
-      <div className="flex bg-white/5 p-1.5 rounded-2xl gap-2 mb-6">
+      {/* زر المكافأة */}
+      <button 
+        onClick={() => showRewardedAd()}
+        className="w-full mb-8 p-4 rounded-[2rem] border border-green-500/30 bg-green-500/10 flex items-center justify-between hover:bg-green-500/20 active:scale-[0.98] transition-all group"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(22,163,74,0.5)]">
+            <PlayCircle size={28} />
+          </div>
+          <div className="text-right">
+            <p className="text-white font-black text-sm">عملات مجانية!</p>
+            <p className="text-green-400/80 text-[11px]">شاهد فيديو واربح {AD_REWARD_AMOUNT} عملة ذهبية</p>
+          </div>
+        </div>
+        <Zap size={18} className="text-green-500 animate-pulse" />
+      </button>
+
+      {/* اختيار الوضع */}
+      <div className="flex bg-white/5 p-1.5 rounded-[1.5rem] gap-2 mb-8 border border-white/5">
         <button
           onClick={() => setMode('fixed')}
           className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${
-            mode === 'fixed' ? 'bg-white text-black shadow' : 'text-zinc-500'
+            mode === 'fixed' ? 'bg-white text-black shadow-xl' : 'text-zinc-500 hover:text-white'
           }`}
         >
           <Zap size={15} /> باقات جاهزة
@@ -69,153 +94,82 @@ export default function PackagesPage() {
         <button
           onClick={() => setMode('custom')}
           className={`flex-1 py-3 rounded-xl font-black text-sm transition-all flex items-center justify-center gap-2 ${
-            mode === 'custom' ? 'bg-white text-black shadow' : 'text-zinc-500'
+            mode === 'custom' ? 'bg-white text-black shadow-xl' : 'text-zinc-500 hover:text-white'
           }`}
         >
           <Sliders size={15} /> كمية مخصصة
         </button>
       </div>
 
-      {/* ── الباقات الثابتة ──────────────────── */}
-      {mode === 'fixed' && (
-        <div className="space-y-3 mb-6">
+      {/* الباقات */}
+      {mode === 'fixed' ? (
+        <div className="space-y-4 mb-8">
           {FIXED_PACKAGES.map((pkg, i) => (
             <button
               key={i}
               onClick={() => setSelected(i)}
-              className={`w-full p-4 rounded-3xl border-2 transition-all text-right flex items-center gap-4 ${
+              className={`w-full p-5 rounded-[2rem] border-2 transition-all text-right flex items-center gap-4 ${
                 selected === i
-                  ? 'border-[#c0002a]/60 bg-[#c0002a]/10'
-                  : 'border-white/10 bg-white/5'
+                  ? 'border-[#B3334B] bg-[#B3334B]/10 shadow-[0_0_25px_rgba(179,51,75,0.2)]'
+                  : 'border-white/5 bg-white/5 hover:bg-white/10'
               }`}
             >
-              {/* دائرة الاختيار */}
-              <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                selected === i ? 'border-[#c0002a] bg-[#c0002a]' : 'border-white/30'
+              <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
+                selected === i ? 'border-[#B3334B] bg-[#B3334B]' : 'border-white/20'
               }`}>
-                {selected === i && <div className="w-2 h-2 rounded-full bg-white" />}
+                {selected === i && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
               </div>
-
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-white font-black text-sm">{pkg.label}</p>
-                  {pkg.bonus > 0 && (
-                    <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30">
-                      +{pkg.bonus} مجاناً
-                    </span>
-                  )}
+                <div className="flex items-center gap-2 mb-1">
+                  <p className="text-white font-black">{pkg.label}</p>
+                  {pkg.bonus > 0 && <span className="badge-metal py-0.5 px-2 text-[9px]">+{pkg.bonus} هدية</span>}
                 </div>
-                <p className="text-white/40 text-xs">{pkg.points.toLocaleString()} نقطة مشتراة</p>
+                <div className="flex items-center gap-1 opacity-60">
+                   <span className="text-xs font-bold text-white">{pkg.points.toLocaleString()}</span>
+                   <LoveCoin size={12} />
+                </div>
               </div>
-
-              <div className="text-left flex-shrink-0">
-                <p className="text-white font-black">{(pkg.points * RATE).toFixed(0)} <span className="text-xs text-white/50">د.ت</span></p>
-              </div>
+              <div className="text-left font-black text-xl text-white">{(pkg.points * RATE).toFixed(0)} <span className="text-[10px] text-white/40 font-normal">د.ت</span></div>
             </button>
           ))}
         </div>
-      )}
-
-      {/* ── الكمية المخصصة ───────────────────── */}
-      {mode === 'custom' && (
-        <div className="glass-panel p-6 mb-6 space-y-6">
-          {/* العدد المحدد */}
-          <div className="text-center">
-            <p className="text-white/40 text-xs mb-2">عدد النقاط</p>
-            <div className="flex items-center justify-center gap-3">
-              {/* زر - */}
-              <button
-                onClick={() => setCustomPts(p => Math.max(500, p - 1))}
-                className="w-9 h-9 rounded-full bg-white/10 text-white font-black text-lg active:scale-90 transition-all"
-              >−</button>
-
-              {/* إدخال مباشر */}
-              <input
-                type="number"
-                min={500}
-                max={99999}
-                value={customPts}
-                onChange={e => {
-                  const v = parseInt(e.target.value) || 500;
-                  setCustomPts(Math.min(99999, Math.max(500, v)));
-                }}
-                className="w-28 text-center text-3xl font-black text-white bg-transparent outline-none border-b-2 border-[#c0002a]/50 pb-1"
-                style={{ direction: 'ltr' }}
-              />
-
-              {/* زر + */}
-              <button
-                onClick={() => setCustomPts(p => Math.min(99999, p + 1))}
-                className="w-9 h-9 rounded-full bg-white/10 text-white font-black text-lg active:scale-90 transition-all"
-              >+</button>
-            </div>
-            <p className="text-white/30 text-xs mt-2">نقطة</p>
-          </div>
-
-          {/* السلايدر */}
-          <div>
-            <input
-              type="range"
-              min={500}
-              max={10000}
-              step={1}
-              value={Math.min(customPts, 10000)}
-              onChange={e => setCustomPts(parseInt(e.target.value))}
-              className="w-full"
-              style={{ accentColor: '#c0002a' }}
-            />
-            <div className="flex justify-between text-white/25 text-[10px] mt-1">
-              <span>10,000</span>
-              <span>500</span>
+      ) : (
+        <div className="glass-panel p-8 mb-8">
+          <div className="text-center mb-8">
+            <p className="text-white/40 text-[11px] mb-4 uppercase tracking-widest">حدد الكمية التي تريدها</p>
+            <div className="flex items-center justify-center gap-6">
+              <button onClick={() => setCustomPts(p => Math.max(500, p - 100))} className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white font-black text-2xl active:scale-90">-</button>
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2 text-4xl font-black text-white border-b-2 border-gold pb-2">
+                  <span>{customPts}</span>
+                  <LoveCoin size={24} />
+                </div>
+              </div>
+              <button onClick={() => setCustomPts(p => Math.min(99999, p + 100))} className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white font-black text-2xl active:scale-90">+</button>
             </div>
           </div>
-
-          <p className="text-white/30 text-xs text-center">
-            يمكنك كتابة أي رقم مباشرة أو استخدام السلايدر
-          </p>
+          <input 
+            type="range" min={500} max={10000} step={100} value={Math.min(customPts, 10000)} 
+            onChange={e => setCustomPts(parseInt(e.target.value))}
+            className="w-full accent-[#B3334B] h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
+          />
         </div>
       )}
 
-      {/* ── ملخص الطلب ──────────────────────── */}
-      <div className="glass-panel p-5 mb-5 space-y-2">
-        <h3 className="text-white font-black text-sm border-b border-white/10 pb-3 mb-3">ملخص الطلب</h3>
-        <Row label="النقاط المشتراة" value={`${buyPoints.toLocaleString()} نقطة`} />
-        {bonusPts > 0 && <Row label="نقاط مجانية 🎁" value={`+ ${bonusPts.toLocaleString()} نقطة`} color="text-green-400" />}
-        <div className="border-t border-white/10 pt-2 mt-2">
-          <Row label="إجمالي النقاط" value={`${totalPts.toLocaleString()} نقطة`} bold />
-          <Row label="المبلغ الإجمالي" value={`${price} د.ت`} bold color="text-[#c0002a]" />
+      {/* زر الشراء النهائي */}
+      <div className="glass-panel p-6 border-white/5 shadow-red-glow">
+        <div className="flex justify-between items-center mb-6">
+          <span className="text-white/40 text-sm font-bold">المبلغ المطلوب</span>
+          <span className="text-gold font-black text-2xl">{price} د.ت</span>
         </div>
+        <button
+          onClick={() => alert('قريباً')}
+          className="btn-premium w-full !h-16 text-lg"
+        >
+          تأكيد شراء {totalPts.toLocaleString()}
+          <LoveCoin size={20} className="mr-2 inline-block" />
+        </button>
       </div>
-
-      {/* ── زر الشراء ───────────────────────── */}
-      <button
-        onClick={handleBuy}
-        disabled={buying}
-        className="w-full py-4 rounded-2xl font-black text-white text-lg transition-all active:scale-95 disabled:opacity-60 flex items-center justify-center gap-3"
-        style={{
-          background: 'linear-gradient(135deg, #800020, #c0002a)',
-          boxShadow: '0 10px 30px rgba(192,0,42,0.4)',
-        }}
-      >
-        <Zap size={20} />
-        {buying ? 'جاري المعالجة...' : `شراء ${totalPts.toLocaleString()} نقطة بـ ${price} د.ت`}
-      </button>
-
-      <p className="text-white/20 text-[10px] text-center mt-4 pb-2">
-        جميع المعاملات آمنة ومشفرة • لا استرداد بعد الشراء
-      </p>
-    </div>
-  );
-}
-
-/* ── مكون صف الملخص ── */
-function Row({ label, value, bold, color }: {
-  label: string; value: string; bold?: boolean; color?: string;
-}) {
-  return (
-    <div className="flex justify-between items-center py-1">
-      <span className={`text-sm ${bold ? 'text-white font-black' : 'text-white/50'}`}>{label}</span>
-      <span className={`text-sm font-black ${color || (bold ? 'text-white' : 'text-white/70')}`}>{value}</span>
     </div>
   );
 }

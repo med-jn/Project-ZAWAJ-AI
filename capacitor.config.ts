@@ -4,9 +4,13 @@ const config: CapacitorConfig = {
   appId: 'com.zawaj.ai',
   appName: 'ZAWAJ AI',
   webDir: 'out',
-  server: {
-    url: 'http://192.168.1.15:3000',
-    cleartext: true
+  plugins: {
+    LiveUpdates: {
+      appId: '8e6b44cc',
+      channel: 'Production',
+      autoUpdateMethod: 'background',
+      maxVersions: 3
+    }
   }
 };
 
