@@ -48,7 +48,7 @@ function AboutContent() {
             v{currentVersion}
           </span>
           <div className="space-y-1 text-right">
-            <p className="text-[var(--text-main)] font-bold text-sm">إصدار السيرفر</p>
+            <p className="text-[var(--text-main)] font-bold text-sm">رقم الإصدار</p>
             <p className="text-[var(--text-tertiary)] text-[10px]">مزامنة تلقائية عبر Orca Sync</p>
           </div>
         </div>
@@ -58,7 +58,7 @@ function AboutContent() {
              ما الجديد؟ <Trophy size={14} />
           </h3>
           <div className="bg-[var(--bg-soft)] rounded-[var(--radius-sm)] p-4 border border-[var(--glass-border)]">
-            <ul className="space-y-3 dir-rtl text-right">
+            <ul className="space-y-3 text-right">
               {changelog.map((item, index) => (
                 <li key={index} className="flex items-start justify-end gap-3 text-[11px] text-[var(--text-secondary)]">
                   <span>{item}</span>
