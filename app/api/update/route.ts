@@ -2,19 +2,27 @@ import { NextResponse } from 'next/server';
 // استيراد ملف package.json لقراءة رقم الإصدار الحالي
 import packageJson from '@/package.json';
 
-// السطر السحري لحل مشكلة الـ Build مع output: export
+// إجبار Next.js على معاملة المسار كاستجابة ثابتة عند عمل Export
 export const dynamic = 'force-static';
 
 export async function GET() {
   try {
-    // جلب رقم الإصدار الحالي من ملف package.json (مثل 0.1.0)
+    // جلب رقم الإصدار الحالي (مثل 0.1.1)
     const currentVersion = packageJson.version;
 
-    // إرجاع استجابة JSON متوافقة مع متطلبات التحديث
-    return NextResponse.json({
-      version: `v${currentVersion}`,
-      url: "https://zawaj-ai.vercel.app/app-dist.zip"
-    });
+    // بناء الاستجابة مع التأكد من صيغة النصوص
+    return new NextResponse(
+      JSON.stringify({
+        version: `v${currentVersion}`,
+        url: "https://zawaj-ai.vercel.app/app-dist.zip"
+      }),
+      {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json', // هذا السطر يمنع المتصفح من تحميل الملف ويجبره على عرضه
+        },
+      }
+    );
   } catch (error) {
     console.error("[update:route] Error reading version:", error);
     return NextResponse.json(
