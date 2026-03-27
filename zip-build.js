@@ -2,30 +2,42 @@ import fs from 'fs';
 import path from 'path';
 import archiver from 'archiver';
 
-// تحديد مسار المجلد الناتج عن Next.js ومسار ملف الـ Zip
+const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf8'));
+const version = packageJson.version;
 const outputDir = path.join(process.cwd(), 'out');
-const zipFile = path.join(process.cwd(), 'public', 'app-dist.zip');
+const publicDir = path.join(process.cwd(), 'public');
+const zipFile = path.join(publicDir, 'app-dist.zip');
+const updateJsonFile = path.join(publicDir, 'update-info.json');
 
 async function zipDirectory() {
-  // التأكد من وجود مجلد out
   if (!fs.existsSync(outputDir)) {
-    console.error('❌ Error: "out" folder not found. Run "npm run build" first.');
+    console.error('❌ Error: "out" folder not found. Run "next build" first.');
     return;
   }
 
-  // إنشاء تيار الكتابة لملف الـ Zip
+  const updateInfo = {
+    version: `v${version}`,
+    url: "https://zawaj-ai.vercel.app/app-dist.zip",
+    timestamp: new Date().toISOString()
+  };
+  
+  fs.writeFileSync(updateJsonFile, JSON.stringify(updateInfo, null, 2));
+
+  if (fs.existsSync(zipFile)) {
+    fs.unlinkSync(zipFile);
+  }
+
   const output = fs.createWriteStream(zipFile);
   const archive = archiver('zip', { zlib: { level: 9 } });
 
   output.on('close', () => {
-    console.log(`✅ Success: Updated zip created at ${zipFile}`);
-    console.log(`📦 Total size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`✅ Success: v${version} created at ${zipFile}`);
+    console.log(`📦 Size: ${(archive.pointer() / 1024 / 1024).toFixed(2)} MB`);
   });
 
   archive.on('error', (err) => { throw err; });
 
   archive.pipe(output);
-  // إضافة محتويات مجلد out بالكامل داخل الـ Zip
   archive.directory(outputDir, false);
   await archive.finalize();
 }

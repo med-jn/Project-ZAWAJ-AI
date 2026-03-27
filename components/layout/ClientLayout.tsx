@@ -1,22 +1,20 @@
 'use client';
-/**
- * 📁 components/layout/ClientLayout.tsx — ZAWAJ AI
- * ✅ Client Component — يحتوي كل ما يحتاج usePathname / useRouter
- * ✅ يُصدّر useTheme hook للاستخدام في أي مكوّن
- * ✅ منفصل عن layout.tsx (Server Component) لأفضل أداء
- */
 
+import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import packageJson from '@/package.json';
 import Navbar        from '@/components/layout/Navbar';
 import PageHeader    from '@/components/layout/PageHeader';
 import TopBar        from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
 
-// ── صفحات بدون أي أشرطة ──────────────────────────────────────
+// ── صفحات بدون أي أشرطة نهائياً ──────────────────────────
 const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
 
-// ── أسماء الصفحات ─────────────────────────────────────────────
+// ── أسماء الصفحات (أضفنا عنوان صفحة About هنا لتظهر في الهيدر) ──
 const PAGE_TITLES: Record<string, string> = {
+  '/about':         'حول التطبيق',
   '/likes':         'الإعجابات',
   '/notifications': 'الإشعارات',
   '/profile':       'الملف الشخصي',
@@ -33,53 +31,73 @@ function getTitle(path: string) {
   return match ? PAGE_TITLES[match] : '';
 }
 
-// ── المكوّن ───────────────────────────────────────────────────
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
+  const currentVersion = packageJson.version;
 
-  const isAuth = AUTH_PAGES.includes(pathname);
-  const isHome = pathname.startsWith('/home');
-  const title  = getTitle(pathname);
+  const isAuth   = AUTH_PAGES.includes(pathname);
+  const isAbout  = pathname === '/about';
+  const isHome   = pathname.startsWith('/home');
+  const title    = getTitle(pathname);
+
+  // ── رادار التحديثات ─────────────────────────────────────
+  useEffect(() => {
+    const checkUpdates = async () => {
+      try {
+        const res = await fetch('/update-info.json');        const data = await res.json();
+        const latestVersion = data.version.replace('v', '');
+
+        if (latestVersion !== currentVersion) {
+          toast.info("تحديث جديد متاح", {
+            description: `الإصدار (v${latestVersion}) متوفر الآن.`,
+            action: {
+              label: "تحديث الآن",
+              onClick: () => router.push(`/about?v=${currentVersion}`)
+            },
+            duration: 8000,
+          });
+        }
+      } catch (err) { /* فشل صامت */ }
+    };
+    const timer = setTimeout(checkUpdates, 5000);
+    return () => clearTimeout(timer);
+  }, [currentVersion, router]);
 
   const getActiveTab = () => {
     if (pathname.startsWith('/home'))          return 'home';
     if (pathname.startsWith('/likes'))         return 'likes';
     if (pathname.startsWith('/notifications')) return 'notifications';
     if (pathname.startsWith('/profile'))       return 'profile';
-    if (pathname.startsWith('/mediators') ||
-        pathname.startsWith('/dash')       ||
+    if (pathname.startsWith('/mediators') || 
+        pathname.startsWith('/dash')      || 
         pathname.startsWith('/subscribers'))   return 'mediator';
     return 'home';
   };
 
   const NAV_ROUTES: Record<string, string> = {
-    home:          '/home',
-    likes:         '/likes',
-    notifications: '/notifications',
-    profile:       '/profile',
-    mediator:      '/mediators',
+    home: '/home', likes: '/likes', notifications: '/notifications', profile: '/profile', mediator: '/mediators'
   };
 
   return (
     <>
-      {/* الرئيسية — TopBar الخاص */}
+      {/* الـ TopBar يظهر فقط في الرئيسية وليس في About */}
       {!isAuth && isHome && <TopBar data-top-bar />}
 
-      {/* صفحات داخلية — PageHeader ذكي */}
+      {/* الـ PageHeader يظهر في About وفي الصفحات الداخلية الأخرى */}
       {!isAuth && !isHome && !!title && (
         <PageHeader title={title} onBack={() => router.back()} />
       )}
 
       <main style={{
         paddingTop:    isAuth ? 0 : 'var(--header-h)',
-        paddingBottom: isAuth ? 0 : 'var(--nav-h)',
+        paddingBottom: (isAuth || isAbout) ? 0 : 'var(--nav-h)', // إزالة البادينج السفلي في About
       }}>
         {children}
       </main>
 
-      {/* Navbar */}
-      {!isAuth && (
+      {/* الـ Navbar يختفي في صفحة About */}
+      {!isAuth && !isAbout && (
         <Navbar
           activeTab={getActiveTab()}
           onTabClick={tab => NAV_ROUTES[tab] && router.push(NAV_ROUTES[tab])}

@@ -1,11 +1,16 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.1.2",
+  "version": "0.1.6",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
-    "build": "npm version patch --no-git-tag-version && next build && node zip-build.js",
+    "build": "next build && node zip-build.js",
+    "version:patch": "npm version patch --no-git-tag-version && node sync-version.js && npm run build",
+    "version:minor": "npm version minor --no-git-tag-version && node sync-version.js && npm run build",
+    "version:major": "npm version major --no-git-tag-version && node sync-version.js && npm run build",
+    "deploy": "npm run version:patch && git add . && git commit -m \"Auto-Deploy: Update Version and Build\" && git push",
+    "sync": "node sync-version.js",
     "start": "next start",
     "lint": "next lint"
   },
