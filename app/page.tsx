@@ -7,6 +7,8 @@ import { Brand }               from '@/components/ui/brand';
 import { GoogleButton }        from '@/components/ui/googlebutton';
 import { Mail }                from 'lucide-react';
 import { toast }               from 'sonner';
+import { Capacitor }          from '@capacitor/core';
+import { Browser }            from '@capacitor/browser';
 
 export default function LandingPage() {
   const [loading, setLoading] = useState(true);
@@ -71,22 +73,39 @@ export default function LandingPage() {
 
   const handleGoogleLogin = async () => {
     try {
-      // التحقق مما إذا كان التشغيل يتم من داخل تطبيق أندرويد (Capacitor)
-      const isAndroidApp = window.location.origin.includes('localhost') && 
-                           window.location.protocol === 'http:';
-      
-      const redirectUrl = isAndroidApp
-        ? 'com.zawaj.ai://auth/callback'
+      const isNative = Capacitor.isNativePlatform();
+
+      const redirectUrl = isNative
+        ? 'com.zawaj.ai://auth/callback'   // custom scheme للتطبيق
         : window.location.origin + '/auth/callback';
 
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { 
-          redirectTo: redirectUrl,
-          skipBrowserRedirect: false 
-        },
-      });
-      if (error) throw error;
+      if (isNative) {
+        // ── Capacitor: نفتح OAuth داخل التطبيق بـ @capacitor/browser ──
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+            skipBrowserRedirect: true,  // ✅ نمنع فتح المتصفح الخارجي
+          },
+        });
+        if (error) throw error;
+
+        // نفتح URL الـ OAuth في متصفح داخلي
+        if (data?.url) {
+          await Browser.open({
+            url: data.url,
+            windowName: '_self',
+            presentationStyle: 'popover',
+          });
+        }
+      } else {
+        // ── Web: السلوك العادي ──
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: { redirectTo: redirectUrl },
+        });
+        if (error) throw error;
+      }
     } catch (error: any) {
       toast.error('حدث خطأ أثناء تسجيل الدخول: ' + error.message);
     }

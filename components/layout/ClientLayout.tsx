@@ -106,21 +106,21 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {!isAuth && isHome && <TopBar />}
 
       {/* شريط العنوان (يظهر في الصفحات الداخلية فقط) */}
-      {!isAuth && !isHome && !!title && (
+      {!isAuth && !isHome && (
         <PageHeader title={title} onBack={() => router.back()} />
       )}
 
       <main style={{
         paddingTop: isAuth ? 0 : 'var(--header-h)',
-        paddingBottom: (isAuth || isAbout) ? 0 : 'var(--nav-h)',
+        paddingBottom: (isHome || pathname.startsWith('/mediators')) ? 'var(--nav-h)' : 0,
         minHeight: '100vh',
         background: 'var(--bg-main)'
       }}>
         {children}
       </main>
 
-      {/* شريط التنقل السفلي (يختفي في صفحات تسجيل الدخول وعن التطبيق) */}
-      {!isAuth && !isAbout && (
+      {/* شريط التنقل السفلي — home و mediators فقط */}
+      {(isHome || pathname.startsWith('/mediators')) && (
         <Navbar 
           activeTab={getActiveTab()} 
           onTabChange={(tab) => router.push(NAV_ROUTES[tab])} 

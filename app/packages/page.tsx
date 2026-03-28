@@ -64,21 +64,70 @@ export default function PackagesPage() {
         </div>
       </div>
 
-      {/* زر المكافأة */}
-      <button 
+      {/* زر مكافأة الفيديو */}
+      <button
         onClick={() => showRewardedAd()}
-        className="w-full mb-8 p-4 rounded-[2rem] border border-green-500/30 bg-green-500/10 flex items-center justify-between hover:bg-green-500/20 active:scale-[0.98] transition-all group"
+        style={{
+          width: '100%',
+          marginBottom: 'var(--sp-8)',
+          padding: 'var(--sp-4) var(--sp-5)',
+          borderRadius: 'var(--radius-xl)',
+          border: '1.5px solid rgba(34,197,94,0.3)',
+          background: 'linear-gradient(135deg,rgba(34,197,94,0.08),rgba(22,163,74,0.14))',
+          display: 'flex', alignItems: 'center',
+          justifyContent: 'space-between', gap: 'var(--sp-4)',
+          cursor: 'pointer', transition: 'all 0.18s ease',
+          WebkitTapHighlightColor: 'transparent',
+        }}
+        onPointerDown={e=>(e.currentTarget.style.transform='scale(0.98)')}
+        onPointerUp={e=>(e.currentTarget.style.transform='scale(1)')}
+        onPointerLeave={e=>(e.currentTarget.style.transform='scale(1)')}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-green-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(22,163,74,0.5)]">
-            <PlayCircle size={28} />
+        {/* أيقونة + نص */}
+        <div style={{ display:'flex', alignItems:'center', gap:'var(--sp-3)' }}>
+          <div style={{
+            width: 'var(--btn-h)', height: 'var(--btn-h)',
+            borderRadius: 'var(--radius-full)',
+            background: 'linear-gradient(135deg,#16a34a,#22c55e)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            boxShadow: '0 4px 20px rgba(34,197,94,0.4)',
+          }}>
+            <PlayCircle size={20} color="#fff" />
           </div>
-          <div className="text-right">
-            <p className="text-white font-black text-sm">عملات مجانية!</p>
-            <p className="text-green-400/80 text-[11px]">شاهد فيديو واربح {AD_REWARD_AMOUNT} عملة ذهبية</p>
+          <div style={{ textAlign: 'right' }}>
+            <p style={{
+              color: '#fff', fontWeight: 900,
+              fontSize: 'var(--text-sm)', margin: 0,
+            }}>
+              عملات مجانية 🎁
+            </p>
+            <p style={{
+              color: 'rgba(74,222,128,0.85)',
+              fontSize: 'var(--text-2xs)', margin: 0,
+              marginTop: 'var(--sp-1)',
+            }}>
+              شاهد فيديو قصير واربح {AD_REWARD_AMOUNT} عملات ذهبية
+            </p>
           </div>
         </div>
-        <Zap size={18} className="text-green-500 animate-pulse" />
+
+        {/* badge يمين */}
+        <div style={{
+          padding: 'var(--sp-1) var(--sp-3)',
+          borderRadius: 'var(--radius-full)',
+          background: 'rgba(34,197,94,0.2)',
+          border: '1px solid rgba(34,197,94,0.4)',
+          display: 'flex', alignItems: 'center', gap: 'var(--sp-1)',
+          flexShrink: 0,
+        }}>
+          <Zap size={12} color="#4ade80" />
+          <span style={{
+            color: '#4ade80', fontSize: 'var(--text-2xs)', fontWeight: 800,
+          }}>
+            مجاني
+          </span>
+        </div>
       </button>
 
       {/* اختيار الوضع */}
