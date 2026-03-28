@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 import * as LiveUpdates from '@capacitor/live-updates';
 import { PackagePlus } from 'lucide-react';
 import packageJson from '@/package.json';
@@ -37,34 +38,42 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const router = useRouter();
 
   const isAuth = AUTH_PAGES.includes(pathname);
+  const isHome = pathname === '/home';
   const isAbout = pathname === '/about';
-  const isHome = pathname.startsWith('/home');
   const title = getTitle(pathname);
 
   useEffect(() => {
     const handleUpdateSystem = async () => {
+      // التأكد من أننا على هاتف أندرويد/iOS وليس المتصفح
+      if (!Capacitor.isNativePlatform()) return;
+
       try {
-        // البحث عن تحديثات باستخدام المكتبة الرسمية
+        // فحص ومزامنة التحديثات بناءً على updateUrl المذكور في capacitor.config.ts
         const result = await LiveUpdates.sync();
-        
-        // في حال وجود نسخة جديدة (Next)
+
         if (result.next) {
-          toast.info("تحديث متاح", {
-            description: "يتم الآن تحميل الإصدار الجديد تلقائياً لتحسين تجربتك.",
-            duration: 8000,
-            icon: <PackagePlus className="w-5 h-5 text-[var(--color-primary)]" />,
+          // عرض إشعار للمستخدم بوجود نسخة جديدة
+          toast.info("تحديث جديد متاح", {
+            description: "جاري تحميل النسخة الجديدة لتحسين الأداء...",
+            icon: <PackagePlus size={18} />,
+            duration: 6000,
             action: {
-              label: "تطبيق الآن",
+              label: "تحديث الآن",
               onClick: () => LiveUpdates.reload()
             }
           });
+
+          // يمكنك اختيار التثبيت التلقائي الصامت هنا
+          // await LiveUpdates.reload();
         }
       } catch (err) {
-        // فشل صامت في حال عدم توفر اتصال
+        console.warn("Update System: Check skipped (No connection or Dev mode)");
       }
     };
 
-    handleUpdateSystem();
+    // تشغيل الفحص بعد ثانية من فتح التطبيق لضمان استقرار الاتصال
+    const timer = setTimeout(handleUpdateSystem, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const getActiveTab = () => {
@@ -90,8 +99,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
   return (
     <>
+      {/* استماع لتنبيهات المطابقة (Match) */}
+      {!isAuth && <MatchListener />}
+
+      {/* شريط التوب بار (يظهر في الصفحة الرئيسية فقط) */}
       {!isAuth && isHome && <TopBar />}
 
+      {/* شريط العنوان (يظهر في الصفحات الداخلية فقط) */}
       {!isAuth && !isHome && !!title && (
         <PageHeader title={title} onBack={() => router.back()} />
       )}
@@ -99,18 +113,19 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       <main style={{
         paddingTop: isAuth ? 0 : 'var(--header-h)',
         paddingBottom: (isAuth || isAbout) ? 0 : 'var(--nav-h)',
+        minHeight: '100vh',
+        background: 'var(--bg-main)'
       }}>
         {children}
       </main>
 
+      {/* شريط التنقل السفلي (يختفي في صفحات تسجيل الدخول وعن التطبيق) */}
       {!isAuth && !isAbout && (
-        <Navbar
-          activeTab={getActiveTab()}
-          onTabClick={tab => NAV_ROUTES[tab] && router.push(NAV_ROUTES[tab])}
+        <Navbar 
+          activeTab={getActiveTab()} 
+          onTabChange={(tab) => router.push(NAV_ROUTES[tab])} 
         />
       )}
-
-      {!isAuth && <MatchListener />}
     </>
   );
 }

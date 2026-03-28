@@ -16,7 +16,7 @@ async function zipDirectory() {
   }
 
   const updateInfo = {
-    version: `v${version}`,
+    version: version,
     url: "https://zawaj-ai.vercel.app/app-dist.zip",
     timestamp: new Date().toISOString()
   };

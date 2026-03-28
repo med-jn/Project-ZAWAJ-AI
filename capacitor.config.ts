@@ -11,7 +11,7 @@ const config: CapacitorConfig = {
       autoUpdateMethod: 'background',
       maxVersions: 2,
       // هذا الرابط هو الذي سيبحث فيه التطبيق عن التحديث v0.00.00x
-      updateUrl: 'https://zawaj-ai.vercel.app/api/update'
+      updateUrl: 'https://zawaj-ai.vercel.app/update-info.json',
     }
   }
 };
