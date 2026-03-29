@@ -119,7 +119,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       <main style={{
         paddingTop: isAuth ? 0 : 'var(--header-h)',
-        paddingBottom: (isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers')) ? 'var(--nav-h)' : 0,
+        paddingBottom: (isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers') || path.startsWith('/likes') || path.startsWith('/notifications') || path.startsWith('/profile')) ? 'var(--nav-h)' : 0,
         minHeight: '100vh',
         background: 'var(--bg-main)'
       }}>
@@ -127,7 +127,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* شريط التنقل السفلي — home و mediators و dash و subscribers */}
-      {(isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers')) && (
+      {(isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers') || path.startsWith('/likes') || path.startsWith('/notifications') || path.startsWith('/profile')) && (
         <Navbar 
           activeTab={getActiveTab()} 
           onTabClick={(tab) => router.push(NAV_ROUTES[tab])} 

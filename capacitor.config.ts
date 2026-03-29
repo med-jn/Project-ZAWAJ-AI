@@ -5,28 +5,18 @@ const config: CapacitorConfig = {
   appName: 'ZAWAJ AI',
   webDir:  'out',
 
-  // ✅ Custom URL scheme لاستقبال OAuth redirect
-  // يجب أن يتطابق مع redirectTo في handleGoogleLogin
   server: {
+    // ✅ التطبيق يحمّل من Vercel مباشرة — أي deploy = تحديث فوري
+    url:           'https://zawaj-ai.vercel.app',
     androidScheme: 'https',
-    // في وضع التطوير المحلي
-    // url: 'http://192.168.x.x:3000',
-    // cleartext: true,
+    cleartext:     false,
   },
 
   plugins: {
-    // ✅ Browser plugin — يفتح OAuth داخل التطبيق
     Browser: {
       presentationStyle: 'popover',
     },
-
-    LiveUpdates: {
-      appId:            '8e6b44cc',
-      channel:          'Production',
-      autoUpdateMethod: 'background',
-      maxVersions:      2,
-      updateUrl:        'https://zawaj-ai.vercel.app/update-info.json',
-    },
+    // LiveUpdates محذوف — غير مدعوم بدون Appflow
   },
 };
 
