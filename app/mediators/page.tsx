@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Star, Users, MessageCircle, Gift, Flag,
-  MapPin, ChevronLeft, X, Crown, Heart, Send, Check,
+  MapPin, ChevronLeft, X, Heart, Crown, Send, Check,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
@@ -271,12 +271,12 @@ export default function MediatorsPage() {
                 disabled={m.isSubscribed || !currentUser}
                 className="flex-1 py-3 rounded-2xl font-black text-sm flex items-center justify-center gap-2"
                 style={{
-                  background: m.isSubscribed?'rgba(34,197,94,0.12)':'linear-gradient(135deg,#800020,#c0002a)',
-                  color: m.isSubscribed?'#4ADE80':'white',
+                  background: m.isSubscribed?'var(--color-gold)':'linear-gradient(135deg,#800020,#c0002a)',
+                  color: m.isSubscribed?'black':'white',
                   border: m.isSubscribed?'1px solid rgba(34,197,94,0.25)':'none',
                   boxShadow: m.isSubscribed?'none':'0 6px 20px rgba(192,0,42,0.3)',
                 }}>
-                {m.isSubscribed ? <><Check size={14}/> مشترك</> : <><Heart size={14}/> اشتراك</>}
+                {m.isSubscribed ? <><Crown size={18}/></> : <><Crown size={14}/> اشتراك</>}
               </motion.button>
 
               <motion.button whileTap={{scale:0.9}}
@@ -481,11 +481,11 @@ export default function MediatorsPage() {
                   disabled={selected.isSubscribed || !currentUser}
                   className="flex-[2] py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2"
                   style={{
-                    background: selected.isSubscribed?'rgba(34,197,94,0.12)':'linear-gradient(135deg,#800020,#c0002a)',
-                    color: selected.isSubscribed?'#4ADE80':'white',
+                    background: selected.isSubscribed?'var(--color-gold)':'linear-gradient(135deg,#800020,#c0002a)',
+                    color: selected.isSubscribed?'black':'white',
                     border: selected.isSubscribed?'1px solid rgba(34,197,94,0.25)':'none',
                   }}>
-                  {selected.isSubscribed ? <><Check size={14}/> أنت مشترك</> : <><Heart size={14}/> اشتراك الآن</>}
+                  {selected.isSubscribed ? <><Crown size={18}/> أنت مشترك</> : <><Crown size={14}/> اشتراك الآن</>}
                 </button>
                 <button className="flex-1 py-3.5 rounded-2xl font-black text-sm flex items-center justify-center gap-2"
                   style={{ background:'rgba(56,189,248,0.1)', border:'1px solid rgba(56,189,248,0.2)', color:'#38BDF8' }}>

@@ -320,7 +320,7 @@ export default function ProfilePage() {
             </div>
           </div>
           <motion.button whileTap={{ scale: 0.94 }} onClick={() => router.push('/packages')}
-            style={{ padding: 'var(--sp-2) var(--sp-4)', borderRadius: 'var(--radius-md)', background: 'var(--color-gold)', color: '#000', fontWeight: 800, fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ padding: 'var(--sp-2) var(--sp-4)', borderRadius: 'var(--radius-md)', background: 'var(--color-primary)', color: '#ffffff', fontWeight: 800, fontSize: 'var(--text-xs)', border: 'none', cursor: 'pointer', fontFamily: 'inherit' }}>
             الباقات
           </motion.button>
         </div>

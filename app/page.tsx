@@ -130,12 +130,19 @@ export default function LandingPage() {
         position: 'relative',
         zIndex: 10,
       }}>
-        <div style={{ fontSize: 'var(--text-3xl)', marginBottom: 'var(--sp-8)' }}
-          className="animate-float">💍</div>
 
         <div style={{ marginBottom: 'var(--sp-8)' }}>
           <Brand />
+        
+                <p style={{
+          marginTop: 'var(--sp-3)', fontSize: 'var(--text-xs)',
+          color: 'var(--text-primary)', opacity: 0.8,
+          lineHeight: 'var(--lh-relaxed)',
+        }}>
+          ابحث عن شريك حياتك بآمان وذكاء
+        </p>
         </div>
+
 
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -144,7 +151,7 @@ export default function LandingPage() {
           <div style={{ height: 1, flex: 1, background: 'var(--border-soft)' }} />
           <span style={{
             fontSize: 'var(--text-sm)', fontWeight: 700,
-            color: 'var(--text-tertiary)',
+            color: 'var(--text-secondary)', textTransform: 'uppercase',
           }}> تسجيل الدخول عبر</span>
           <div style={{ height: 1, flex: 1, background: 'var(--border-soft)' }} />
         </div>
@@ -159,7 +166,7 @@ export default function LandingPage() {
               justifyContent: 'center', gap: 'var(--sp-4)',
             }}>
             <Mail style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-            <span style={{ fontWeight: 700, fontSize: 'var(--text-base)' }}>email</span>
+            <span className="font-bold text-md">email</span>
           </button>
         </div>
 

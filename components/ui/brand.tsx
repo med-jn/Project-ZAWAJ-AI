@@ -1,6 +1,6 @@
 export const Brand = () => (
   <div className="text-center animate-slow-fade">
-    <h1 className="  flex-row-reverse text-3xl font-black tracking-tighter flex items-center justify-center font-cairo">
+    <h1 className="  flex-row-reverse text-4xl font-black tracking-tighter flex items-center justify-center font-cairo">
       <span className="
         relative px-0
         bg-gold-metallic bg-clip-text text-white 

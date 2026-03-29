@@ -49,7 +49,7 @@ export default function TopBar() {
       >
         <div className="flex items-center">
           <button onClick={() => router.push('/home')} className="active:scale-95 transition-transform">
-            <Brand />
+            <Brand size="1.5em" />
           </button>
         </div>
 
@@ -58,7 +58,7 @@ export default function TopBar() {
           onClick={() => setOpen(true)}
           className="p-2"
         >
-          <Menu size="1.5em" className="text-[var(--text-main)]" strokeWidth={2} />
+          <Menu size="1.5em" className="text-white" strokeWidth={2} />
         </motion.button>
       </header>
 
