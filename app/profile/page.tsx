@@ -13,7 +13,8 @@ import {
   Users, BookOpen, ShieldCheck, Smile, Ruler, Activity,
   Flame, Globe, HandHeart, LogOut,
 } from 'lucide-react';
-import  { CoinBalance } from '@/components/ui/CoinBalance';
+import { CoinBalance } from '@/components/ui/CoinBalance';
+import { LoveCoin } from '@/components/ui/LoveCoin';
 import { supabase }  from '@/lib/supabase/client';
 import { AutoBadge } from '@/components/auto-badge';
 import { useWallet } from '@/hooks/useWallet';
@@ -312,12 +313,10 @@ export default function ProfilePage() {
       <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)' }}>
         <div style={{ padding: 'var(--sp-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-            <div style={{ width: 'var(--icon-xl)', height: 'var(--icon-xl)', borderRadius: 'var(--radius-md)', background: 'rgba(212,175,55,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Crown size={18} style={{ color: 'var(--color-gold)' }} />
-            </div>
             <div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)', margin: 0 }}>رصيدك</p>
-              <p style={{ color: 'var(--color-gold)', fontWeight: 900, fontSize: 'var(--text-2xl)', margin: 0 }}>{totalBalance}<span style={{ fontSize: 'var(--text-xs)', fontWeight: 500 }}> نقطة</span></p>
+              <CoinBalance amount={totalBalance}/>
+
             </div>
           </div>
           <motion.button whileTap={{ scale: 0.94 }} onClick={() => router.push('/packages')}

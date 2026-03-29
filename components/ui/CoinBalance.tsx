@@ -9,18 +9,19 @@ interface CoinBalanceProps {
 export const CoinBalance = ({
   amount,
   className = "",
-  iconSize = 26
+  iconSize = 20
 }: CoinBalanceProps) => {
 
   return (
 
     <div className={`flex items-center gap-2 font-bold ${className}`}>
 
-      <LoveCoin size={iconSize} />
 
-      <span className="tabular-nums text-yellow-300 tracking-wide">
+      <span className="tabular-nums 'var(--text-primary)' text-2xl tracking-wide">
         {amount.toLocaleString()}
       </span>
+       <LoveCoin size={iconSize} />
+
 
     </div>
 

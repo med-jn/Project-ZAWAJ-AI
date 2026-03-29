@@ -28,15 +28,15 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
         padding:    '0 var(--sp-2)',
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--glass-border)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
       }}
     >
       {/* اسم الصفحة — يمين */}
       <span style={{
         flex: 1,
         color:      'var(--text-main)',
-        fontSize:   'var(--text-lg)',
+        fontSize:   'var(--text-xl)',
         fontWeight: 800,
         paddingRight: 'var(--sp-2)',
       }}>
@@ -60,9 +60,10 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
           cursor: 'pointer',
           color: 'var(--text-main)',
           flexShrink: 0,
+          
         }}
       >
-        <ArrowLeft size={20} />
+        <ArrowLeft size={24} />
       </button>
     </header>
   );

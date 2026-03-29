@@ -16,15 +16,20 @@ import MatchListener from '@/components/MatchListener';
 const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
 
 const PAGE_TITLES: Record<string, string> = {
-  '/about': 'حول التطبيق',
-  '/likes': 'الإعجابات',
+  '/about':         'حول التطبيق',
+  '/likes':         'الإعجابات',
   '/notifications': 'الإشعارات',
-  '/profile': 'الملف الشخصي',
-  '/settings': 'الإعدادات',
-  '/privacy': 'الخصوصية',
-  '/mediators': 'الوسطاء',
-  '/dash': 'لوحة التحكم',
-  '/subscribers': 'المشتركون',
+  '/profile':       'الملف الشخصي',
+  '/profile/edit':  'تعديل الملف',
+  '/settings':      'الإعدادات',
+  '/privacy':       'الخصوصية',
+  '/mediators':     'الوسطاء',
+  '/dash':          'لوحة التحكم',
+  '/subscribers':   'المشتركون',
+  '/packages':      'المتجر',
+  '/packages/history': 'سجل المعاملات',
+  '/help':          'المساعدة',
+  '/terms':         'الشروط والسياسات',
 };
 
 function getTitle(path: string) {
@@ -37,10 +42,12 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router = useRouter();
 
-  const isAuth = AUTH_PAGES.includes(pathname);
-  const isHome = pathname === '/home';
-  const isAbout = pathname === '/about';
-  const title = getTitle(pathname);
+  // تطبيع المسار — إزالة الـ / في النهاية
+  const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
+  const isAuth = AUTH_PAGES.includes(path);
+  const isHome = path === '/home';
+  const isAbout = path === '/about';
+  const title = getTitle(path);
 
   useEffect(() => {
     const handleUpdateSystem = async () => {
@@ -77,14 +84,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   }, []);
 
   const getActiveTab = () => {
-    if (pathname.startsWith('/home')) return 'home';
-    if (pathname.startsWith('/likes')) return 'likes';
-    if (pathname.startsWith('/notifications')) return 'notifications';
-    if (pathname.startsWith('/profile')) return 'profile';
+    if (path.startsWith('/home')) return 'home';
+    if (path.startsWith('/likes')) return 'likes';
+    if (path.startsWith('/notifications')) return 'notifications';
+    if (path.startsWith('/profile')) return 'profile';
     if (
-      pathname.startsWith('/mediators') || 
-      pathname.startsWith('/dash') || 
-      pathname.startsWith('/subscribers')
+      path.startsWith('/mediators') || 
+      path.startsWith('/dash') || 
+      path.startsWith('/subscribers')
     ) return 'mediator';
     return 'home';
   };
@@ -112,18 +119,18 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       <main style={{
         paddingTop: isAuth ? 0 : 'var(--header-h)',
-        paddingBottom: (isHome || pathname.startsWith('/mediators')) ? 'var(--nav-h)' : 0,
+        paddingBottom: (isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers')) ? 'var(--nav-h)' : 0,
         minHeight: '100vh',
         background: 'var(--bg-main)'
       }}>
         {children}
       </main>
 
-      {/* شريط التنقل السفلي — home و mediators فقط */}
-      {(isHome || pathname.startsWith('/mediators')) && (
+      {/* شريط التنقل السفلي — home و mediators و dash و subscribers */}
+      {(isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers')) && (
         <Navbar 
           activeTab={getActiveTab()} 
-          onTabChange={(tab) => router.push(NAV_ROUTES[tab])} 
+          onTabClick={(tab) => router.push(NAV_ROUTES[tab])} 
         />
       )}
     </>

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Home, Heart, Bell, User, ShieldCheck } from 'lucide-react';
+import { Home, BookSearch, Heart, Bell, User, HouseHeart } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 // ── نغمة الإشعار ─────────────────────────
@@ -106,7 +106,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     { id: 'notifications', label: 'إشعارات', Icon: Bell,  badge: true  },
     { id: 'mediator',      isCenter: true                               },
     { id: 'likes',         label: 'إعجابات', Icon: Heart, badge: false },
-    { id: 'home',          label: 'الرئيسية',Icon: Home,  badge: false },
+    { id: 'home',          label: 'الرئيسية',Icon: BookSearch,  badge: false },
   ];
 
   return (
@@ -143,7 +143,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
                 background: 'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
                 borderRadius: '50%', filter: 'blur(1.5px)', pointerEvents: 'none',
               }}/>
-              <ShieldCheck size={18} strokeWidth={active ? 2.5 : 2} color="white"
+              <HouseHeart size={20} strokeWidth={active ? 2.5 : 2} color="white"
                 fill={active ? 'rgba(255,255,255,0.18)' : 'none'}/>
             </motion.button>
           </div>
@@ -163,7 +163,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
                   ? { duration: 0.5, repeat: Infinity, repeatDelay: 3 }
                   : { type: 'spring', stiffness: 420, damping: 18 }}
               >
-                <Icon size={18} strokeWidth={1.8}
+                <Icon size={22} strokeWidth={1.5}
                   style={{ color: 'var(--color-secondary)' }}
                   fill={active ? 'var(--color-secondary)' : 'none'}
                 />

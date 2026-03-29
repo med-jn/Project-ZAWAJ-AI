@@ -36,8 +36,7 @@ export default function PackagesPage() {
       {/* الهيدر */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-black text-white mb-1">متجر العملات</h1>
-          <p className="text-white/40 text-sm">اشحن رصيدك أو احصل على عملات مجانية</p>
+          <p className="var(--text-primary) text-sm">اشحن رصيدك أو احصل على عملات مجانية</p>
         </div>
         <Link href="/packages/history" className="w-12 h-12 rounded-2xl glass-panel flex items-center justify-center text-gold shadow-gold-glow hover:scale-105 transition-transform border border-white/5">
           <History size={24} />
@@ -47,17 +46,17 @@ export default function PackagesPage() {
       {/* الرصيد الحالي */}
       <div className="glass-panel p-6 mb-6 flex items-center justify-between border-gold relative overflow-hidden">
         <div className="relative z-10">
-          <p className="text-white/40 text-xs mb-1 font-bold">رصيدك الحالي</p>
-          <CoinBalance amount={totalBalance} iconSize={32} className="text-4xl" />
+          <p className="var(--text-secondary) text-xs mb-1 font-bold">رصيدك الحالي</p>
+          <CoinBalance amount={totalBalance} iconSize={20} className="text-2xl" />
         </div>
-        <div className="relative z-10 bg-black/40 backdrop-blur-md p-3 rounded-2xl border border-white/5 text-left space-y-1">
+        <div className="relative z-10 'var(--bg-soft)' p-3 rounded-2xl border 'var(--border-gold)' text-left text-xs space-y-1">
           <div className="flex items-center gap-2 justify-end text-[10px]">
-            <span className="text-white/50">رصيد الشراء:</span>
+            <span className="var(--text-secondary)">رصيد الشراء :</span>
             <span className="font-bold text-white">{wallet?.balance || 0}</span>
             <LoveCoin size={12} />
           </div>
           <div className="flex items-center gap-2 justify-end text-[10px]">
-            <span className="text-white/50">رصيد الهدايا:</span>
+            <span className="var(--text-secondary)"> رصيد الهدايا :</span>
             <span className="font-bold text-green-400">{wallet?.balance_free || 0}</span>
             <LoveCoin size={12} />
           </div>
