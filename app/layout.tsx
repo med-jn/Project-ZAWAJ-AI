@@ -20,10 +20,14 @@ const cairo = Cairo({
 });
 
 export const metadata: Metadata = {
-  title:       { default: 'زواج AI', template: '%s | زواج AI' },
+  title:       { default: 'ZAWAJ AI', template: '%s | ZAWAJ AI' },
   description: 'منصة الزواج الجاد المدعومة بالذكاء الاصطناعي',
   manifest:    '/manifest.json',
   icons:       { apple: '/apple-touch-icon.png' },
+
+  verification: {
+    google: 'NGEXMXzT6SpYRnz76pQauvgXBT4e-sEXWkr8UGvlYyk',
+  },
 };
 
 export const viewport: Viewport = {
