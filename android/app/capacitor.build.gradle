@@ -12,6 +12,7 @@ dependencies {
     implementation project(':admob-plus-capacitor')
     implementation project(':capacitor-community-admob')
     implementation project(':capacitor-browser')
+    implementation project(':capacitor-filesystem')
     implementation project(':capacitor-geolocation')
     implementation project(':capacitor-live-updates')
 
