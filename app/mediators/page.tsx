@@ -178,12 +178,6 @@ export default function MediatorsPage() {
   return (
     <div className="min-h-full px-4 py-5" dir="rtl" style={{ background: 'var(--bg-main)' }}>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-black" style={{ color: 'var(--text-main)' }}>الوسطاء</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-tertiary)' }}>
-          اختر وسيطاً موثوقاً يساعدك في رحلة الزواج
-        </p>
-      </div>
 
       {mediators.length === 0 && (
         <div className="text-center py-24">
