@@ -14,19 +14,19 @@ export default function Footer() {
             href="/privacy" 
             className="text-[var(--text-main)] opacity-60 active:opacity-100 transition-opacity"
           >
-            الخصوصية
+            Privacy Policy
           </Link>
           <Link 
             href="/terms" 
             className="text-[var(--text-main)] opacity-60 active:opacity-100 transition-opacity"
           >
-            الشروط
+            Terms
           </Link>
           <Link 
             href="/about" 
             className="text-[var(--text-main)] opacity-60 active:opacity-100 transition-opacity"
           >
-            حول التطبيق
+            About
           </Link>
         </nav>
 
