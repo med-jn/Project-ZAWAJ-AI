@@ -3,8 +3,10 @@
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { PackagePlus, RefreshCw } from 'lucide-react';
-import { checkAndApplyUpdate } from '@/lib/services/liveUpdate';
+import { Capacitor } from '@capacitor/core';
+import * as LiveUpdates from '@capacitor/live-updates';
+import { PackagePlus } from 'lucide-react';
+import packageJson from '@/package.json';
 
 import Navbar from '@/components/layout/Navbar';
 import PageHeader from '@/components/layout/PageHeader';
@@ -48,21 +50,36 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const title = getTitle(path);
 
   useEffect(() => {
-    // فحص التحديث في الخلفية بعد 2 ثانية من الفتح
-    const timer = setTimeout(async () => {
-      const result = await checkAndApplyUpdate();
-      if (result.hasUpdate) {
-        toast.info(`تحديث v${result.version} جاهز`, {
-          description: 'سيُطبَّق التحديث عند إعادة فتح التطبيق',
-          icon: <PackagePlus size={18} />,
-          duration: 8000,
-          action: {
-            label: 'إعادة التشغيل',
-            onClick: () => window.location.reload(),
-          },
-        });
+    const handleUpdateSystem = async () => {
+      // التأكد من أننا على هاتف أندرويد/iOS وليس المتصفح
+      if (!Capacitor.isNativePlatform()) return;
+
+      try {
+        // فحص ومزامنة التحديثات بناءً على updateUrl المذكور في capacitor.config.ts
+        const result = await LiveUpdates.sync();
+
+        if (result.next) {
+          // عرض إشعار للمستخدم بوجود نسخة جديدة
+          toast.info("تحديث جديد متاح", {
+            description: "جاري تحميل النسخة الجديدة لتحسين الأداء...",
+            icon: <PackagePlus size={18} />,
+            duration: 6000,
+            action: {
+              label: "تحديث الآن",
+              onClick: () => LiveUpdates.reload()
+            }
+          });
+
+          // يمكنك اختيار التثبيت التلقائي الصامت هنا
+          // await LiveUpdates.reload();
+        }
+      } catch (err) {
+        console.warn("Update System: Check skipped (No connection or Dev mode)");
       }
-    }, 2000);
+    };
+
+    // تشغيل الفحص بعد ثانية من فتح التطبيق لضمان استقرار الاتصال
+    const timer = setTimeout(handleUpdateSystem, 1500);
     return () => clearTimeout(timer);
   }, []);
 
@@ -102,7 +119,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       <main style={{
         paddingTop: isAuth ? 0 : 'var(--header-h)',
-        paddingBottom: (isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers')) ? 'var(--nav-h)' : 0,
+        paddingBottom: (isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers') || path.startsWith('/likes') || path.startsWith('/notifications') || path.startsWith('/profile')) ? 'var(--nav-h)' : 0,
         minHeight: '100vh',
         background: 'var(--bg-main)'
       }}>
@@ -110,7 +127,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* شريط التنقل السفلي — home و mediators و dash و subscribers */}
-      {(isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers')) && (
+      {(isHome || path.startsWith('/mediators') || path.startsWith('/dash') || path.startsWith('/subscribers') || path.startsWith('/likes') || path.startsWith('/notifications') || path.startsWith('/profile')) && (
         <Navbar 
           activeTab={getActiveTab()} 
           onTabClick={(tab) => router.push(NAV_ROUTES[tab])} 

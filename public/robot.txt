@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /privacy
+Allow: /terms
+Allow: /about
+Disallow: /profile/
+Disallow: /dash/
+
+Sitemap: https://zawaj-ai.vercel.app/sitemap.xml
