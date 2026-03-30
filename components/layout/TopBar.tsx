@@ -49,7 +49,9 @@ export default function TopBar() {
       >
         <div className="flex items-center">
           <button onClick={() => router.push('/home')} className="active:scale-95 transition-transform">
-            <Brand size="1.5em" />
+            <div className="scale-50 origin-center -mb-4">
+          <Brand />
+        </div>
           </button>
         </div>
 
@@ -83,7 +85,9 @@ export default function TopBar() {
               style={{ background: 'var(--bg-elevated)', borderLeft: '1px solid var(--glass-border)' }}
             >
               <div className="flex items-center justify-between px-6 py-6 border-b border-[var(--glass-border)]">
-                <Brand />
+                <div className="scale-50 origin-center -mb-4">
+          <Brand />
+        </div>
                 <button onClick={() => setOpen(false)} className="text-[var(--text-tertiary)]">
                   <X size="1.2em" />
                 </button>

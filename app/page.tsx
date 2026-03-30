@@ -9,6 +9,7 @@ import { Mail }                from 'lucide-react';
 import { toast }               from 'sonner';
 import { Capacitor }          from '@capacitor/core';
 import { Browser }            from '@capacitor/browser';
+import Footer from '@/components/layout/Footer';
 
 export default function LandingPage() {
   const [loading, setLoading] = useState(true);
@@ -177,6 +178,7 @@ export default function LandingPage() {
         }}>
           بتسجيل دخولك توافق على سياسة الخصوصية وشروط الاستخدام
         </p>
+        <Footer />
       </section>
     </main>
   );
