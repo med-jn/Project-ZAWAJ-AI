@@ -3,18 +3,20 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId:   'com.zawaj.ai',
   appName: 'ZAWAJ AI',
-  webDir:  'out',   // ← ملفات محلية دائماً = لا crash
+  webDir:  'out',
 
   server: {
+    // ✅ يحمّل من Vercel مباشرة — تحديث فوري عند كل deploy
+    // لا crash لأن vercel.json يعالج الـ routing بشكل صحيح
+    url:           'https://zawaj-ai.vercel.app',
     androidScheme: 'https',
-    // لا server.url — التحديث يتم عبر liveUpdate.ts
+    cleartext:     false,
   },
 
   plugins: {
     Browser: {
       presentationStyle: 'popover',
     },
-    Filesystem: {},
   },
 };
 
