@@ -3,7 +3,11 @@ import AboutContent from './AboutContent';
 
 export const metadata: Metadata = {
   title: 'حول التطبيق | ZAWAJ AI',
-  description: 'ZAWAJ AI هو مشروع مبتكر من تطوير orcaPROD، يهدف لتسهيل الزواج الجاد باستخدام تقنيات الذكاء الاصطناعي مع الحفاظ على الخصوصية والقيم.',
+  description: 'تعرف على رؤية ZAWAJ AI، المنصة الرائدة في تيسير الزواج الجاد باستخدام تقنيات الذكاء الاصطناعي تحت إشراف orcaPROD.',
+  openGraph: {
+    title: 'حول تطبيق ZAWAJ AI',
+    description: 'رؤيتنا والتقنيات المستخدمة في تطوير منصة الزواج الجاد.',
+  }
 };
 
 export default function AboutPage() {

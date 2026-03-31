@@ -49,7 +49,7 @@ export default function TopBar() {
       >
         <div className="flex items-center">
           <button onClick={() => router.push('/home')} className="active:scale-95 transition-transform">
-            <div className="scale-50 origin-center -mb-4">
+            <div className="scale-65 origin-left -mb-2">
           <Brand />
         </div>
           </button>

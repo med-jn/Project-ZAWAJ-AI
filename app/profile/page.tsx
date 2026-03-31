@@ -59,9 +59,9 @@ function Block({ title, icon, children }: { title: string; icon: React.ReactNode
   const kids = Array.isArray(children) ? (children as any[]).flat().filter(Boolean) : [children].filter(Boolean);
   if (!kids.length) return null;
   return (
-    <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+    <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-md)', overflow: 'hidden', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', padding: 'var(--sp-3) var(--sp-4)', borderBottom: '1px solid var(--glass-border)' }}>
-        <span style={{ color: 'var(--color-primary)', opacity: 0.7, display: 'flex' }}>{icon}</span>
+        <span style={{ color:  'var(--color-primary)', opacity: 0.7, display: 'flex' }}>{icon}</span>
         <span style={{ fontSize: 'var(--text-2xs)', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>{title}</span>
       </div>
       <div style={{ padding: '0 var(--sp-4) var(--sp-2)' }}>{kids}</div>
@@ -310,7 +310,7 @@ export default function ProfilePage() {
       </div>
 
       {/* الرصيد + الإحصائيات */}
-      <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-xl)', background: 'linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)' }}>
+      <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg,rgba(212,175,55,0.15),rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)' }}>
         <div style={{ padding: 'var(--sp-4)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
             <div>
@@ -339,7 +339,7 @@ export default function ProfilePage() {
 
       {/* شريط الاكتمال */}
       {pct > 0 && (
-        <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-xl)', padding: 'var(--sp-4)', background: 'var(--glass-bg)', border: `1px solid ${pct >= 80 ? 'rgba(34,197,94,0.3)' : 'var(--glass-border)'}` }}>
+        <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-md)', padding: 'var(--sp-4)', background: 'var(--glass-bg)', border: `1px solid ${pct >= 80 ? 'rgba(34,197,94,0.3)' : 'var(--glass-border)'}` }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--sp-2)' }}>
             <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>اكتمال الملف</span>
             <span style={{ color: pctColor, fontWeight: 900, fontSize: 'var(--text-md)' }}>{pct}%</span>
@@ -413,13 +413,13 @@ export default function ProfilePage() {
       </Block>
 
       {!!p.bio && (
-        <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-xl)', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: 'var(--sp-4)' }}>
+        <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-md)', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: 'var(--sp-4)' }}>
           <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 'var(--sp-2)' }}>نبذة شخصية</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 'var(--lh-relaxed)', margin: 0 }}>"{p.bio}"</p>
         </div>
       )}
       {!!p.partner_requirements && (
-        <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-xl)', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: 'var(--sp-4)' }}>
+        <div style={{ marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-md)', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', padding: 'var(--sp-4)' }}>
           <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', fontWeight: 900, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 'var(--sp-2)' }}>يبحث عن</p>
           <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 'var(--lh-relaxed)', margin: 0 }}>{p.partner_requirements}</p>
         </div>

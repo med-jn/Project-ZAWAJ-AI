@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import TermsContent from './TermsContent';
 
 export const metadata: Metadata = {
-  title: 'سياسة الخصوصية | ZAWAJ AI',
-  description: 'تعرف على كيفية حماية بياناتك وخصوصيتك في تطبيق زواج AI. نحن نلتزم بأعلى معايير الأمان والشفافية.',
+  title: 'شروط الخدمة | ZAWAJ AI',
+  description: 'اطلع على شروط استخدام تطبيق ZAWAJ AI.',
 };
 
 export default function TermsPage() {
