@@ -4,7 +4,7 @@ export const Brand = () => (
       <span className="
         relative px-0
         bg-gold-metallic bg-clip-text text-white 
-        text-gold-luxury drop-shadow ">ZAWAJ</span>
+        text-gold-luxury drop-shadow">ZAWAJ</span>
       
       {/* كلمة AI الذهبية */}
       <span className="

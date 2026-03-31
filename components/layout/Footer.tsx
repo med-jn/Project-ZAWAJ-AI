@@ -50,7 +50,7 @@ export default function Footer() {
           opacity: 0.7, 
           fontFamily: 'sans-serif', 
           letterSpacing: '0.1em', 
-          textTransform: 'uppercase' 
+          textTransform: 'none' 
         }}>
           ZAWAJ AI by orcaPROD © 2026
         </p>

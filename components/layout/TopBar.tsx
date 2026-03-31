@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, Settings, Shield, Package,
+  Menu, X, Settings, Shield, Package, UserPen ,
   HelpCircle, FileText, LogOut, ChevronLeft, Info
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,9 +14,9 @@ const MENU_ITEMS = [
   {
     group: 'الحساب',
     items: [
+      { icon: UserPen,   label: 'تعديل الملف',           href: '/profile/edit' },
       { icon: Settings,   label: 'الإعدادات',           href: '/settings' },
-      { icon: Shield,     label: 'الأمان والخصوصية',    href: '/privacy'  },
-      { icon: Package,    label: 'الباقات والاشتراكات',  href: '/packages' },
+      { icon: Package,    label: 'الإشتراك',  href: '/packages' },
     ],
   },
   {
@@ -24,7 +24,9 @@ const MENU_ITEMS = [
     items: [
       { icon: Info,       label: 'حول التطبيق',        href: '/about'    },
       { icon: HelpCircle, label: 'المساعدة والدعم',    href: '/help'     },
-      { icon: FileText,   label: 'الشروط والسياسات',   href: '/terms'    },
+      { icon: FileText,   label: 'شروط الاستخدام',   href: '/terms'    },
+            { icon: Shield,     label: 'السياسات والخصوصية',    href: '/privacy'  },
+
     ],
   },
 ];
@@ -47,13 +49,9 @@ export default function TopBar() {
         className="fixed top-0 right-0 left-0 h-[var(--header-h)] z-[200] flex items-center justify-between px-4 flex-row-reverse"
         style={{ backdropFilter: 'blur(10px)', background: 'transparent' }}
       >
-        <div className="flex items-center">
-          <button onClick={() => router.push('/home')} className="active:scale-95 transition-transform">
-            <div className="scale-65 origin-left -mb-2">
-          <Brand />
-        </div>
-          </button>
-        </div>
+            <div className="scale-[0.70] origin-left -mb-2"><Brand />
+            </div>
+
 
         <motion.button
           whileTap={{ scale: 0.88 }}

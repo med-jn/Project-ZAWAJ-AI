@@ -16,9 +16,9 @@ function AboutContent() {
   const isUpdateAvailable = userAppVersion && userAppVersion !== currentVersion;
 
   const changelog = [
-    "تطوير محرك البحث بالذكاء الاصطناعي بنسبة 40%",
-    "إضافة نظام التوثيق بالهوية لزيادة الأمان",
-    "تحسين سرعة استجابة التطبيق في الوضع الليلي"
+    "تطوير محرك البحث بالذكاء الاصطناعي",
+    "إضافة نظام الوسطاء المعتمدين للتحقق من المستخدمين",
+    "تحسين خوارزمية التحقق من الصور"
   ];
 
   return (
@@ -31,10 +31,10 @@ function AboutContent() {
       <div className="mb-10 text-center space-y-4">
         
         <p className="text-right text-sm text-[var(--text-secondary)] leading-7">
-       منصة رقمية مبتكرة صممتها <span className="font-bold text-[var(--color-primary)] uppercase tracking-tighter">orcaPROD</span> لتيسير سبل الزواج الجاد في إطار قيمي وأخلاقي رصين. يعتمد التطبيق على تقنيات الذكاء الاصطناعي <span className="font-sans">(Gemini AI)</span> لتحليل التوافق بين المشتركين وضمان أمان المحتوى، مع توفير بيئة خصوصية مشفرة بالكامل. بفضل نظام الوسطاء المعتمدين وآليات التحقق الذكية، نهدف إلى بناء جسور تواصل آمنة تجمع بين القلوب الباحثة عن الاستقرار، بعيداً عن العشوائية، وبأعلى معايير الثقة والشفافية.
+       منصة رقمية مبتكرة صممتها <span className="font-bold text-[var(--color-primary)] tracking-tighter">orcaPROD</span> لتيسير سبل الزواج الجاد في إطار قيمي وأخلاقي رصين. يعتمد التطبيق على تقنيات الذكاء الاصطناعي <span className="font-sans">(Gemini AI)</span> لتحليل التوافق بين المشتركين وضمان أمان المحتوى، مع توفير بيئة خصوصية مشفرة بالكامل. بفضل نظام الوسطاء المعتمدين وآليات التحقق الذكية، نهدف إلى بناء جسور تواصل آمنة تجمع بين القلوب الباحثة عن الاستقرار، بعيداً عن العشوائية، وبأعلى معايير الثقة والشفافية.
        </p>
        <p className="text-left text-[var(--text-base)) text-[var(--text-secondary)] opacity-60 leading-6 font-sans italic" dir="ltr">
-       An innovative digital platform developed by <span className="font-bold uppercase">orcaPROD</span> to facilitate serious marriage within a solid ethical framework. The app leverages <span className="not-italic">Gemini AI</span> to analyze compatibility and ensure content safety, providing a fully encrypted environment. Through our verified mediators and smart verification mechanisms, we aim to build secure communication bridges that unite hearts seeking stability, far from randomness, and with the highest standards of trust and transparency.
+       An innovative digital platform developed by <span className="font-bold ">orcaPROD</span> to facilitate serious marriage within a solid ethical framework. The app leverages <span className="not-italic">Gemini AI</span> to analyze compatibility and ensure content safety, providing a fully encrypted environment. Through our verified mediators and smart verification mechanisms, we aim to build secure communication bridges that unite hearts seeking stability, far from randomness, and with the highest standards of trust and transparency.
        </p>
       </div>
 
@@ -46,7 +46,7 @@ function AboutContent() {
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
             </span>
-             Operational / Stable
+             Stable
           </div>
           <span className="text-[var(--text-main)] font-bold">حالة النظام</span>
         </div>
@@ -95,7 +95,7 @@ function AboutContent() {
       <div className="mt-8 flex gap-8 text-[var(--text-tertiary)] text-[10px] font-bold">
         <div className="flex flex-col items-center gap-1">
           <Users size={16} />
-          <span>+10K مستخدم</span>
+          <span>هدفنا 10K مستخدم نشط</span>
         </div>
         <div className="flex flex-col items-center gap-1">
           <ShieldCheck size={16} />
