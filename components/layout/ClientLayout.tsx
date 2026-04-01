@@ -10,6 +10,21 @@ import Navbar from '@/components/layout/Navbar';
 import PageHeader from '@/components/layout/PageHeader';
 import TopBar from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
+import { PushNotifications } from '@capacitor/push-notifications';
+
+const requestPermissions = async () => {
+  let permStatus = await PushNotifications.checkPermissions();
+
+  if (permStatus.receive === 'prompt') {
+    permStatus = await PushNotifications.requestPermissions();
+  }
+
+  if (permStatus.receive !== 'granted') {
+    throw new Error('User denied permissions!');
+  }
+
+  await PushNotifications.register(); // هذا هو ما يولد التوكن
+};
 
 const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
 
