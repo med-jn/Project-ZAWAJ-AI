@@ -13,6 +13,7 @@ buildscript {
         // الإصدار المتوافق مع متطلبات المكتبات الحديثة في 2026
         classpath 'com.android.tools.build:gradle:8.9.1'
         classpath 'com.google.gms:google-services:4.4.0'
+        classpath 'com.google.gms:google-services:4.4.0'
 
         // ربط محرك Kotlin بالمشروع باستخدام النسخة المعرفة أعلاه
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"

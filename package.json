@@ -1,7 +1,7 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.1.30",
+  "version": "0.1.31",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
@@ -24,6 +24,7 @@
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/geolocation": "^8.1.0",
     "@capacitor/live-updates": "^0.5.0",
+    "@capacitor/push-notifications": "^8.0.3",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.9",
     "@supabase/ssr": "^0.8.0",

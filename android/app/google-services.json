@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "204069740517",
+    "project_id": "zawaj-ai-app",
+    "storage_bucket": "zawaj-ai-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:204069740517:android:bd7bd96ea107ea09dc190c",
+        "android_client_info": {
+          "package_name": "com.zawaj.ai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyALpfZ_TJ4HG7zmVhJ7la20WI6UrGk6910"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

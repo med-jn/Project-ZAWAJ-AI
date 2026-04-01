@@ -6,6 +6,7 @@
  * ✅ ProfileModal بدل sessionStorage + router.push
  */
 
+import { useNotifications } from '@/hooks/useNotifications';
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -258,6 +259,8 @@ function NotifCard({ n, onRead, onPress }: {
     </motion.div>
   );
 }
+
+
 
 // ══════════════════════════════════════════════════════════════
 //  الصفحة الرئيسية

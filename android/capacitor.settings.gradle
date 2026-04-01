@@ -19,3 +19,6 @@ project(':capacitor-geolocation').projectDir = new File('../node_modules/@capaci
 
 include ':capacitor-live-updates'
 project(':capacitor-live-updates').projectDir = new File('../node_modules/@capacitor/live-updates/android')
+
+include ':capacitor-push-notifications'
+project(':capacitor-push-notifications').projectDir = new File('../node_modules/@capacitor/push-notifications/android')
