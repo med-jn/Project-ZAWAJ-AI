@@ -14,17 +14,18 @@ serve(async (req) => {
     )
 
     // 3. جلب التوكنات الخاصة بالمستخدم المستهدف
+    // التعديل: نستخدم record.id (المستلم) للبحث في عمود user_id بجدول التوكنات
     const { data: userTokens } = await supabase
       .from('fcm_tokens')
       .select('token')
-      .eq('user_id', record.user_id)
+      .eq('user_id', record.id)
 
     if (!userTokens || userTokens.length === 0) {
-      console.log('No tokens found for user:', record.user_id)
+      console.log('No tokens found for user:', record.id)
       return new Response(JSON.stringify({ message: 'No tokens' }), { status: 200 })
     }
 
-    // 4. توليد Access Token من جوجل تلقائياً (الحل الدائم)
+    // 4. توليد Access Token من جوجل تلقائياً
     const serviceAccount = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}')
     const client = new JWT({
       email: serviceAccount.client_email,
@@ -44,7 +45,7 @@ serve(async (req) => {
           token: fcmToken,
           notification: {
             title: record.type === 'like' ? 'إعجاب جديد! ❤️' : 'رسالة جديدة 💬',
-            body: record.content,
+            body: record.message, // التعديل: استخدام حقل message من جدولك
           },
           android: {
             priority: "high",
