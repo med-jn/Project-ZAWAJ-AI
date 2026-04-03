@@ -16,10 +16,11 @@ export type PaymentState = 'idle' | 'initiating' | 'awaiting' | 'success' | 'fai
 
 const IS_NATIVE = Capacitor.isNativePlatform();
 
-// ✅ URL مطلق — يعمل على Native و Web معاً
-const API_BASE = typeof window !== 'undefined'
-  ? window.location.origin          // localhost:3000 في Dev، vercel في Prod
-  : process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+const API_BASE = Capacitor.isNativePlatform()
+  ? process.env.NEXT_PUBLIC_APP_URL!          // https://zawaj-ai.vercel.app
+  : (typeof window !== 'undefined'
+      ? window.location.origin                 // http://localhost:3000
+      : process.env.NEXT_PUBLIC_APP_URL!);
 
 
 export function useKonnectPayment(currency: SupportedCurrency) {
