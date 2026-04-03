@@ -1,23 +1,19 @@
 'use client';
 /**
- * 📁 app/(app)/packages/page.tsx — ZAWAJ AI  v2.1
- * ✅ useWallet: destructure مباشر
- * ✅ useAdMobReward: مربوط بـ userId الحقيقي
- * ✅ useKonnectPayment: يدعم الباقات الثابتة والشراء الحر
- * ✅ 3 باقات + slider حر (500–10 000 ، قفزة 100)
- * ✅ العملة مفروضة من profiles.country — لا اختيار يدوي
+ * 📁 app/packages/page.tsx — ZAWAJ AI  v2.2
+ * ✅ إصلاح: showAd() من useAdMobReward (API موحّدة)
+ * ✅ إصلاح: لا toLocaleString (Hydration safe)
+ * ✅ إصلاح: URL مطلق للـ API عبر useKonnectPayment
  */
-import { useState, useEffect }   from 'react';
+import { useState, useEffect }              from 'react';
 import { Zap, PlayCircle, History, Sliders } from 'lucide-react';
-import Link from 'next/link';
+import Link                                  from 'next/link';
 
-import { supabase }              from '@/lib/supabase/client';
-import { useWallet }             from '@/hooks/useWallet';
-import { useAdMobReward }        from '@/hooks/useAdMobReward';
-import { useKonnectPayment }     from '@/hooks/useKonnectPayment';
-import { showRewardedAd }        from '@/lib/services/admob';
-import { CoinBalance }           from '@/components/ui/CoinBalance';
-import { LoveCoin }              from '@/components/ui/LoveCoin';
+import { supabase }             from '@/lib/supabase/client';
+import { useWallet }            from '@/hooks/useWallet';
+import { useSmartAdMobReward } from '@/hooks/useAdMobReward';import { useKonnectPayment }    from '@/hooks/useKonnectPayment';
+import { CoinBalance }          from '@/components/ui/CoinBalance';
+import { LoveCoin }             from '@/components/ui/LoveCoin';
 import {
   ECONOMY_RULES,
   getCurrencyByCountry,
@@ -28,18 +24,16 @@ import {
   type SupportedCurrency,
 } from '@/constants/ecomomy';
 
-const AD_REWARD_AMOUNT = 5;
-const { MIN, MAX, STEP } = ECONOMY_RULES.CUSTOM_RANGE;
-
-// ✅ بديل toLocaleString — ثابت على الخادم والمتصفح (لا Hydration error)
+const AD_REWARD_AMOUNT           = 5;
+const { MIN, MAX, STEP }         = ECONOMY_RULES.CUSTOM_RANGE;
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
 export default function PackagesPage() {
 
-  // ── رصيد المحفظة ─────────────────────────────────────────────
+  // ── رصيد المحفظة ──────────────────────────────────────────────
   const { balance, balance_free, totalBalance, loading: walletLoading } = useWallet();
 
-  // ── هوية المستخدم + اكتشاف العملة ────────────────────────────
+  // ── هوية المستخدم + العملة ────────────────────────────────────
   const [userId,   setUserId]   = useState('');
   const [currency, setCurrency] = useState<SupportedCurrency>('USD');
 
@@ -58,21 +52,19 @@ export default function PackagesPage() {
     });
   }, []);
 
-  // ── مكافأة الإعلان (يسجّل المعاملة تلقائياً) ─────────────────
-  useAdMobReward(userId, AD_REWARD_AMOUNT);
-
-  // ── نظام الدفع Konnect ────────────────────────────────────────
+  // ── AdMob ─────────────────────────────────────────────────────
+  // showAd() يعمل على Native و يُحاكي على Web
+const { showAd, isAdReady: adReady } = useSmartAdMobReward(userId, AD_REWARD_AMOUNT);
+  // ── Konnect ───────────────────────────────────────────────────
   const { paymentState, startPayment } = useKonnectPayment(currency);
   const isProcessing = paymentState === 'initiating' || paymentState === 'awaiting';
 
   // ── حالة الواجهة ──────────────────────────────────────────────
   const [mode,      setMode]      = useState<'fixed' | 'custom'>('fixed');
-  const [selected,  setSelected]  = useState(1);   // الأكثر طلباً افتراضياً
+  const [selected,  setSelected]  = useState(1);
   const [customPts, setCustomPts] = useState(1000);
 
   const currencyInfo = ECONOMY_RULES.CURRENCY_PRICING[currency];
-
-  // السعر النهائي حسب الوضع
   const currentPkg   = ECONOMY_RULES.PACKAGES[selected];
   const fixedPrice   = getPackagePrice(currentPkg.id as PackageId, currency);
   const customPrice  = getCustomPrice(customPts, currency);
@@ -80,7 +72,6 @@ export default function PackagesPage() {
   const displayCoins = mode === 'fixed' ? currentPkg.coins : customPts;
   const decimals     = priceDecimals(displayPrice);
 
-  // ── معالج الشراء ──────────────────────────────────────────────
   const handleBuy = () => {
     if (mode === 'fixed') {
       startPayment({ type: 'package', packageId: currentPkg.id as PackageId });
@@ -139,7 +130,7 @@ export default function PackagesPage() {
 
       {/* ── زر مكافأة الفيديو ──────────────────────────────────── */}
       <button
-        onClick={() => showRewardedAd()}
+        onClick={showAd}
         style={{
           width: '100%', marginBottom: 'var(--sp-8)',
           padding: 'var(--sp-4) var(--sp-5)',
@@ -150,6 +141,7 @@ export default function PackagesPage() {
           justifyContent: 'space-between', gap: 'var(--sp-4)',
           cursor: 'pointer', transition: 'all 0.18s ease',
           WebkitTapHighlightColor: 'transparent',
+          opacity: userId ? 1 : 0.5,
         }}
         onPointerDown={e  => (e.currentTarget.style.transform = 'scale(0.98)')}
         onPointerUp={e    => (e.currentTarget.style.transform = 'scale(1)')}
@@ -176,11 +168,14 @@ export default function PackagesPage() {
         </div>
         <div style={{
           padding: 'var(--sp-1) var(--sp-3)', borderRadius: 'var(--radius-full)',
-          background: 'rgba(34,197,94,0.2)', border: '1px solid rgba(34,197,94,0.4)',
+          background: adReady ? 'rgba(34,197,94,0.2)' : 'rgba(255,255,255,0.05)',
+          border: `1px solid ${adReady ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
           display: 'flex', alignItems: 'center', gap: 'var(--sp-1)', flexShrink: 0,
         }}>
-          <Zap size={12} color="#4ade80" />
-          <span style={{ color: '#4ade80', fontSize: 'var(--text-2xs)', fontWeight: 800 }}>مجاني</span>
+          <Zap size={12} color={adReady ? '#4ade80' : '#ffffff60'} />
+          <span style={{ color: adReady ? '#4ade80' : '#ffffff60', fontSize: 'var(--text-2xs)', fontWeight: 800 }}>
+            {adReady ? 'جاهز' : 'تحميل…'}
+          </span>
         </div>
       </button>
 
@@ -221,14 +216,11 @@ export default function PackagesPage() {
                     : 'border-white/5 bg-white/5 hover:bg-white/10'
                 }`}
               >
-                {/* Radio */}
                 <div className={`w-6 h-6 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
                   isSelected ? 'border-[#B3334B] bg-[#B3334B]' : 'border-white/20'
                 }`}>
                   {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-white" />}
                 </div>
-
-                {/* تفاصيل */}
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className="text-white font-black">{pkg.label}</p>
@@ -241,8 +233,6 @@ export default function PackagesPage() {
                     <LoveCoin size={12} />
                   </div>
                 </div>
-
-                {/* السعر */}
                 <div className="text-left flex-shrink-0">
                   <span className="font-black text-xl text-white">{pkgPrice.toFixed(dec)}</span>
                   <span className="text-[10px] text-white/40 font-normal mr-1">{currencyInfo.symbol}</span>
@@ -251,53 +241,37 @@ export default function PackagesPage() {
             );
           })}
         </div>
-
       ) : (
-        /* ── الشراء الحر ──────────────────────────────────────── */
         <div className="glass-panel p-8 mb-8">
           <div className="text-center mb-8">
             <p className="text-white/40 text-[11px] mb-4 uppercase tracking-widest">
               حدد الكمية التي تريدها
             </p>
-
-            {/* عارض النقاط + أزرار +/- */}
             <div className="flex items-center justify-center gap-6">
               <button
                 onClick={() => setCustomPts(p => Math.max(MIN, p - STEP))}
                 className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white font-black text-2xl active:scale-90 transition-transform"
-              >
-                −
-              </button>
-
+              >−</button>
               <div className="flex flex-col items-center">
                 <div className="flex items-center gap-2 text-4xl font-black text-white border-b-2 border-gold pb-2">
                   <span>{fmt(customPts)}</span>
                   <LoveCoin size={24} />
                 </div>
-                {/* سعر الكمية الحرة */}
                 <p className="text-gold text-sm font-black mt-3">
                   {customPrice.toFixed(priceDecimals(customPrice))} {currencyInfo.symbol}
                 </p>
               </div>
-
               <button
                 onClick={() => setCustomPts(p => Math.min(MAX, p + STEP))}
                 className="w-12 h-12 rounded-full bg-white/5 border border-white/10 text-white font-black text-2xl active:scale-90 transition-transform"
-              >
-                +
-              </button>
+              >+</button>
             </div>
           </div>
-
-          {/* Slider */}
           <input
-            type="range"
-            min={MIN} max={MAX} step={STEP}
-            value={customPts}
+            type="range" min={MIN} max={MAX} step={STEP} value={customPts}
             onChange={e => setCustomPts(Number(e.target.value))}
             className="w-full accent-[#B3334B] h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer"
           />
-          {/* حدود المقياس */}
           <div className="flex justify-between mt-2 text-[10px] text-white/30">
             <span>{fmt(MIN)}</span>
             <span>{fmt(MAX)}</span>
@@ -307,53 +281,39 @@ export default function PackagesPage() {
 
       {/* ── ملخص الشراء + زر الدفع ─────────────────────────────── */}
       <div className="glass-panel p-6 border-white/5 shadow-red-glow">
-
-        {/* صف العملة (للمعلومية فقط) */}
         <div className="flex justify-between items-center mb-4">
           <span className="text-white/40 text-xs font-bold">عملة الدفع</span>
           <span className="text-white/70 text-sm font-bold">
             {currencyInfo.symbol} — {currencyInfo.name}
           </span>
         </div>
-
-        {/* صف الإجمالي */}
         <div className="flex justify-between items-center mb-6">
           <span className="text-white/40 text-sm font-bold">المبلغ المطلوب</span>
           <div>
-            <span className="text-gold font-black text-2xl">
-              {displayPrice.toFixed(decimals)}
-            </span>
+            <span className="text-gold font-black text-2xl">{displayPrice.toFixed(decimals)}</span>
             <span className="text-white/40 text-sm mr-1">{currencyInfo.symbol}</span>
           </div>
         </div>
 
-        {/* مؤشر الحالة الجارية */}
         {isProcessing && (
           <div className="mb-4 flex items-center gap-3 bg-white/5 rounded-2xl p-3 border border-white/10">
             <div className="w-5 h-5 rounded-full border-2 border-gold border-t-transparent animate-spin flex-shrink-0" />
             <p className="text-white/70 text-xs font-bold">
-              {paymentState === 'initiating'
-                ? 'جارٍ فتح صفحة الدفع…'
-                : 'في انتظار تأكيد Konnect…'}
+              {paymentState === 'initiating' ? 'جارٍ فتح صفحة الدفع…' : 'في انتظار تأكيد Konnect…'}
             </p>
           </div>
         )}
 
-        {/* زر الشراء */}
         <button
           onClick={handleBuy}
           disabled={isProcessing || !userId}
           className="btn-premium w-full !h-16 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {isProcessing ? 'يُرجى الانتظار…' : (
-            <>
-              تأكيد شراء {fmt(displayCoins)}
-              <LoveCoin size={20} className="mr-2 inline-block" />
-            </>
+            <>تأكيد شراء {fmt(displayCoins)} <LoveCoin size={20} className="mr-2 inline-block" /></>
           )}
         </button>
       </div>
-
     </div>
   );
 }
