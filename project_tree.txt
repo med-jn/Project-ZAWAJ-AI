@@ -1,0 +1,143 @@
+Project ZAWAJ AI
+├── README.md
+├── app
+│   ├── about
+│   │   ├── AboutContent.tsx
+│   │   └── page.tsx
+│   ├── actions
+│   │   └── profileActions.ts
+│   ├── admin
+│   │   └── page.tsx
+│   ├── api
+│   │   ├── payments
+│   │   └── moderate
+│   ├── auth
+│   │   └── callback
+│   ├── dash
+│   │   └── page.tsx
+│   ├── debug
+│   │   └── page.tsx
+│   ├── globals.css
+│   ├── help
+│   │   ├── HelpContent.tsx
+│   │   └── page.tsx
+│   ├── home
+│   │   └── page.tsx
+│   ├── likes
+│   │   └── page.tsx
+│   ├── login
+│   │   └── page.tsx
+│   ├── mediators
+│   │   └── page.tsx
+│   ├── notifications
+│   │   └── page.tsx
+│   ├── onboarding
+│   │   └── page.tsx
+│   ├── packages
+│   │   ├── history
+│   │   └── page.tsx
+│   ├── page.tsx
+│   ├── privacy
+│   │   ├── PrivacyContent.tsx
+│   │   └── page.tsx
+│   ├── profile
+│   │   ├── edit
+│   │   └── page.tsx
+│   ├── register
+│   │   └── page.tsx
+│   ├── settings
+│   │   └── page.tsx
+│   ├── subscribers
+│   │   └── page.tsx
+│   └── terms
+│       ├── TermsContent.tsx
+│       └── page.tsx
+├── capacitor.config.json
+├── capacitor.config.ts
+├── components
+│   ├── EconomyModal.tsx
+│   ├── MatchCelebration.tsx
+│   ├── MatchListener.tsx
+│   ├── OnboardingForm.tsx
+│   ├── auto-badge.tsx
+│   ├── badges.tsx
+│   ├── cards
+│   │   └── usercard.tsx
+│   ├── chat
+│   │   ├── ChatList.tsx
+│   │   ├── ChatTab.tsx
+│   │   └── ChatWindow.tsx
+│   ├── layout
+│   │   ├── PageHeader.tsx
+│   │   ├── ClientLayout.tsx
+│   │   ├── StickySubHeader.tsx
+│   │   ├── Footer.tsx
+│   │   ├── Navbar.tsx
+│   │   └── TopBar.tsx
+│   ├── profile
+│   │   └── ProfileModal.tsx
+│   ├── providers
+│   └── ui
+│       ├── CoinBalance.tsx
+│       ├── LoveCoin.tsx
+│       ├── brand.tsx
+│       ├── googlebutton.tsx
+│       └── rangedouble.tsx
+├── constants
+│   ├── EconomyErrors.ts
+│   ├── constants.ts
+│   ├── countries.ts
+│   ├── ecomomy.ts
+│   ├── icons-lib.tsx
+│   ├── occupations.ts
+│   └── options.ts
+├── hooks
+│   ├── useAdMobReward.ts
+│   ├── useKonnectPayment.ts
+│   ├── useChat.ts
+│   ├── useNotifications.ts
+│   ├── useTheme.ts
+│   ├── useWallet.ts
+│   └── usetracker.ts
+├── lib
+│   ├── gemini.ts
+│   ├── moderate.ts
+│   ├── services
+│   │   ├── EconomyService.ts
+│   │   ├── MatchingEngine.ts
+│   │   ├── admob.ts
+│   │   ├── liveUpdate.ts
+│   │   ├── locationService.ts
+│   │   └── pushService.ts
+│   └── supabase
+│       └── client.ts
+├── next-env.d.ts
+├── next.config.js
+├── package.json
+├── postcss.config.cjs
+├── project_tree.txt
+├── public
+│   ├── assets
+│   │   ├── ZAWAJ-PNK.png
+│   │   └── ZAWAJ-WT.png
+│   ├── favico.ico
+│   ├── googleb7cdd508ae0d0bd9.html
+│   ├── icons
+│   │   ├── icon-192x192.png
+│   │   └── icon-512x512.png
+│   ├── manifest.json
+│   ├── robot.txt
+│   ├── sitemap.xml
+│   └── update-info.json
+├── supabase
+│   ├── config.toml
+│   └── functions
+│       ├── moderate
+│       ├── moderate
+│       ├── moderate
+│       ├── konnect-webhook
+│       └── send-push
+├── sync-version.js
+├── tailwind.config.ts
+├── tsconfig.json
+└── vercel.json

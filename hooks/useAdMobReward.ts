@@ -1,53 +1,51 @@
 'use client';
 /**
  * 📁 hooks/useAdMobReward.ts — ZAWAJ AI
- * ✅ يُحدّث wallets.balance_free (وليس profiles.points)
- * ✅ Sonner للإشعارات
+ * ✅ إصلاح BUG: AdMobPlus + RewardedAd (مطابق لـ lib/services/admob.ts)
+ * ✅ يسجّل المعاملة في point_transactions عبر EconomyService
  */
-import { useEffect } from "react";
-import { AdMob, RewardAdPluginEvents } from "@admob-plus/capacitor";
-import { supabase } from "@/lib/supabase/client";
-import { toast }    from "sonner";
+import { useEffect }             from 'react';
+import { AdMobPlus, RewardedAd } from '@admob-plus/capacitor';
+import { addBonusPoints }        from '@/lib/services/EconomyService';
+import { ECONOMY_RULES }         from '@/constants/ecomomy';
+import { toast }                 from 'sonner';
+
+// ⚠️ استبدل بمعرّف وحدتك الإعلانية الحقيقي في الإنتاج
+const AD_UNIT_ID = 'ca-app-pub-3940256099942544/5224354917';
 
 export const useAdMobReward = (userId: string, rewardAmount: number = 5) => {
   useEffect(() => {
     if (!userId) return;
 
-    const listener = AdMob.addListener(
-      RewardAdPluginEvents.Rewarded,
-      async () => {
-        try {
-          // جلب الرصيد الحالي
-          const { data, error: fetchErr } = await supabase
-            .from("wallets")
-            .select("balance_free")
-            .eq("id", userId)
-            .single();
+    let ad: InstanceType<typeof RewardedAd> | null = null;
 
-          if (fetchErr) throw fetchErr;
+    const setup = async () => {
+      try {
+        ad = new RewardedAd({ adUnitId: AD_UNIT_ID });
 
-          const newFree = (data?.balance_free ?? 0) + rewardAmount;
+        // حدث المكافأة — يُطلق بعد إتمام المشاهدة
+        ad.on('reward', async () => {
+          try {
+            await addBonusPoints(
+              userId,
+              rewardAmount,
+              ECONOMY_RULES.TRANSACTION_SOURCES.ADMOB,
+              `مشاهدة إعلان — +${rewardAmount} نقطة`
+            );
+            toast.success(`🎁 تم إضافة ${rewardAmount} نقطة مكافأة!`);
+          } catch (e) {
+            console.error('[AdMob reward] فشل تسجيل المكافأة:', e);
+            toast.error('فشل تسجيل المكافأة، تواصل مع الدعم.');
+          }
+        });
 
-          // تحديث wallets
-          const { error: updateErr } = await supabase
-            .from("wallets")
-            .update({
-              balance_free: newFree,
-              updated_at:   new Date().toISOString(),
-            })
-            .eq("id", userId);
-
-          if (updateErr) throw updateErr;
-
-          toast.success(`🎁 تم إضافة ${rewardAmount} نقطة مكافأة!`);
-
-        } catch (e) {
-          console.error("[AdMob reward]", e);
-          toast.error("فشل تسجيل المكافأة، تواصل مع الدعم إذا استمرت المشكلة");
-        }
+        await ad.load(); // تحميل مسبق
+      } catch (e) {
+        console.error('[AdMob setup]', e);
       }
-    );
+    };
 
-    return () => { listener.remove(); };
+    setup();
+    return () => { ad = null; };
   }, [userId, rewardAmount]);
 };
