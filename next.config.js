@@ -1,22 +1,22 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 
-  // ── Capacitor / Android ──────────────────────────────────
-  output:        'export',
+  // ── ✅ حُذف output:'export' ──────────────────────────────
+  // Capacitor يحمّل من Vercel (server.url) — لا يحتاج static export
+  // API Routes تعمل الآن على Vercel بشكل طبيعي
+
   trailingSlash: true,
 
   images: {
     unoptimized: true,
   },
 
-  // ── السماح للهاتف بالوصول في وضع التطوير ─────────────────
   allowedDevOrigins: ['192.168.1.15', '192.168.1.16'],
 
-  // ── TypeScript ────────────────────────────────────────────
   typescript: {
     ignoreBuildErrors: true,
   },
 
- };
+};
 
 export default nextConfig;
