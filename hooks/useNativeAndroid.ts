@@ -1,46 +1,52 @@
 'use client';
 /**
  * 📁 hooks/useNativeAndroid.ts — ZAWAJ AI
- * ✅ زر الرجوع الفيزيائي (يتكامل مع PageHeader الموجود)
- * ✅ شريط الحالة بلون التطبيق
- * ✅ إخفاء شريط التنقل السفلي للأندرويد (edge-to-edge)
+ * ✅ Back button يُعدّ مرة واحدة فقط (لا تكرار)
+ * ✅ StatusBar يُعدّ مرة واحدة فقط عند فتح التطبيق
+ * ✅ لا dynamic imports في كل تنقل (كانت تسبب البطء)
  */
-import { useEffect }               from 'react';
-import { useRouter, usePathname }  from 'next/navigation';
-import { Capacitor }               from '@capacitor/core';
-import { App }                     from '@capacitor/app';
+import { useEffect, useRef } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
 
 const IS_NATIVE = Capacitor.isNativePlatform();
-
-// صفحات الخروج — الضغط على Back فيها يخرج من التطبيق
 const EXIT_PAGES = ['/', '/home', '/login', '/register'];
 
 export function useNativeAndroid() {
   const router   = useRouter();
   const pathname = usePathname();
 
-  // ── زر الرجوع الفيزيائي ───────────────────────────────────
+  // ref للمسار الحالي — يتجنب إعادة إنشاء الـ listener
+  const pathnameRef = useRef(pathname);
+  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+
+  // ── Back Button: يُعدّ مرة واحدة فقط ──────────────────────
   useEffect(() => {
     if (!IS_NATIVE) return;
 
-    const path = pathname.endsWith('/') && pathname !== '/'
-      ? pathname.slice(0, -1)
-      : pathname;
+    let removeListener: (() => void) | null = null;
 
-    const isExitPage = EXIT_PAGES.includes(path);
+    const setup = async () => {
+      const { App } = await import('@capacitor/app');
+      const handle = await App.addListener('backButton', ({ canGoBack }) => {
+        const path = pathnameRef.current;
+        const clean = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path;
+        const isExit = EXIT_PAGES.includes(clean);
 
-    const listener = App.addListener('backButton', ({ canGoBack }) => {
-      if (isExitPage || !canGoBack) {
-        App.exitApp();
-      } else {
-        router.back();
-      }
-    });
+        if (isExit || !canGoBack) {
+          App.exitApp();
+        } else {
+          router.back();
+        }
+      });
+      removeListener = () => handle.remove();
+    };
 
-    return () => { listener.then(h => h.remove()); };
-  }, [pathname, router]);
+    setup();
+    return () => { removeListener?.(); };
+  }, []); // [] — مرة واحدة فقط
 
-  // ── شريط الحالة ────────────────────────────────────────────
+  // ── StatusBar: مرة واحدة عند فتح التطبيق ──────────────────
   useEffect(() => {
     if (!IS_NATIVE) return;
 
@@ -48,14 +54,10 @@ export function useNativeAndroid() {
       try {
         const { StatusBar, Style } = await import('@capacitor/status-bar');
         await StatusBar.setStyle({ style: Style.Dark });
-        await StatusBar.setBackgroundColor({ color: '#080008' }); // --bg-main
-        await StatusBar.show();
-      } catch (e) {
-        // المكتبة غير مثبتة أو خطأ — نتجاهل
-        console.warn('[StatusBar]', e);
-      }
+        await StatusBar.setBackgroundColor({ color: '#080008' });
+      } catch {}
     };
 
     setup();
-  }, [pathname]); // يُعاد ضبطه عند كل تغيير صفحة
+  }, []); // [] — مرة واحدة فقط
 }

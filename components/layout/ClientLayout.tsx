@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect }                    from 'react';
-import { usePathname, useRouter }        from 'next/navigation';
-import { toast }                         from 'sonner';
-import { PackagePlus }                   from 'lucide-react';
-import { checkAndApplyUpdate }           from '@/lib/services/liveUpdate';
-import { useNativeAndroid }              from '@/hooks/useNativeAndroid'; // ✅ مضاف
+import { useEffect }                from 'react';
+import { usePathname, useRouter }   from 'next/navigation';
+import { toast }                    from 'sonner';
+import { PackagePlus }              from 'lucide-react';
+import { checkAndApplyUpdate }      from '@/lib/services/liveUpdate';
+import { useNativeAndroid }         from '@/hooks/useNativeAndroid';
 
 import Navbar        from '@/components/layout/Navbar';
 import PageHeader    from '@/components/layout/PageHeader';
@@ -18,9 +18,7 @@ const requestPermissions = async () => {
   if (permStatus.receive === 'prompt') {
     permStatus = await PushNotifications.requestPermissions();
   }
-  if (permStatus.receive !== 'granted') {
-    throw new Error('User denied permissions!');
-  }
+  if (permStatus.receive !== 'granted') throw new Error('User denied permissions!');
   await PushNotifications.register();
 };
 
@@ -53,10 +51,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router   = useRouter();
 
-  // ✅ تجربة Android الأصيلة — زر الرجوع + شريط الحالة
+  // ✅ Native Android — back button + status bar (مرة واحدة فقط، لا بطء)
   useNativeAndroid();
 
-  // تطبيع المسار
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
   const isHome = path === '/home';
@@ -71,7 +68,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
           icon: <PackagePlus size={18} />,
           duration: 8000,
           action: {
-            label:   'إعادة التشغيل',
+            label: 'إعادة التشغيل',
             onClick: () => window.location.reload(),
           },
         });
@@ -94,11 +91,9 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   };
 
   const NAV_ROUTES: Record<string, string> = {
-    home:          '/home',
-    likes:         '/likes',
+    home: '/home', likes: '/likes',
     notifications: '/notifications',
-    profile:       '/profile',
-    mediator:      '/mediators',
+    profile: '/profile', mediator: '/mediators',
   };
 
   const showNavbar =
@@ -113,10 +108,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   return (
     <>
       {!isAuth && <MatchListener />}
-      {!isAuth && isHome && <TopBar />}
-      {!isAuth && !isHome && (
-        <PageHeader title={title} onBack={() => router.back()} />
-      )}
+      {!isAuth && isHome  && <TopBar />}
+      {!isAuth && !isHome && <PageHeader title={title} onBack={() => router.back()} />}
 
       <main style={{
         paddingTop: isAuth ? 0 : 'var(--header-h)',

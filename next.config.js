@@ -1,9 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 
-  // ── ✅ حُذف output:'export' ──────────────────────────────
-  // Capacitor يحمّل من Vercel (server.url) — لا يحتاج static export
-  // API Routes تعمل الآن على Vercel بشكل طبيعي
+  // ── ✅ حُذف output:'export' — API Routes تعمل الآن ──────────
+  // Capacitor يحمّل من Vercel (server.url) لا من out/
+  // zip-build.js يجد مجلد out/ فارغاً (موجود في git) فلا يفشل
 
   trailingSlash: true,
 
