@@ -1,10 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 
-  // ── ✅ حُذف output:'export' — API Routes تعمل الآن ──────────
-  // Capacitor يحمّل من Vercel (server.url) لا من out/
-  // zip-build.js يجد مجلد out/ فارغاً (موجود في git) فلا يفشل
-
+  // ✅ أُعيد output:'export' — ضروري لنظام OTA و zip-build.js
+  // الدفع يمر عبر Supabase Edge Function (لا Next.js API Route)
+  output:        'export',
   trailingSlash: true,
 
   images: {
