@@ -31,6 +31,9 @@ import {
 const AD_REWARD_AMOUNT = 5;
 const { MIN, MAX, STEP } = ECONOMY_RULES.CUSTOM_RANGE;
 
+// ✅ بديل toLocaleString — ثابت على الخادم والمتصفح (لا Hydration error)
+const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
 export default function PackagesPage() {
 
   // ── رصيد المحفظة ─────────────────────────────────────────────
@@ -120,14 +123,14 @@ export default function PackagesPage() {
           <div className="flex items-center gap-2 justify-end text-[10px]">
             <span style={{ color: 'var(--text-secondary)' }}>رصيد الشراء:</span>
             <span className="font-bold text-white">
-              {walletLoading ? '…' : balance.toLocaleString()}
+              {walletLoading ? '…' : fmt(balance)}
             </span>
             <LoveCoin size={12} />
           </div>
           <div className="flex items-center gap-2 justify-end text-[10px]">
             <span style={{ color: 'var(--text-secondary)' }}>رصيد الهدايا:</span>
             <span className="font-bold text-green-400">
-              {walletLoading ? '…' : balance_free.toLocaleString()}
+              {walletLoading ? '…' : fmt(balance_free)}
             </span>
             <LoveCoin size={12} />
           </div>
@@ -234,7 +237,7 @@ export default function PackagesPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-1 opacity-60">
-                    <span className="text-xs font-bold text-white">{pkg.coins.toLocaleString()}</span>
+                    <span className="text-xs font-bold text-white">{fmt(pkg.coins)}</span>
                     <LoveCoin size={12} />
                   </div>
                 </div>
@@ -268,7 +271,7 @@ export default function PackagesPage() {
 
               <div className="flex flex-col items-center">
                 <div className="flex items-center gap-2 text-4xl font-black text-white border-b-2 border-gold pb-2">
-                  <span>{customPts.toLocaleString()}</span>
+                  <span>{fmt(customPts)}</span>
                   <LoveCoin size={24} />
                 </div>
                 {/* سعر الكمية الحرة */}
@@ -296,8 +299,8 @@ export default function PackagesPage() {
           />
           {/* حدود المقياس */}
           <div className="flex justify-between mt-2 text-[10px] text-white/30">
-            <span>{MIN.toLocaleString()}</span>
-            <span>{MAX.toLocaleString()}</span>
+            <span>{fmt(MIN)}</span>
+            <span>{fmt(MAX)}</span>
           </div>
         </div>
       )}
@@ -344,7 +347,7 @@ export default function PackagesPage() {
         >
           {isProcessing ? 'يُرجى الانتظار…' : (
             <>
-              تأكيد شراء {displayCoins.toLocaleString()}
+              تأكيد شراء {fmt(displayCoins)}
               <LoveCoin size={20} className="mr-2 inline-block" />
             </>
           )}

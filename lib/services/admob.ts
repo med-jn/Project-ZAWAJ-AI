@@ -1,29 +1,46 @@
-import { AdMobPlus } from "@admob-plus/capacitor";
+/**
+ * 📁 lib/services/admob.ts — ZAWAJ AI
+ * ✅ guard: لا يعمل على Web/localhost — Capacitor native فقط
+ */
+import { Capacitor }  from '@capacitor/core';
+import { AdMobPlus }  from '@admob-plus/capacitor';
 
-// دالة التحميل المسبق (Preload)
+const IS_NATIVE = Capacitor.isNativePlatform();
+
+const AD_UNIT_REWARDED = 'ca-app-pub-3940256099942544/5224354917'; // ← استبدل بمعرّفك
+
+// ── التحميل المسبق ────────────────────────────────────────────
 export const preloadRewardedAd = async (): Promise<void> => {
-  const adUnitId = "ca-app-pub-3940256099942544/5224354917"; // المعرف التجريبي
+  if (!IS_NATIVE) {
+    console.log('[AdMob] Web mode — skipping preload');
+    return;
+  }
   try {
-    await AdMobPlus.rewardVideoPrepare({ adUnitId });
-    console.log("إعلان الفيديو جاهز في الخلفية");
+    await AdMobPlus.rewardVideoPrepare({ adUnitId: AD_UNIT_REWARDED });
+    console.log('[AdMob] إعلان جاهز في الخلفية');
   } catch (e) {
-    console.error("فشل تجهيز الإعلان:", e);
+    console.error('[AdMob] فشل تجهيز الإعلان:', e);
   }
 };
 
-// دالة العرض عند الضغط على الزر
+// ── العرض عند الضغط ──────────────────────────────────────────
 export const showRewardedAd = async (): Promise<void> => {
+  if (!IS_NATIVE) {
+    // في وضع التطوير — محاكاة المكافأة مباشرة بدون إعلان
+    console.log('[AdMob] Web mode — reward simulated');
+    // اطرد حدثاً مخصصاً لـ useAdMobReward يستقبله
+    window.dispatchEvent(new CustomEvent('admob-reward-simulated'));
+    return;
+  }
   try {
     await AdMobPlus.rewardVideoShow();
-    // بعد العرض، نقوم بالتحميل مرة أخرى للمرة القادمة
-    preloadRewardedAd();
+    preloadRewardedAd(); // إعادة تحميل للمرة القادمة
   } catch {
-    // إذا لم يكن جاهزاً، نحاول التحميل والعرض فوراً كحل أخير
     await preloadRewardedAd();
     try {
-       await AdMobPlus.rewardVideoShow();
+      await AdMobPlus.rewardVideoShow();
     } catch {
-       throw new Error("No Ad Ready");
+      throw new Error('No Ad Ready');
     }
   }
 };
