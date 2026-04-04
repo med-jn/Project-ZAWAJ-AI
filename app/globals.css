@@ -451,34 +451,32 @@ html.light {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   NATIVE ANDROID FEEL — أضف هذا في نهاية globals.css
+   NATIVE ANDROID — نسخة آمنة لا تأثر على لوحة المفاتيح
+   أضف هذا في نهاية globals.css بدلاً من النسخة السابقة
    ═══════════════════════════════════════════════════════════ */
 
-/* ── منع تحديد النص في كل التطبيق ───────────────────────── */
-* {
+/* منع تحديد النص — فقط على العناصر غير التفاعلية */
+p, h1, h2, h3, h4, h5, h6, span, div, label {
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
 }
 
-/* السماح بالتحديد في حقول الإدخال فقط */
-input, textarea, [contenteditable="true"] {
-  -webkit-user-select: text;
-  user-select: text;
+/* ✅ الحقول تبقى تفاعلية كاملاً */
+input, textarea, select, [contenteditable] {
+  -webkit-user-select: text !important;
+  user-select: text !important;
+  touch-action: auto !important;
+  -webkit-touch-callout: default !important;
+  cursor: text !important;
 }
 
-/* ── منع الارتداد عند التمرير (Overscroll) ───────────────── */
+/* منع الارتداد */
 html, body {
   overscroll-behavior: none;
-  height: 100%;
 }
 
-/* ── Safe Area — يتجنب الـ notch وشريط التنقل ───────────── */
+/* Safe Area */
 .pb-safe {
   padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
-}
-
-/* ── تحسين أداء اللمس ────────────────────────────────────── */
-button, a, [role="button"] {
-  touch-action: manipulation;
 }

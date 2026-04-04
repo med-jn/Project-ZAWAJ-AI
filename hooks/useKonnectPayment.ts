@@ -1,8 +1,9 @@
 'use client';
 /**
  * 📁 hooks/useKonnectPayment.ts — ZAWAJ AI
- * ✅ إصلاح CRITICAL: URL مطلق للـ API (Capacitor لا يفهم URLs النسبية)
- * ✅ Realtime + Capacitor Browser
+ * ✅ URL ثابت للـ Edge Function — يعمل مع output:'export'
+ * ✅ يرسل JWT تلقائياً
+ * ✅ Capacitor Browser + Supabase Realtime
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Capacitor }  from '@capacitor/core';
@@ -14,24 +15,19 @@ import type { PurchasePayload, SupportedCurrency } from '@/constants/ecomomy';
 
 export type PaymentState = 'idle' | 'initiating' | 'awaiting' | 'success' | 'failed';
 
-const IS_NATIVE = Capacitor.isNativePlatform();
+const IS_NATIVE     = Capacitor.isNativePlatform();
 
-const API_BASE = Capacitor.isNativePlatform()
-  ? process.env.NEXT_PUBLIC_APP_URL!          // https://zawaj-ai.vercel.app
-  : (typeof window !== 'undefined'
-      ? window.location.origin                 // http://localhost:3000
-      : process.env.NEXT_PUBLIC_APP_URL!);
-
+// ✅ URL ثابت — لا يعتمد على env vars في وقت التشغيل
+const EDGE_FUNC_URL = 'https://lbftmbutvtjtkxgdbndu.supabase.co/functions/v1/konnect-initiate';
 
 export function useKonnectPayment(currency: SupportedCurrency) {
   const [paymentState,    setPaymentState]    = useState<PaymentState>('idle');
   const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // ── استماع للعودة من المتصفح (deep link — Native فقط) ────────
+  // ── Deep link من Konnect ──────────────────────────────────
   useEffect(() => {
     if (!IS_NATIVE) return;
-
     const listener = App.addListener('appUrlOpen', ({ url }) => {
       if (url.includes('/payment/success')) {
         setPaymentState('awaiting');
@@ -45,7 +41,7 @@ export function useKonnectPayment(currency: SupportedCurrency) {
     return () => { listener.then(h => h.remove()); };
   }, []);
 
-  // ── Realtime: انتظار تأكيد الـ Webhook ───────────────────────
+  // ── Realtime: انتظار تأكيد الـ Webhook ───────────────────
   useEffect(() => {
     if (!activePaymentId || paymentState !== 'awaiting') return;
 
@@ -71,7 +67,6 @@ export function useKonnectPayment(currency: SupportedCurrency) {
       })
       .subscribe();
 
-    // مهلة 5 دقائق
     const timeout = setTimeout(() => {
       if (paymentState === 'awaiting') {
         setPaymentState('failed');
@@ -91,16 +86,20 @@ export function useKonnectPayment(currency: SupportedCurrency) {
     setActivePaymentId(null);
   }, []);
 
-  // ── بدء الدفع ────────────────────────────────────────────────
+  // ── بدء الدفع ────────────────────────────────────────────
   const startPayment = useCallback(async (payload: PurchasePayload) => {
     setPaymentState('initiating');
     try {
-      // ✅ URL مطلق — يعمل في Capacitor WebView
-      const res = await fetch(`${API_BASE}/api/payments/initiate`, {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('غير مسجّل الدخول');
+
+      const res = await fetch(EDGE_FUNC_URL, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ ...payload, currency }),
-        credentials: 'include', // إرسال الـ cookies مع الطلب
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ ...payload, currency }),
       });
 
       if (!res.ok) {
@@ -113,9 +112,12 @@ export function useKonnectPayment(currency: SupportedCurrency) {
       setPaymentState('awaiting');
 
       if (IS_NATIVE) {
-        await Browser.open({ url: payUrl, windowName: '_self', presentationStyle: 'popover' });
+        await Browser.open({
+          url: payUrl,
+          windowName: '_self',
+          presentationStyle: 'popover',
+        });
       } else {
-        // Web/Dev: فتح في tab جديد
         window.open(payUrl, '_blank');
       }
 
