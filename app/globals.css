@@ -450,12 +450,3 @@ html.light {
   100% { transform: translateX(240px);  opacity: 0;   }
 }
 
-/* ═══════════════════════════════════════════════════════════
-   NATIVE ANDROID — الحد الأدنى الآمن
-   أضف هذا في نهاية globals.css (بعد @keyframes coinShine)
-   ═══════════════════════════════════════════════════════════ */
-
-/* منع الارتداد عند التمرير فقط */
-html, body {
-  overscroll-behavior: none;
-}
