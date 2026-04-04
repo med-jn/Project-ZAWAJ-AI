@@ -16,7 +16,7 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const KONNECT_API    = 'https://api.konnect.network/api/v2';
+const KONNECT_API = 'https://api.preprod.konnect.network/api/v2';
 const KONNECT_KEY    = Deno.env.get('KONNECT_API_KEY')!;
 const KONNECT_WALLET = Deno.env.get('KONNECT_WALLET_ID')!;
 const APP_URL        = Deno.env.get('APP_URL')!;
