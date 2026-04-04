@@ -1,9 +1,8 @@
 'use client';
 /**
  * 📁 hooks/useKonnectPayment.ts — ZAWAJ AI
- * ✅ URL ثابت للـ Edge Function — يعمل مع output:'export'
- * ✅ يرسل JWT تلقائياً
- * ✅ Capacitor Browser + Supabase Realtime
+ * ✅ يستخدم zawaj:// scheme للـ deep link — يعمل على Android
+ * ✅ يرسل JWT للـ Edge Function
  */
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { Capacitor }  from '@capacitor/core';
@@ -16,8 +15,6 @@ import type { PurchasePayload, SupportedCurrency } from '@/constants/ecomomy';
 export type PaymentState = 'idle' | 'initiating' | 'awaiting' | 'success' | 'failed';
 
 const IS_NATIVE     = Capacitor.isNativePlatform();
-
-// ✅ URL ثابت — لا يعتمد على env vars في وقت التشغيل
 const EDGE_FUNC_URL = 'https://lbftmbutvtjtkxgdbndu.supabase.co/functions/v1/konnect-initiate';
 
 export function useKonnectPayment(currency: SupportedCurrency) {
@@ -25,14 +22,14 @@ export function useKonnectPayment(currency: SupportedCurrency) {
   const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // ── Deep link من Konnect ──────────────────────────────────
+  // ── Deep link — zawaj://payment/success أو /fail ─────────
   useEffect(() => {
     if (!IS_NATIVE) return;
     const listener = App.addListener('appUrlOpen', ({ url }) => {
-      if (url.includes('/payment/success')) {
+      if (url.includes('payment/success')) {
         setPaymentState('awaiting');
         toast.info('جارٍ التحقق من الدفع…');
-      } else if (url.includes('/payment/fail')) {
+      } else if (url.includes('payment/fail')) {
         setPaymentState('failed');
         toast.error('تعذّر إتمام الدفع. حاول مجدداً.');
         Browser.close();
@@ -41,7 +38,7 @@ export function useKonnectPayment(currency: SupportedCurrency) {
     return () => { listener.then(h => h.remove()); };
   }, []);
 
-  // ── Realtime: انتظار تأكيد الـ Webhook ───────────────────
+  // ── Realtime ──────────────────────────────────────────────
   useEffect(() => {
     if (!activePaymentId || paymentState !== 'awaiting') return;
 
@@ -68,11 +65,9 @@ export function useKonnectPayment(currency: SupportedCurrency) {
       .subscribe();
 
     const timeout = setTimeout(() => {
-      if (paymentState === 'awaiting') {
-        setPaymentState('failed');
-        toast.error('انتهت مهلة التحقق. تواصل مع الدعم إذا تم الخصم.');
-        cleanup();
-      }
+      setPaymentState('failed');
+      toast.error('انتهت مهلة التحقق. تواصل مع الدعم إذا تم الخصم.');
+      cleanup();
     }, 5 * 60_000);
 
     return () => { clearTimeout(timeout); cleanup(); };
@@ -86,7 +81,6 @@ export function useKonnectPayment(currency: SupportedCurrency) {
     setActivePaymentId(null);
   }, []);
 
-  // ── بدء الدفع ────────────────────────────────────────────
   const startPayment = useCallback(async (payload: PurchasePayload) => {
     setPaymentState('initiating');
     try {
@@ -112,11 +106,7 @@ export function useKonnectPayment(currency: SupportedCurrency) {
       setPaymentState('awaiting');
 
       if (IS_NATIVE) {
-        await Browser.open({
-          url: payUrl,
-          windowName: '_self',
-          presentationStyle: 'popover',
-        });
+        await Browser.open({ url: payUrl, windowName: '_self', presentationStyle: 'popover' });
       } else {
         window.open(payUrl, '_blank');
       }

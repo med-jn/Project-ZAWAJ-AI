@@ -48,17 +48,36 @@
             android:launchMode="singleTask"
             android:exported="true">
 
+            <!-- تشغيل التطبيق -->
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep link: تسجيل الدخول -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.zawaj.ai" android:host="auth" android:pathPrefix="/callback" />
             </intent-filter>
+
+            <!-- ✅ Deep link: نجاح الدفع -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="zawaj" android:host="payment" android:pathPrefix="/success" />
+            </intent-filter>
+
+            <!-- ✅ Deep link: فشل الدفع -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="zawaj" android:host="payment" android:pathPrefix="/fail" />
+            </intent-filter>
+
         </activity>
 
         <provider

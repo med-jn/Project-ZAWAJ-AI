@@ -1,14 +1,14 @@
 From: <Saved by Blink>
 Snapshot-Content-Location: https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/functions/konnect-initiate/code
 Subject: konnect-initiate | Code | Edge Functions | ZAWAJ AI | mohamed.jouini029@gmail.com's Org | Supabase
-Date: Sat, 4 Apr 2026 16:01:34 +0100
+Date: Sat, 4 Apr 2026 18:22:15 +0100
 MIME-Version: 1.0
 Content-Type: multipart/related;
 	type="text/html";
-	boundary="----MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----"
+	boundary="----MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----"
 
 
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-9B4223C141AEAA32027FD0CED67A9884@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -16,11 +16,11 @@ Content-Location: https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/fu
 
 <!DOCTYPE html><html lang=3D"en" data-theme=3D"dark" style=3D"color-scheme:=
  dark;"><head><meta http-equiv=3D"Content-Type" content=3D"text/html; chars=
-et=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-2dee=
-a880-c729-4280-9434-1668e1968b8e@mhtml.blink" /><link rel=3D"stylesheet" ty=
-pe=3D"text/css" href=3D"cid:css-709d1922-09dc-49eb-a155-e8b73b30f9fb@mhtml.=
-blink" /><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-b1ffbad=
-1-b1f7-4ec4-88b7-f240d1741427@mhtml.blink" /><title data-next-head=3D"">kon=
+et=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-e3ef=
+4a0e-9f66-4198-a89c-a6cd7c2005fd@mhtml.blink" /><link rel=3D"stylesheet" ty=
+pe=3D"text/css" href=3D"cid:css-87ea9166-d52f-48c8-98f8-8f00a178b8ca@mhtml.=
+blink" /><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-a9d85b9=
+f-0a58-4fc3-8457-830e3863314b@mhtml.blink" /><title data-next-head=3D"">kon=
 nect-initiate | Code | Edge Functions | ZAWAJ AI | mohamed.jouini029@gmail.=
 com's Org | Supabase</title><meta name=3D"viewport" content=3D"initial-scal=
 e=3D1.0, width=3Ddevice-width" data-next-head=3D""><meta property=3D"og:ima=
@@ -957,20 +957,20 @@ ass=3D"w-full" style=3D"max-height: 100%; max-width: 100%; flex-grow: 1; to=
 uch-action: pan-y;"><div class=3D"h-full overflow-y-auto"><div class=3D"fle=
 x flex-row h-full w-full"><div data-slot=3D"resizable-panel-group" class=3D=
 "flex h-full w-full aria-[orientation=3Dvertical]:flex-col" data-group=3D"t=
-rue" data-testid=3D":ruc:" id=3D":ruc:" style=3D"height: 100%; width: 100%;=
- overflow: hidden; display: flex; flex-flow: row; touch-action: pan-y;"><di=
-v data-slot=3D"resizable-panel" aria-disabled=3D"true" data-panel=3D"true" =
-data-testid=3D"panel-left" id=3D"panel-left" style=3D"min-height: 0px; max-=
-height: 100%; height: auto; min-width: 0px; max-width: 100%; width: auto; b=
-order: 0px none; padding: 0px; margin: 0px; display: flex; flex: 19.938 1 0=
-px; overflow: hidden;"><div style=3D"max-height: 100%; max-width: 100%; fle=
-x-grow: 1; touch-action: pan-y;"><div class=3D"h-full" style=3D"width: auto=
-; opacity: 1; height: 100%;"><div id=3D"spec-click-target" class=3D"flex fl=
-ex-col w-full h-full hide-scrollbar bg-dash-sidebar border-default"><div cl=
-ass=3D"border-default flex min-h-[var(--header-height)] items-center border=
--b px-6"><h4 class=3D"text-lg">Edge Functions</h4></div><div class=3D"flex-=
-grow overflow-y-auto"><div class=3D"flex flex-col space-y-4"><nav role=3D"m=
-enu" aria-label=3D"Sidebar" aria-orientation=3D"vertical" aria-labelledby=
+rue" data-testid=3D":r13j:" id=3D":r13j:" style=3D"height: 100%; width: 100=
+%; overflow: hidden; display: flex; flex-flow: row; touch-action: pan-y;"><=
+div data-slot=3D"resizable-panel" aria-disabled=3D"true" data-panel=3D"true=
+" data-testid=3D"panel-left" id=3D"panel-left" style=3D"min-height: 0px; ma=
+x-height: 100%; height: auto; min-width: 0px; max-width: 100%; width: auto;=
+ border: 0px none; padding: 0px; margin: 0px; display: flex; flex: 19.938 1=
+ 0px; overflow: hidden;"><div style=3D"max-height: 100%; max-width: 100%; f=
+lex-grow: 1; touch-action: pan-y;"><div class=3D"h-full" style=3D"width: au=
+to; opacity: 1; height: 100%;"><div id=3D"spec-click-target" class=3D"flex =
+flex-col w-full h-full hide-scrollbar bg-dash-sidebar border-default"><div =
+class=3D"border-default flex min-h-[var(--header-height)] items-center bord=
+er-b px-6"><h4 class=3D"text-lg">Edge Functions</h4></div><div class=3D"fle=
+x-grow overflow-y-auto"><div class=3D"flex flex-col space-y-4"><nav role=3D=
+"menu" aria-label=3D"Sidebar" aria-orientation=3D"vertical" aria-labelledby=
 =3D"options-menu"><ul><div><div class=3D"my-4 space-y-4"><div class=3D"md:m=
 x-3"><div class=3D" flex space-x-3 mb-2 font-normal  px-3"><span class=3D"t=
 ext-sm text-foreground-lighter w-full"><div class=3D"flex flex-col space-y-=
@@ -1004,61 +1004,61 @@ n=3Dhorizontal]:after:left-0 aria-[orientation=3Dhorizontal]:after:h-1 aria=
 ter:-translate-y-1/2 aria-[orientation=3Dhorizontal]:after:translate-x-0 [&=
 amp;[aria-orientation=3Dhorizontal]&gt;div]:rotate-90 data-[separator=3Dact=
 ive]:bg-border-strong group transition-colors hidden md:flex" data-separato=
-r=3D"disabled" data-testid=3D":ruf:" id=3D":ruf:" role=3D"separator" style=
-=3D"flex: 0 0 auto; cursor: auto; touch-action: none;"><div class=3D"z-10 f=
-lex h-4 w-3 items-center justify-center rounded-sm border bg-border focus:b=
-g-surface-400 opacity-0 transition-opacity duration-200 group-data-[separat=
-or=3Dhover]:opacity-100 hover:bg-surface-400 group-data-[separator=3Dactive=
-]:opacity-100 group-data-[separator=3Dactive]:bg-foreground-muted"><svg xml=
+r=3D"disabled" data-testid=3D":r13m:" id=3D":r13m:" role=3D"separator" styl=
+e=3D"flex: 0 0 auto; cursor: auto; touch-action: none;"><div class=3D"z-10 =
+flex h-4 w-3 items-center justify-center rounded-sm border bg-border focus:=
+bg-surface-400 opacity-0 transition-opacity duration-200 group-data-[separa=
+tor=3Dhover]:opacity-100 hover:bg-surface-400 group-data-[separator=3Dactiv=
+e]:opacity-100 group-data-[separator=3Dactive]:bg-foreground-muted"><svg xm=
+lns=3D"http://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 =
+0 24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-li=
+necap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-grip-verti=
+cal h-2.5 w-2.5"><circle cx=3D"9" cy=3D"12" r=3D"1"></circle><circle cx=3D"=
+9" cy=3D"5" r=3D"1"></circle><circle cx=3D"9" cy=3D"19" r=3D"1"></circle><c=
+ircle cx=3D"15" cy=3D"12" r=3D"1"></circle><circle cx=3D"15" cy=3D"5" r=3D"=
+1"></circle><circle cx=3D"15" cy=3D"19" r=3D"1"></circle></svg></div></div>=
+<div data-slot=3D"resizable-panel" data-panel=3D"true" data-testid=3D"panel=
+-project-content" id=3D"panel-project-content" style=3D"min-height: 0px; ma=
+x-height: 100%; height: auto; min-width: 0px; max-width: 100%; width: auto;=
+ border: 0px none; padding: 0px; margin: 0px; display: flex; flex: 80.062 1=
+ 0px; overflow: hidden;"><div class=3D"h-full flex flex-col w-full xl:min-w=
+-[600px] bg-dash-sidebar" style=3D"max-height: 100%; max-width: 100%; flex-=
+grow: 1; touch-action: pan-y;"><main class=3D"h-full flex flex-col flex-1 w=
+-full overflow-y-auto overflow-x-hidden @container"><div class=3D"w-full mi=
+n-h-full flex flex-col items-stretch"><div data-slot=3D"page-header" data-s=
+ize=3D"full" class=3D"flex flex-col gap-4 w-full pt-6 sticky top-0 z-10 bg-=
+surface-75"><div class=3D"mx-auto w-full @container px-6 xl:px-10 max-w-non=
+e"><nav aria-label=3D"breadcrumb" data-slot=3D"page-header-breadcrumb" clas=
+s=3D"flex items-center gap-4 [&amp;_li]:text-xs"><ol class=3D"flex flex-wra=
+p items-center gap-0.5 break-words text-sm text-muted-foreground sm:gap-1.5=
+"><li class=3D"inline-flex text-foreground-lighter items-center gap-1.5 lea=
+ding-5"><a class=3D"transition-colors underline lg:no-underline hover:text-=
+foreground" href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgd=
+bndu/functions">Edge Functions</a></li><li role=3D"presentation" aria-hidde=
+n=3D"true" class=3D"[&amp;&gt;svg]:size-3.5 text-foreground-muted"><svg xml=
 ns=3D"http://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0=
  24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-lin=
-ecap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-grip-vertic=
-al h-2.5 w-2.5"><circle cx=3D"9" cy=3D"12" r=3D"1"></circle><circle cx=3D"9=
-" cy=3D"5" r=3D"1"></circle><circle cx=3D"9" cy=3D"19" r=3D"1"></circle><ci=
-rcle cx=3D"15" cy=3D"12" r=3D"1"></circle><circle cx=3D"15" cy=3D"5" r=3D"1=
-"></circle><circle cx=3D"15" cy=3D"19" r=3D"1"></circle></svg></div></div><=
-div data-slot=3D"resizable-panel" data-panel=3D"true" data-testid=3D"panel-=
-project-content" id=3D"panel-project-content" style=3D"min-height: 0px; max=
--height: 100%; height: auto; min-width: 0px; max-width: 100%; width: auto; =
-border: 0px none; padding: 0px; margin: 0px; display: flex; flex: 80.062 1 =
-0px; overflow: hidden;"><div class=3D"h-full flex flex-col w-full xl:min-w-=
-[600px] bg-dash-sidebar" style=3D"max-height: 100%; max-width: 100%; flex-g=
-row: 1; touch-action: pan-y;"><main class=3D"h-full flex flex-col flex-1 w-=
-full overflow-y-auto overflow-x-hidden @container"><div class=3D"w-full min=
--h-full flex flex-col items-stretch"><div data-slot=3D"page-header" data-si=
-ze=3D"full" class=3D"flex flex-col gap-4 w-full pt-6 sticky top-0 z-10 bg-s=
-urface-75"><div class=3D"mx-auto w-full @container px-6 xl:px-10 max-w-none=
-"><nav aria-label=3D"breadcrumb" data-slot=3D"page-header-breadcrumb" class=
-=3D"flex items-center gap-4 [&amp;_li]:text-xs"><ol class=3D"flex flex-wrap=
- items-center gap-0.5 break-words text-sm text-muted-foreground sm:gap-1.5"=
-><li class=3D"inline-flex text-foreground-lighter items-center gap-1.5 lead=
-ing-5"><a class=3D"transition-colors underline lg:no-underline hover:text-f=
-oreground" href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgdb=
-ndu/functions">Edge Functions</a></li><li role=3D"presentation" aria-hidden=
-=3D"true" class=3D"[&amp;&gt;svg]:size-3.5 text-foreground-muted"><svg xmln=
-s=3D"http://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 =
-24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-line=
-cap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-chevron-righ=
-t"><path d=3D"m9 18 6-6-6-6"></path></svg></li><li class=3D"inline-flex tex=
-t-foreground-lighter items-center gap-1.5 leading-5"><a class=3D"transition=
--colors underline lg:no-underline hover:text-foreground" href=3D"https://su=
-pabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/functions/konnect-initiat=
-e">konnect-initiate</a></li></ol></nav></div><div class=3D"mx-auto w-full @=
-container px-6 xl:px-10 max-w-none"><div data-slot=3D"page-header-meta" cla=
-ss=3D"flex flex-col @xl:flex-row @xl:justify-between @xl:items-center gap-4=
- [&amp;&gt;[data-slot=3D&quot;page-header-icon&quot;]]:shrink-0 [&amp;&gt;[=
-data-slot=3D&quot;page-header-summary&quot;]]:flex-1"><div data-slot=3D"pag=
-e-header-summary" class=3D"flex flex-col gap-1"><h1 data-slot=3D"page-heade=
-r-title" class=3D"heading-title">konnect-initiate</h1><div data-slot=3D"pag=
-e-header-description" class=3D"heading-subSection text-foreground-light fle=
-x flex-row flex-wrap items-center gap-x-4 gap-y-1 !text-sm"><div class=3D"f=
-lex items-center gap-x-2"><span class=3D"flex items-center gap-2">https://l=
-bftmbutvtjtkxgdbndu.supabase.co/functions/v1/konnect-initiate</span><button=
- data-size=3D"tiny" type=3D"button" class=3D"relative justify-center cursor=
--pointer inline-flex items-center space-x-2 text-center font-regular ease-o=
-ut duration-200 rounded-md outline-none transition-all outline-0 focus-visi=
-ble:outline-4 focus-visible:outline-offset-1 border text-foreground hover:b=
-g-surface-300 shadow-none focus-visible:outline-border-strong data-[state=
+ecap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-chevron-rig=
+ht"><path d=3D"m9 18 6-6-6-6"></path></svg></li><li class=3D"inline-flex te=
+xt-foreground-lighter items-center gap-1.5 leading-5"><a class=3D"transitio=
+n-colors underline lg:no-underline hover:text-foreground" href=3D"https://s=
+upabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/functions/konnect-initia=
+te">konnect-initiate</a></li></ol></nav></div><div class=3D"mx-auto w-full =
+@container px-6 xl:px-10 max-w-none"><div data-slot=3D"page-header-meta" cl=
+ass=3D"flex flex-col @xl:flex-row @xl:justify-between @xl:items-center gap-=
+4 [&amp;&gt;[data-slot=3D&quot;page-header-icon&quot;]]:shrink-0 [&amp;&gt;=
+[data-slot=3D&quot;page-header-summary&quot;]]:flex-1"><div data-slot=3D"pa=
+ge-header-summary" class=3D"flex flex-col gap-1"><h1 data-slot=3D"page-head=
+er-title" class=3D"heading-title">konnect-initiate</h1><div data-slot=3D"pa=
+ge-header-description" class=3D"heading-subSection text-foreground-light fl=
+ex flex-row flex-wrap items-center gap-x-4 gap-y-1 !text-sm"><div class=3D"=
+flex items-center gap-x-2"><span class=3D"flex items-center gap-2">https://=
+lbftmbutvtjtkxgdbndu.supabase.co/functions/v1/konnect-initiate</span><butto=
+n data-size=3D"tiny" type=3D"button" class=3D"relative justify-center curso=
+r-pointer inline-flex items-center space-x-2 text-center font-regular ease-=
+out duration-200 rounded-md outline-none transition-all outline-0 focus-vis=
+ible:outline-4 focus-visible:outline-offset-1 border text-foreground hover:=
+bg-surface-300 shadow-none focus-visible:outline-border-strong data-[state=
 =3Dopen]:bg-surface-300 data-[state=3Dopen]:outline-border-strong border-tr=
 ansparent text-xs py-1 h-[26px] px-1" tabindex=3D"0"><div class=3D"[&amp;_s=
 vg]:h-[14px] [&amp;_svg]:w-[14px] text-foreground-lighter"><svg xmlns=3D"ht=
@@ -1075,538 +1075,529 @@ nd" class=3D"lucide lucide-clock text-foreground-lighter"><circle cx=3D"12"=
  cy=3D"12" r=3D"10"></circle><polyline points=3D"12 6 12 12 16 14"></polyli=
 ne></svg><span class=3D"transition text-foreground-light group-hover:text-f=
 oreground underline decoration-dotted decoration-foreground-muted underline=
--offset-4">17 hours ago</span></button></div></div><div data-slot=3D"page-h=
-eader-actions" class=3D"flex items-center gap-2 shrink-0"><div class=3D"fle=
-x items-center space-x-2"><a target=3D"_blank" rel=3D"noopener noreferrer" =
-href=3D"https://supabase.com/docs/guides/functions" data-size=3D"tiny" type=
-=3D"button" class=3D"relative justify-center cursor-pointer inline-flex ite=
-ms-center space-x-2 text-center font-regular ease-out duration-200 rounded-=
-md outline-none transition-all outline-0 focus-visible:outline-4 focus-visi=
-ble:outline-offset-1 border text-foreground bg-alternative dark:bg-muted ho=
-ver:bg-selection border-strong hover:border-stronger focus-visible:outline-=
-brand-600 data-[state=3Dopen]:bg-selection data-[state=3Dopen]:outline-bran=
-d-600 data-[state=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-[26px]"=
- tabindex=3D"0"><div class=3D"[&amp;_svg]:h-[14px] [&amp;_svg]:w-[14px] tex=
-t-foreground-lighter"><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D"24=
-" height=3D"24" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D"currentColor"=
- stroke-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=3D"round" clas=
-s=3D"lucide lucide-book-open"><path d=3D"M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-=
-3-3H2z"></path><path d=3D"M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></pat=
-h></svg></div><span class=3D"truncate">Docs</span></a><button data-size=3D"=
-tiny" type=3D"button" aria-haspopup=3D"dialog" aria-expanded=3D"false" aria=
--controls=3D"radix-:ruh:" data-state=3D"closed" tabindex=3D"0" class=3D"rel=
-ative justify-center cursor-pointer inline-flex items-center space-x-2 text=
--center font-regular ease-out duration-200 rounded-md outline-none transiti=
-on-all outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 bor=
-der text-foreground bg-alternative dark:bg-muted hover:bg-selection border-=
-strong hover:border-stronger focus-visible:outline-brand-600 data-[state=3D=
-open]:bg-selection data-[state=3Dopen]:outline-brand-600 data-[state=3Dopen=
-]:border-button-hover text-xs px-2.5 py-1 h-[26px]"><div class=3D"[&amp;_sv=
-g]:h-[14px] [&amp;_svg]:w-[14px] text-foreground-lighter"><svg xmlns=3D"htt=
-p://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 24 24" f=
-ill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-linecap=3D"r=
-ound" stroke-linejoin=3D"round" class=3D"lucide lucide-download"><path d=3D=
-"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points=3D"7 10=
- 12 15 17 10"></polyline><line x1=3D"12" x2=3D"12" y1=3D"15" y2=3D"3"></lin=
-e></svg></div> <span class=3D"truncate">Download</span> </button><button da=
-ta-size=3D"tiny" type=3D"button" tabindex=3D"0" class=3D"relative justify-c=
-enter cursor-pointer inline-flex items-center space-x-2 text-center font-re=
-gular ease-out duration-200 rounded-md outline-none transition-all outline-=
-0 focus-visible:outline-4 focus-visible:outline-offset-1 border text-foregr=
-ound bg-alternative dark:bg-muted hover:bg-selection border-strong hover:bo=
-rder-stronger focus-visible:outline-brand-600 data-[state=3Dopen]:bg-select=
-ion data-[state=3Dopen]:outline-brand-600 data-[state=3Dopen]:border-button=
--hover text-xs px-2.5 py-1 h-[26px]"><div class=3D"[&amp;_svg]:h-[14px] [&a=
-mp;_svg]:w-[14px] text-foreground-lighter"><svg xmlns=3D"http://www.w3.org/=
-2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 24 24" fill=3D"none" st=
-roke=3D"currentColor" stroke-width=3D"2" stroke-linecap=3D"round" stroke-li=
-nejoin=3D"round" class=3D"lucide lucide-send"><path d=3D"m22 2-7 20-4-9-9-4=
-Z"></path><path d=3D"M22 2 11 13"></path></svg></div> <span class=3D"trunca=
-te">Test</span> </button></div></div></div></div><div class=3D"mx-auto w-fu=
-ll @container px-6 xl:px-10 max-w-none border-b"><div data-slot=3D"page-hea=
-der-footer" class=3D"w-full [&amp;&gt;nav]:border-b-0"><nav dir=3D"ltr" cla=
-ss=3D"border-b"><ul role=3D"menu" class=3D"flex gap-5"><li aria-selected=3D=
-"false" data-state=3D"inactive" class=3D"inline-flex items-center justify-c=
-enter whitespace-nowrap text-sm ring-offset-background transition-all focus=
--visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-vi=
-sible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[=
-state=3Dactive]:text-foreground text-foreground-lighter hover:text-foregrou=
-nd data-[state=3Dactive]:border-foreground border-b-2 border-transparent *:=
-py-1.5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgdb=
-ndu/functions/konnect-initiate">Overview</a></li><li aria-selected=3D"false=
-" data-state=3D"inactive" class=3D"inline-flex items-center justify-center =
-whitespace-nowrap text-sm ring-offset-background transition-all focus-visib=
-le:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:=
-ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=
-=3Dactive]:text-foreground text-foreground-lighter hover:text-foreground da=
-ta-[state=3Dactive]:border-foreground border-b-2 border-transparent *:py-1.=
-5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/f=
-unctions/konnect-initiate/invocations">Invocations</a></li><li aria-selecte=
-d=3D"false" data-state=3D"inactive" class=3D"inline-flex items-center justi=
-fy-center whitespace-nowrap text-sm ring-offset-background transition-all f=
-ocus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focu=
-s-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 da=
-ta-[state=3Dactive]:text-foreground text-foreground-lighter hover:text-fore=
-ground data-[state=3Dactive]:border-foreground border-b-2 border-transparen=
-t *:py-1.5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtk=
-xgdbndu/functions/konnect-initiate/logs">Logs</a></li><li aria-selected=3D"=
-true" data-state=3D"active" class=3D"inline-flex items-center justify-cente=
-r whitespace-nowrap text-sm ring-offset-background transition-all focus-vis=
-ible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visibl=
-e:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[stat=
-e=3Dactive]:text-foreground text-foreground-lighter hover:text-foreground d=
-ata-[state=3Dactive]:border-foreground border-b-2 border-transparent *:py-1=
-.5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/=
-functions/konnect-initiate/code">Code</a></li><li aria-selected=3D"false" d=
-ata-state=3D"inactive" class=3D"inline-flex items-center justify-center whi=
-tespace-nowrap text-sm ring-offset-background transition-all focus-visible:=
-outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:rin=
-g-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=3Da=
-ctive]:text-foreground text-foreground-lighter hover:text-foreground data-[=
-state=3Dactive]:border-foreground border-b-2 border-transparent *:py-1.5"><=
-a href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/funct=
-ions/konnect-initiate/details">Settings</a></li></ul></nav></div></div></di=
-v><div class=3D"flex flex-col h-full"><div class=3D"flex-1 overflow-hidden =
-flex h-full relative gap-x-3 bg-surface-100"><div class=3D"min-w-64 w-64 bo=
-rder-r bg-surface-200 flex flex-col"><div class=3D"py-4 px-6 border-b flex =
-items-center justify-between"><h3 class=3D"text-sm font-normal font-mono up=
-percase text-lighter tracking-wide">Files</h3><button data-size=3D"tiny" ty=
-pe=3D"button" tabindex=3D"0" class=3D"relative justify-center cursor-pointe=
-r inline-flex items-center space-x-2 text-center font-regular ease-out dura=
-tion-200 rounded-md outline-none transition-all outline-0 focus-visible:out=
-line-4 focus-visible:outline-offset-1 border text-foreground bg-alternative=
- dark:bg-muted hover:bg-selection border-strong hover:border-stronger focus=
--visible:outline-brand-600 data-[state=3Dopen]:bg-selection data-[state=3Do=
-pen]:outline-brand-600 data-[state=3Dopen]:border-button-hover text-xs px-2=
-.5 py-1 h-[26px]"><div class=3D"[&amp;_svg]:h-[14px] [&amp;_svg]:w-[14px] t=
-ext-foreground-lighter"><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D"=
-14" height=3D"14" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D"currentColo=
-r" stroke-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=3D"round" cl=
-ass=3D"lucide lucide-plus"><path d=3D"M5 12h14"></path><path d=3D"M12 5v14"=
-></path></svg></div> <span class=3D"truncate">Add File</span> </button></di=
-v><div class=3D"flex-1 overflow-y-auto"><ul class=3D"tree" role=3D"tree" ar=
-ia-multiselectable=3D"false" aria-label=3D"files tree"><li role=3D"none" cl=
-ass=3D"tree-leaf-list-item"><div data-state=3D"closed"><div title=3D"index.=
-ts" role=3D"treeitem" tabindex=3D"0" class=3D"group relative transition-col=
-ors h-[28px] flex items-center gap-3 text-sm cursor-pointer select-none hov=
-er:bg-control aria-expanded:bg-transparent data-[state=3Dopen]:bg-transpare=
-nt !bg-selection pr-2 justify-between text-code_block-2" aria-setsize=3D"1"=
- aria-posinset=3D"1" aria-level=3D"1" aria-disabled=3D"false" aria-selected=
-=3D"true" aria-expanded=3D"false" data-treeview-is-branch=3D"false" data-tr=
-eeview-level=3D"1" style=3D"padding-left: 16px;"><div class=3D"absolute lef=
-t-0 h-full w-0.5 bg-foreground"></div><div class=3D"flex items-center gap-x=
--3 truncate"><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D"14" height=
-=3D"14" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D"currentColor" stroke-=
-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=3D"round" class=3D"luc=
-ide lucide-file text-foreground-light shrink-0"><path d=3D"M15 2H6a2 2 0 0 =
-0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d=3D"M14 2v4a2 2 0=
- 0 0 2 2h4"></path></svg><span class=3D"truncate text-sm">index.ts</span></=
-div><div class=3D"flex items-center justify-center w-3"><button data-state=
-=3D"closed" class=3D"text-xs">M</button></div><form class=3D"hidden"><input=
- class=3D"rounded-md border border-control read-only:border-button bg-foreg=
-round/[.026] file:border-0 file:bg-transparent file:text-sm file:font-mediu=
-m placeholder:text-foreground-muted read-only:text-foreground-light focus:r=
-ing-background-control focus:border-control focus-visible:outline-none focu=
-s-visible:ring-2 focus-visible:ring-background-control focus-visible:ring-o=
-ffset-2 focus-visible:ring-offset-foreground-muted disabled:cursor-not-allo=
-wed disabled:text-foreground-muted aria-[] aria-[invalid=3Dtrue]:bg-destruc=
-tive-200 aria-[invalid=3Dtrue]:border-destructive-400 aria-[invalid=3Dtrue]=
-:focus:border-destructive aria-[invalid=3Dtrue]:focus-visible:border-destru=
-ctive block w-full text-sm px-2 py-1 h-7" value=3D"index.ts"></form></div><=
-/div></li></ul></div></div><div class=3D"flex-grow min-w-0"><div class=3D"f=
-lex-1 overflow-hidden flex flex-col h-full relative"><div class=3D"w-full h=
--full relative"><section style=3D"display: flex; position: relative; text-a=
-lign: initial; width: 100%; height: 100%;"><div class=3D"" style=3D"width: =
-100%; --vscode-editorCodeLens-lineHeight: 15px; --vscode-editorCodeLens-fon=
-tSize: 11px; --vscode-editorCodeLens-fontFeatureSettings: &quot;liga&quot; =
-off, &quot;calt&quot; off; --code-editorInlayHintsFontFamily: Consolas, 'Co=
-urier New', monospace;" data-keybinding-context=3D"4" data-mode-id=3D"types=
-cript"><div class=3D"monaco-editor no-user-select  showUnused showDeprecate=
-d vs-dark focused" role=3D"code" data-uri=3D"inmemory://model/6" style=3D"w=
-idth: 760px; height: 367px;"><div data-mprt=3D"3" class=3D"overflow-guard" =
-style=3D"width: 760px; height: 367px;"><div class=3D"margin" role=3D"presen=
-tation" aria-hidden=3D"true" style=3D"position: absolute; transform: transl=
-ate3d(0px, 0px, 0px); contain: strict; top: -3307px; height: 3933px; width:=
- 31px;"><div class=3D"glyph-margin" style=3D"left: 0px; width: 0px; height:=
- 3933px;"></div><div class=3D"margin-view-zones" role=3D"presentation" aria=
--hidden=3D"true" style=3D"position: absolute;"></div><div class=3D"margin-v=
-iew-overlays focused" role=3D"presentation" aria-hidden=3D"true" style=3D"p=
-osition: absolute; font-family: Consolas, &quot;Courier New&quot;, monospac=
-e; font-weight: normal; font-size: 13px; font-feature-settings: &quot;liga&=
-quot; 0, &quot;calt&quot; 0; font-variation-settings: normal; line-height: =
-18px; letter-spacing: 0px; width: 31px; height: 3933px;"><div style=3D"top:=
-3296px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21=
-px;">181</div></div><div style=3D"top:3314px;height:18px;"><div class=3D"li=
-ne-numbers" style=3D"left:0px;width:21px;">182</div></div><div style=3D"top=
-:3332px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px;width:2=
-1px;">183</div></div><div style=3D"top:3350px;height:18px;"><div class=3D"l=
-ine-numbers" style=3D"left:0px;width:21px;">184</div></div><div style=3D"to=
-p:3368px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px;width:=
-21px;">185</div></div><div style=3D"top:3386px;height:18px;"><div class=3D"=
-line-numbers" style=3D"left:0px;width:21px;">186</div></div><div style=3D"t=
-op:3404px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px;width=
-:21px;">187</div></div><div style=3D"top:3422px;height:18px;"><div class=3D=
-"line-numbers" style=3D"left:0px;width:21px;">188</div></div><div style=3D"=
-top:3440px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px;widt=
-h:21px;">189</div></div><div style=3D"top:3458px;height:18px;"><div class=
-=3D"line-numbers" style=3D"left:0px;width:21px;">190</div></div><div style=
-=3D"top:3476px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px;=
-width:21px;">191</div></div><div style=3D"top:3494px;height:18px;"><div cla=
-ss=3D"line-numbers" style=3D"left:0px;width:21px;">192</div></div><div styl=
-e=3D"top:3512px;height:18px;"><div class=3D"line-numbers" style=3D"left:0px=
-;width:21px;">193</div></div><div style=3D"top:3530px;height:18px;"><div cl=
-ass=3D"line-numbers" style=3D"left:0px;width:21px;">194</div></div><div sty=
-le=3D"top:3548px;height:18px;"><div class=3D"line-numbers" style=3D"left:0p=
-x;width:21px;">195</div></div><div style=3D"top:3566px;height:18px;"><div c=
-lass=3D"current-line current-line-margin-both" style=3D"width:31px"></div><=
-div class=3D"line-numbers active-line-number" style=3D"left:0px;width:21px;=
-">196</div></div></div><div class=3D"glyph-margin-widgets" style=3D"positio=
-n: absolute; top: 0px;"></div></div><div class=3D"monaco-scrollable-element=
- editor-scrollable vs-dark" role=3D"presentation" data-mprt=3D"6" style=3D"=
-position: absolute; overflow: hidden; left: 31px; height: 367px; width: 729=
-px;"><div class=3D"lines-content monaco-editor-background" style=3D"positio=
-n: absolute; overflow: hidden; width: 1.67772e+07px; height: 1.67772e+07px;=
- transform: translate3d(0px, 0px, 0px); contain: strict; top: -3307px; left=
-: 0px;"><div class=3D"view-overlays focused" role=3D"presentation" aria-hid=
-den=3D"true" style=3D"position: absolute; font-family: Consolas, &quot;Cour=
-ier New&quot;, monospace; font-weight: normal; font-size: 13px; font-featur=
-e-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings=
-: normal; line-height: 18px; letter-spacing: 0px; height: 0px; width: 729px=
-;"><div style=3D"top:3296px;height:18px;"><div class=3D"core-guide core-gui=
-de-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px=
-"></div><div class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D=
-"left:14.296875px;width:7.1484375px"></div><div class=3D"core-guide core-gu=
-ide-indent lvl-2 vertical" style=3D"left:28.59375px;width:7.1484375px"></di=
-v></div><div style=3D"top:3314px;height:18px;"><div class=3D"core-guide cor=
-e-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484=
-375px"></div><div class=3D"core-guide core-guide-indent lvl-1 vertical" sty=
-le=3D"left:14.296875px;width:7.1484375px"></div></div><div style=3D"top:333=
-2px;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-a=
-ctive vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"co=
-re-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:=
-7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-2 vertica=
-l" style=3D"left:28.59375px;width:7.1484375px"></div></div><div style=3D"to=
-p:3350px;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 ind=
-ent-active vertical" style=3D"left:0px;width:7.1484375px"></div><div class=
-=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;=
-width:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-2 v=
-ertical" style=3D"left:28.59375px;width:7.1484375px"></div></div><div style=
-=3D"top:3368px;height:18px;"><div class=3D"core-guide core-guide-indent lvl=
+-offset-4">a few seconds ago</span></button></div></div><div data-slot=3D"p=
+age-header-actions" class=3D"flex items-center gap-2 shrink-0"><div class=
+=3D"flex items-center space-x-2"><a target=3D"_blank" rel=3D"noopener noref=
+errer" href=3D"https://supabase.com/docs/guides/functions" data-size=3D"tin=
+y" type=3D"button" class=3D"relative justify-center cursor-pointer inline-f=
+lex items-center space-x-2 text-center font-regular ease-out duration-200 r=
+ounded-md outline-none transition-all outline-0 focus-visible:outline-4 foc=
+us-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-m=
+uted hover:bg-selection border-strong hover:border-stronger focus-visible:o=
+utline-brand-600 data-[state=3Dopen]:bg-selection data-[state=3Dopen]:outli=
+ne-brand-600 data-[state=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-=
+[26px]" tabindex=3D"0"><div class=3D"[&amp;_svg]:h-[14px] [&amp;_svg]:w-[14=
+px] text-foreground-lighter"><svg xmlns=3D"http://www.w3.org/2000/svg" widt=
+h=3D"24" height=3D"24" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D"curren=
+tColor" stroke-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=3D"roun=
+d" class=3D"lucide lucide-book-open"><path d=3D"M2 3h6a4 4 0 0 1 4 4v14a3 3=
+ 0 0 0-3-3H2z"></path><path d=3D"M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z=
+"></path></svg></div><span class=3D"truncate">Docs</span></a><button data-s=
+ize=3D"tiny" type=3D"button" aria-haspopup=3D"dialog" aria-expanded=3D"fals=
+e" aria-controls=3D"radix-:r13o:" data-state=3D"closed" tabindex=3D"0" clas=
+s=3D"relative justify-center cursor-pointer inline-flex items-center space-=
+x-2 text-center font-regular ease-out duration-200 rounded-md outline-none =
+transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offs=
+et-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection=
+ border-strong hover:border-stronger focus-visible:outline-brand-600 data-[=
+state=3Dopen]:bg-selection data-[state=3Dopen]:outline-brand-600 data-[stat=
+e=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-[26px]"><div class=3D"[=
+&amp;_svg]:h-[14px] [&amp;_svg]:w-[14px] text-foreground-lighter"><svg xmln=
+s=3D"http://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 =
+24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-line=
+cap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-download"><p=
+ath d=3D"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points=
+=3D"7 10 12 15 17 10"></polyline><line x1=3D"12" x2=3D"12" y1=3D"15" y2=3D"=
+3"></line></svg></div> <span class=3D"truncate">Download</span> </button><b=
+utton data-size=3D"tiny" type=3D"button" tabindex=3D"0" class=3D"relative j=
+ustify-center cursor-pointer inline-flex items-center space-x-2 text-center=
+ font-regular ease-out duration-200 rounded-md outline-none transition-all =
+outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border tex=
+t-foreground bg-alternative dark:bg-muted hover:bg-selection border-strong =
+hover:border-stronger focus-visible:outline-brand-600 data-[state=3Dopen]:b=
+g-selection data-[state=3Dopen]:outline-brand-600 data-[state=3Dopen]:borde=
+r-button-hover text-xs px-2.5 py-1 h-[26px]"><div class=3D"[&amp;_svg]:h-[1=
+4px] [&amp;_svg]:w-[14px] text-foreground-lighter"><svg xmlns=3D"http://www=
+.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 24 24" fill=3D"=
+none" stroke=3D"currentColor" stroke-width=3D"2" stroke-linecap=3D"round" s=
+troke-linejoin=3D"round" class=3D"lucide lucide-send"><path d=3D"m22 2-7 20=
+-4-9-9-4Z"></path><path d=3D"M22 2 11 13"></path></svg></div> <span class=
+=3D"truncate">Test</span> </button></div></div></div></div><div class=3D"mx=
+-auto w-full @container px-6 xl:px-10 max-w-none border-b"><div data-slot=
+=3D"page-header-footer" class=3D"w-full [&amp;&gt;nav]:border-b-0"><nav dir=
+=3D"ltr" class=3D"border-b"><ul role=3D"menu" class=3D"flex gap-5"><li aria=
+-selected=3D"false" data-state=3D"inactive" class=3D"inline-flex items-cent=
+er justify-center whitespace-nowrap text-sm ring-offset-background transiti=
+on-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-r=
+ing focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opaci=
+ty-50 data-[state=3Dactive]:text-foreground text-foreground-lighter hover:t=
+ext-foreground data-[state=3Dactive]:border-foreground border-b-2 border-tr=
+ansparent *:py-1.5"><a href=3D"https://supabase.com/dashboard/project/lbftm=
+butvtjtkxgdbndu/functions/konnect-initiate">Overview</a></li><li aria-selec=
+ted=3D"false" data-state=3D"inactive" class=3D"inline-flex items-center jus=
+tify-center whitespace-nowrap text-sm ring-offset-background transition-all=
+ focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring fo=
+cus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 =
+data-[state=3Dactive]:text-foreground text-foreground-lighter hover:text-fo=
+reground data-[state=3Dactive]:border-foreground border-b-2 border-transpar=
+ent *:py-1.5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvtj=
+tkxgdbndu/functions/konnect-initiate/invocations">Invocations</a></li><li a=
+ria-selected=3D"false" data-state=3D"inactive" class=3D"inline-flex items-c=
+enter justify-center whitespace-nowrap text-sm ring-offset-background trans=
+ition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:rin=
+g-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:op=
+acity-50 data-[state=3Dactive]:text-foreground text-foreground-lighter hove=
+r:text-foreground data-[state=3Dactive]:border-foreground border-b-2 border=
+-transparent *:py-1.5"><a href=3D"https://supabase.com/dashboard/project/lb=
+ftmbutvtjtkxgdbndu/functions/konnect-initiate/logs">Logs</a></li><li aria-s=
+elected=3D"true" data-state=3D"active" class=3D"inline-flex items-center ju=
+stify-center whitespace-nowrap text-sm ring-offset-background transition-al=
+l focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring f=
+ocus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50=
+ data-[state=3Dactive]:text-foreground text-foreground-lighter hover:text-f=
+oreground data-[state=3Dactive]:border-foreground border-b-2 border-transpa=
+rent *:py-1.5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvt=
+jtkxgdbndu/functions/konnect-initiate/code">Code</a></li><li aria-selected=
+=3D"false" data-state=3D"inactive" class=3D"inline-flex items-center justif=
+y-center whitespace-nowrap text-sm ring-offset-background transition-all fo=
+cus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus=
+-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dat=
+a-[state=3Dactive]:text-foreground text-foreground-lighter hover:text-foreg=
+round data-[state=3Dactive]:border-foreground border-b-2 border-transparent=
+ *:py-1.5"><a href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkx=
+gdbndu/functions/konnect-initiate/details">Settings</a></li></ul></nav></di=
+v></div></div><div class=3D"flex flex-col h-full"><div class=3D"flex-1 over=
+flow-hidden flex h-full relative gap-x-3 bg-surface-100"><div class=3D"min-=
+w-64 w-64 border-r bg-surface-200 flex flex-col"><div class=3D"py-4 px-6 bo=
+rder-b flex items-center justify-between"><h3 class=3D"text-sm font-normal =
+font-mono uppercase text-lighter tracking-wide">Files</h3><button data-size=
+=3D"tiny" type=3D"button" tabindex=3D"0" class=3D"relative justify-center c=
+ursor-pointer inline-flex items-center space-x-2 text-center font-regular e=
+ase-out duration-200 rounded-md outline-none transition-all outline-0 focus=
+-visible:outline-4 focus-visible:outline-offset-1 border text-foreground bg=
+-alternative dark:bg-muted hover:bg-selection border-strong hover:border-st=
+ronger focus-visible:outline-brand-600 data-[state=3Dopen]:bg-selection dat=
+a-[state=3Dopen]:outline-brand-600 data-[state=3Dopen]:border-button-hover =
+text-xs px-2.5 py-1 h-[26px]"><div class=3D"[&amp;_svg]:h-[14px] [&amp;_svg=
+]:w-[14px] text-foreground-lighter"><svg xmlns=3D"http://www.w3.org/2000/sv=
+g" width=3D"14" height=3D"14" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D=
+"currentColor" stroke-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=
+=3D"round" class=3D"lucide lucide-plus"><path d=3D"M5 12h14"></path><path d=
+=3D"M12 5v14"></path></svg></div> <span class=3D"truncate">Add File</span> =
+</button></div><div class=3D"flex-1 overflow-y-auto"><ul class=3D"tree" rol=
+e=3D"tree" aria-multiselectable=3D"false" aria-label=3D"files tree"><li rol=
+e=3D"none" class=3D"tree-leaf-list-item"><div data-state=3D"closed"><div ti=
+tle=3D"index.ts" role=3D"treeitem" tabindex=3D"0" class=3D"group relative t=
+ransition-colors h-[28px] flex items-center gap-3 text-sm cursor-pointer se=
+lect-none hover:bg-control aria-expanded:bg-transparent data-[state=3Dopen]=
+:bg-transparent text-foreground !bg-selection" aria-setsize=3D"1" aria-posi=
+nset=3D"1" aria-level=3D"1" aria-disabled=3D"false" aria-selected=3D"true" =
+aria-expanded=3D"false" data-treeview-is-branch=3D"false" data-treeview-lev=
+el=3D"1" style=3D"padding-left: 16px;"><div class=3D"absolute left-0 h-full=
+ w-0.5 bg-foreground"></div><div class=3D"flex items-center gap-x-3 truncat=
+e"><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D"14" height=3D"14" vie=
+wBox=3D"0 0 24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2"=
+ stroke-linecap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-=
+file text-foreground-light shrink-0"><path d=3D"M15 2H6a2 2 0 0 0-2 2v16a2 =
+2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path><path d=3D"M14 2v4a2 2 0 0 0 2 2h4"=
+></path></svg><span class=3D"truncate text-sm">index.ts</span></div><form c=
+lass=3D"hidden"><input class=3D"rounded-md border border-control read-only:=
+border-button bg-foreground/[.026] file:border-0 file:bg-transparent file:t=
+ext-sm file:font-medium placeholder:text-foreground-muted read-only:text-fo=
+reground-light focus:ring-background-control focus:border-control focus-vis=
+ible:outline-none focus-visible:ring-2 focus-visible:ring-background-contro=
+l focus-visible:ring-offset-2 focus-visible:ring-offset-foreground-muted di=
+sabled:cursor-not-allowed disabled:text-foreground-muted aria-[] aria-[inva=
+lid=3Dtrue]:bg-destructive-200 aria-[invalid=3Dtrue]:border-destructive-400=
+ aria-[invalid=3Dtrue]:focus:border-destructive aria-[invalid=3Dtrue]:focus=
+-visible:border-destructive block w-full text-sm px-2 py-1 h-7" value=3D"in=
+dex.ts"></form></div></div></li></ul></div></div><div class=3D"flex-grow mi=
+n-w-0"><div class=3D"flex-1 overflow-hidden flex flex-col h-full relative">=
+<div class=3D"w-full h-full relative"><section style=3D"display: flex; posi=
+tion: relative; text-align: initial; width: 100%; height: 100%;"><div class=
+=3D"" style=3D"width: 100%; --vscode-editorCodeLens-lineHeight: 15px; --vsc=
+ode-editorCodeLens-fontSize: 11px; --vscode-editorCodeLens-fontFeatureSetti=
+ngs: &quot;liga&quot; off, &quot;calt&quot; off; --code-editorInlayHintsFon=
+tFamily: Consolas, 'Courier New', monospace;" data-keybinding-context=3D"5"=
+ data-mode-id=3D"typescript"><div class=3D"monaco-editor no-user-select  sh=
+owUnused showDeprecated vs-dark" role=3D"code" data-uri=3D"inmemory://model=
+/8" style=3D"width: 760px; height: 367px;"><div data-mprt=3D"3" class=3D"ov=
+erflow-guard" style=3D"width: 760px; height: 367px;"><div class=3D"margin" =
+role=3D"presentation" aria-hidden=3D"true" style=3D"position: absolute; tra=
+nsform: translate3d(0px, 0px, 0px); contain: strict; top: -2497px; height: =
+3123px; width: 31px;"><div class=3D"glyph-margin" style=3D"left: 0px; width=
+: 0px; height: 3123px;"></div><div class=3D"margin-view-zones" role=3D"pres=
+entation" aria-hidden=3D"true" style=3D"position: absolute;"></div><div cla=
+ss=3D"margin-view-overlays" role=3D"presentation" aria-hidden=3D"true" styl=
+e=3D"position: absolute; font-family: Consolas, &quot;Courier New&quot;, mo=
+nospace; font-weight: normal; font-size: 13px; font-feature-settings: &quot=
+;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: normal; line-he=
+ight: 18px; letter-spacing: 0px; width: 31px; height: 3123px;"><div style=
+=3D"top: 2486px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0=
+px;width:21px;">137</div></div><div style=3D"top: 2504px; height: 18px;"><d=
+iv class=3D"line-numbers" style=3D"left:0px;width:21px;">138</div></div><di=
+v style=3D"top: 2522px; height: 18px;"><div class=3D"line-numbers" style=3D=
+"left:0px;width:21px;">139</div></div><div style=3D"top: 2540px; height: 18=
+px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">140</div></=
+div><div style=3D"top: 2558px; height: 18px;"><div class=3D"line-numbers" s=
+tyle=3D"left:0px;width:21px;">141</div></div><div style=3D"top: 2576px; hei=
+ght: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">142<=
+/div></div><div style=3D"top: 2594px; height: 18px;"><div class=3D"line-num=
+bers" style=3D"left:0px;width:21px;">143</div></div><div style=3D"top: 2612=
+px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px=
+;">144</div></div><div style=3D"top: 2630px; height: 18px;"><div class=3D"l=
+ine-numbers" style=3D"left:0px;width:21px;">145</div></div><div style=3D"to=
+p: 2648px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;wid=
+th:21px;">146</div></div><div style=3D"top: 2666px; height: 18px;"><div cla=
+ss=3D"line-numbers" style=3D"left:0px;width:21px;">147</div></div><div styl=
+e=3D"top: 2684px; height: 18px;"><div class=3D"line-numbers" style=3D"left:=
+0px;width:21px;">148</div></div><div style=3D"top: 2702px; height: 18px;"><=
+div class=3D"line-numbers" style=3D"left:0px;width:21px;">149</div></div><d=
+iv style=3D"top: 2720px; height: 18px;"><div class=3D"line-numbers" style=
+=3D"left:0px;width:21px;">150</div></div><div style=3D"top: 2738px; height:=
+ 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">151</div=
+></div><div style=3D"top:2756px;height:18px;"><div class=3D"current-line cu=
+rrent-line-margin-both" style=3D"width:31px"></div><div class=3D"line-numbe=
+rs active-line-number" style=3D"left:0px;width:21px;">152</div></div></div>=
+<div class=3D"glyph-margin-widgets" style=3D"position: absolute; top: 0px;"=
+></div></div><div class=3D"monaco-scrollable-element editor-scrollable vs-d=
+ark" role=3D"presentation" data-mprt=3D"6" style=3D"position: absolute; ove=
+rflow: hidden; left: 31px; height: 367px; width: 729px;"><div class=3D"line=
+s-content monaco-editor-background" style=3D"position: absolute; overflow: =
+hidden; width: 1.67772e+07px; height: 1.67772e+07px; transform: translate3d=
+(0px, 0px, 0px); contain: strict; top: -2497px; left: 0px;"><div class=3D"v=
+iew-overlays" role=3D"presentation" aria-hidden=3D"true" style=3D"position:=
+ absolute; font-family: Consolas, &quot;Courier New&quot;, monospace; font-=
+weight: normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0,=
+ &quot;calt&quot; 0; font-variation-settings: normal; line-height: 18px; le=
+tter-spacing: 0px; height: 0px; width: 729px;"><div style=3D"top:2486px;hei=
+ght:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active v=
+ertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guid=
+e core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.14843=
+75px"></div></div><div style=3D"top:2504px;height:18px;"><div class=3D"core=
+-guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;wi=
+dth:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 ver=
+tical" style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=
+=3D"top:2522px;height:18px;"><div class=3D"core-guide core-guide-indent lvl=
 -0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div><div =
 class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.2968=
-75px;width:7.1484375px"></div></div><div style=3D"top:3386px;height:18px;">=
+75px;width:7.1484375px"></div></div><div style=3D"top: 2540px; height: 18px=
+;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vertical"=
+ style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core-g=
+uide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></=
+div><div class=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"lef=
+t:28.59375px;width:7.1484375px"></div></div><div style=3D"top: 2558px; heig=
+ht: 18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active v=
+ertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guid=
+e core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.14843=
+75px"></div><div class=3D"core-guide core-guide-indent lvl-2 vertical" styl=
+e=3D"left:28.59375px;width:7.1484375px"></div></div><div style=3D"top:2576p=
+x;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-act=
+ive vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core=
+-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.=
+1484375px"></div><div class=3D"core-guide core-guide-indent lvl-2 vertical"=
+ style=3D"left:28.59375px;width:7.1484375px"></div></div><div style=3D"top:=
+2594px;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 inden=
+t-active vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D=
+"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;wid=
+th:7.1484375px"></div></div><div style=3D"top:2612px;height:18px;"><div cla=
+ss=3D"core-guide core-guide-indent lvl-0 indent-active vertical" style=3D"l=
+eft:0px;width:7.1484375px"></div><div class=3D"core-guide core-guide-indent=
+ lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></div><div cl=
+ass=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"left:28.59375p=
+x;width:7.1484375px"></div></div><div style=3D"top: 2630px; height: 18px;">=
 <div class=3D"core-guide core-guide-indent lvl-0 indent-active vertical" st=
 yle=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core-guid=
 e-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></div=
 ><div class=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"left:2=
-8.59375px;width:7.1484375px"></div></div><div style=3D"top:3404px;height:18=
-px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vertica=
-l" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core=
--guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px">=
-</div><div class=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"l=
-eft:28.59375px;width:7.1484375px"></div></div><div style=3D"top:3422px;heig=
-ht:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active ve=
-rtical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide=
- core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.148437=
-5px"></div></div><div style=3D"top:3440px;height:18px;"><div class=3D"core-=
-guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;wid=
-th:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 vert=
-ical" style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=
-=3D"top:3458px;height:18px;"><div class=3D"core-guide core-guide-indent lvl=
--0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div></div=
-><div style=3D"top:3476px;height:18px;"><div class=3D"core-guide core-guide=
--indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px">=
-</div><div class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"l=
-eft:14.296875px;width:7.1484375px"></div></div><div style=3D"top:3494px;hei=
-ght:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active v=
-ertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guid=
-e core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.14843=
-75px"></div></div><div style=3D"top:3512px;height:18px;"><div class=3D"core=
+8.59375px;width:7.1484375px"></div></div><div style=3D"top: 2648px; height:=
+ 18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vert=
+ical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide c=
+ore-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375p=
+x"></div></div><div style=3D"top: 2666px; height: 18px;"><div class=3D"core=
 -guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;wi=
 dth:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 ver=
-tical" style=3D"left:14.296875px;width:7.1484375px"></div><div class=3D"cor=
-e-guide core-guide-indent lvl-2 vertical" style=3D"left:28.59375px;width:7.=
-1484375px"></div></div><div style=3D"top:3530px;height:18px;"><div class=3D=
+tical" style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=
+=3D"top:2684px;height:18px;"><div class=3D"core-guide core-guide-indent lvl=
+-0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div></div=
+><div style=3D"top: 2702px; height: 18px;"><div class=3D"core-guide core-gu=
+ide-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375p=
+x"></div><div class=3D"core-guide core-guide-indent lvl-1 vertical" style=
+=3D"left:14.296875px;width:7.1484375px"></div></div><div style=3D"top:2720p=
+x;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-act=
+ive vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core=
+-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.=
+1484375px"></div></div><div style=3D"top:2738px;height:18px;"><div class=3D=
 "core-guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0=
-px;width:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-=
-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></div></div><div s=
-tyle=3D"top:3548px;height:18px;"><div class=3D"core-guide core-guide-indent=
- lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div><=
-/div><div style=3D"top:3566px;height:18px;"><div class=3D"current-line curr=
-ent-line-exact" style=3D"width:729px;"></div></div></div><div role=3D"prese=
-ntation" aria-hidden=3D"true" class=3D"view-rulers"></div><div class=3D"vie=
-w-zones" role=3D"presentation" aria-hidden=3D"true" style=3D"position: abso=
-lute;"></div><div class=3D"view-lines monaco-mouse-cursor-text" role=3D"pre=
-sentation" aria-hidden=3D"true" data-mprt=3D"8" style=3D"position: absolute=
-; font-family: Consolas, &quot;Courier New&quot;, monospace; font-weight: n=
-ormal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;ca=
-lt&quot; 0; font-variation-settings: normal; line-height: 18px; letter-spac=
-ing: 0px; width: 729px; height: 3933px;"><div style=3D"top:3296px;height:18=
-px;" class=3D"view-line"><span><span></span></span></div><div style=3D"top:=
-3314px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&=
-nbsp;&nbsp;&nbsp;</span><span class=3D"mtk9">return</span><span class=3D"mt=
-k1">&nbsp;</span><span class=3D"mtk9">new</span><span class=3D"mtk1">&nbsp;=
-</span><span class=3D"mtk24">Response</span><span class=3D"mtk10 bracket-hi=
-ghlighting-3">(</span><span class=3D"mtk24">JSON</span><span class=3D"mtk10=
-">.</span><span class=3D"mtk1">stringify</span><span class=3D"mtk10 bracket=
--highlighting-4">(</span><span class=3D"mtk10 bracket-highlighting-5">{</sp=
-an></span></div><div style=3D"top:3332px;height:18px;" class=3D"view-line">=
-<span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payUrl</span=
-><span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;paymentId</span><=
-span class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;payment</span><span=
- class=3D"mtk10">.</span><span class=3D"mtk1">payment_id</span><span class=
-=3D"mtk10">,</span></span></div><div style=3D"top:3350px;height:18px;" clas=
-s=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&n=
-bsp;summary</span><span class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;=
-</span><span class=3D"mtk10 bracket-highlighting-6">{</span><span class=3D"=
-mtk1">&nbsp;coins</span><span class=3D"mtk10">,</span><span class=3D"mtk1">=
-&nbsp;label</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;=
-displayPrice</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp=
-;currencySymbol</span><span class=3D"mtk10">:</span><span class=3D"mtk1">&n=
-bsp;currencyConf</span><span class=3D"mtk10">.</span><span class=3D"mtk9">s=
-ymbol</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;curren=
-cy&nbsp;</span><span class=3D"mtk10 bracket-highlighting-6">}</span><span c=
-lass=3D"mtk10">,</span></span></div><div style=3D"top:3368px;height:18px;" =
-class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</sp=
-an><span class=3D"mtk10 bracket-highlighting-5">}</span><span class=3D"mtk1=
-0 bracket-highlighting-4">)</span><span class=3D"mtk10">,</span><span class=
-=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-4">{</span=
-></span></div><div style=3D"top:3386px;height:18px;" class=3D"view-line"><s=
-pan><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;status</span><=
-span class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=
-=3D"mtk6">200</span><span class=3D"mtk10">,</span></span></div><div style=
-=3D"top:3404px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1"=
->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;headers</span><span class=3D"mtk10">:<=
-/span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highli=
-ghting-5">{</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10">.=
-..</span><span class=3D"mtk24">CORS</span><span class=3D"mtk10">,</span><sp=
-an class=3D"mtk1">&nbsp;</span><span class=3D"mtk5">'Content-Type'</span><s=
-pan class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=
-=3D"mtk5">'application/json'</span><span class=3D"mtk1">&nbsp;</span><span =
-class=3D"mtk10 bracket-highlighting-5">}</span><span class=3D"mtk10">,</spa=
-n></span></div><div style=3D"top:3422px;height:18px;" class=3D"view-line"><=
-span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk=
-10 bracket-highlighting-4">}</span><span class=3D"mtk10 bracket-highlightin=
-g-3">)</span><span class=3D"mtk10">;</span></span></div><div style=3D"top:3=
-440px;height:18px;" class=3D"view-line"><span><span></span></span></div><di=
-v style=3D"top:3458px;height:18px;" class=3D"view-line"><span><span class=
-=3D"mtk1">&nbsp;&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2">}=
-</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk9">catch</span><=
-span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-=
-2">(</span><span class=3D"mtk1">err</span><span class=3D"mtk10 bracket-high=
-lighting-2">)</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 =
-bracket-highlighting-2">{</span></span></div><div style=3D"top:3476px;heigh=
+px;width:7.1484375px"></div></div><div style=3D"top:2756px;height:18px;"><d=
+iv class=3D"current-line current-line-exact" style=3D"width:729px;"></div><=
+/div></div><div role=3D"presentation" aria-hidden=3D"true" class=3D"view-ru=
+lers"></div><div class=3D"view-zones" role=3D"presentation" aria-hidden=3D"=
+true" style=3D"position: absolute;"></div><div class=3D"view-lines monaco-m=
+ouse-cursor-text" role=3D"presentation" aria-hidden=3D"true" data-mprt=3D"8=
+" style=3D"position: absolute; font-family: Consolas, &quot;Courier New&quo=
+t;, monospace; font-weight: normal; font-size: 13px; font-feature-settings:=
+ &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: normal; l=
+ine-height: 18px; letter-spacing: 0px; width: 729px; height: 3123px;"><div =
+style=3D"top:2486px;height:18px;" class=3D"view-line"><span><span class=3D"=
+mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk9">const</span><span=
+ class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-3">{=
+</span><span class=3D"mtk1">&nbsp;payUrl</span><span class=3D"mtk10">,</spa=
+n><span class=3D"mtk1">&nbsp;paymentRef&nbsp;</span><span class=3D"mtk10 br=
+acket-highlighting-3">}</span><span class=3D"mtk1">&nbsp;</span><span class=
+=3D"mtk10">=3D</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk9"=
+>await</span><span class=3D"mtk1">&nbsp;konnectRes</span><span class=3D"mtk=
+10">.</span><span class=3D"mtk1">json</span><span class=3D"mtk10 bracket-hi=
+ghlighting-3">(</span><span class=3D"mtk10 bracket-highlighting-3">)</span>=
+<span class=3D"mtk10">;</span></span></div><div style=3D"top:2504px;height:=
+18px;" class=3D"view-line"><span><span></span></span></div><div style=3D"to=
+p:2522px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp=
+;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk9">await</span><span class=3D"m=
+tk1">&nbsp;supabase</span><span class=3D"mtk10">.</span><span class=3D"mtk9=
+">from</span><span class=3D"mtk10 bracket-highlighting-3">(</span><span cla=
+ss=3D"mtk5">'konnect_payments'</span><span class=3D"mtk10 bracket-highlight=
+ing-3">)</span></span></div><div style=3D"top:2540px;height:18px;" class=3D=
+"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
+</span><span class=3D"mtk10">.</span><span class=3D"mtk1">update</span><spa=
+n class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk10 brack=
+et-highlighting-4">{</span><span class=3D"mtk1">&nbsp;konnect_ref</span><sp=
+an class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;paymentRef</span><spa=
+n class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;konnect_pay_url</span>=
+<span class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;payUrl&nbsp;</span=
+><span class=3D"mtk10 bracket-highlighting-4">}</span><span class=3D"mtk10 =
+bracket-highlighting-3">)</span></span></div><div style=3D"top:2558px;heigh=
 t:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&=
-nbsp;console</span><span class=3D"mtk10">.</span><span class=3D"mtk1">error=
-</span><span class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"=
-mtk5">'[konnect-initiate]'</span><span class=3D"mtk10">,</span><span class=
-=3D"mtk1">&nbsp;err</span><span class=3D"mtk10 bracket-highlighting-3">)</s=
-pan><span class=3D"mtk10">;</span></span></div><div style=3D"top:3494px;hei=
-ght:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp=
-;&nbsp;</span><span class=3D"mtk9">return</span><span class=3D"mtk1">&nbsp;=
-</span><span class=3D"mtk9">new</span><span class=3D"mtk1">&nbsp;</span><sp=
-an class=3D"mtk24">Response</span><span class=3D"mtk10 bracket-highlighting=
--3">(</span><span class=3D"mtk24">JSON</span><span class=3D"mtk10">.</span>=
-<span class=3D"mtk1">stringify</span><span class=3D"mtk10 bracket-highlight=
-ing-4">(</span><span class=3D"mtk10 bracket-highlighting-5">{</span><span c=
-lass=3D"mtk1">&nbsp;error</span><span class=3D"mtk10">:</span><span class=
-=3D"mtk1">&nbsp;</span><span class=3D"mtk5">'Internal&nbsp;server&nbsp;erro=
-r'</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-hig=
-hlighting-5">}</span><span class=3D"mtk10 bracket-highlighting-4">)</span><=
-span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;</span><span class=
-=3D"mtk10 bracket-highlighting-4">{</span></span></div><div style=3D"top:35=
-12px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nb=
-sp;&nbsp;&nbsp;&nbsp;&nbsp;status</span><span class=3D"mtk10">:</span><span=
- class=3D"mtk1">&nbsp;</span><span class=3D"mtk6">500</span><span class=3D"=
-mtk10">,</span><span class=3D"mtk1">&nbsp;headers</span><span class=3D"mtk1=
-0">:</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-h=
-ighlighting-5">{</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk=
-10">...</span><span class=3D"mtk24">CORS</span><span class=3D"mtk10">,</spa=
-n><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk5">'Content-Type'</sp=
-an><span class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span cl=
-ass=3D"mtk5">'application/json'</span><span class=3D"mtk1">&nbsp;</span><sp=
-an class=3D"mtk10 bracket-highlighting-5">}</span><span class=3D"mtk10">,</=
-span></span></div><div style=3D"top:3530px;height:18px;" class=3D"view-line=
-"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"=
-mtk10 bracket-highlighting-4">}</span><span class=3D"mtk10 bracket-highligh=
-ting-3">)</span><span class=3D"mtk10">;</span></span></div><div style=3D"to=
-p:3548px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp=
-;&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2">}</span></span><=
-/div><div style=3D"top:3566px;height:18px;" class=3D"view-line"><span><span=
- class=3D"mtk10 bracket-highlighting-1">}</span><span class=3D"mtk10 bracke=
-t-highlighting-0">)</span><span class=3D"mtk10">;</span></span></div></div>=
-<div data-mprt=3D"1" class=3D"contentWidgets" style=3D"position: absolute; =
-top: 0px;"><div class=3D"lightBulbWidget" role=3D"listbox" widgetid=3D"Ligh=
-tBulbWidget" style=3D"position: absolute; display: none; visibility: hidden=
-; max-width: 729px;"></div></div><div role=3D"presentation" aria-hidden=3D"=
-true" class=3D"cursors-layer cursor-line-style cursor-solid"><div class=3D"=
-cursor  monaco-mouse-cursor-text " style=3D"height: 18px; top: 3566px; left=
-: 21px; font-family: Consolas, &quot;Courier New&quot;, monospace; font-wei=
-ght: normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &q=
-uot;calt&quot; 0; font-variation-settings: normal; line-height: 18px; lette=
-r-spacing: 0px; display: block; visibility: inherit; padding-left: 0px; wid=
-th: 1.85185px;"></div></div></div><div role=3D"presentation" aria-hidden=3D=
-"true" class=3D"invisible scrollbar horizontal" style=3D"position: absolute=
-; width: 715px; height: 12px; left: 0px; bottom: 0px;"><div class=3D"slider=
-" style=3D"position: absolute; top: 0px; left: 0px; height: 12px; transform=
-: translate3d(0px, 0px, 0px); contain: strict; width: 715px;"></div></div><=
-canvas class=3D"decorationsOverviewRuler" aria-hidden=3D"true" width=3D"15"=
- height=3D"396" style=3D"position: absolute; transform: translate3d(0px, 0p=
-x, 0px); contain: strict; top: 0px; right: 0px; width: 14px; height: 367px;=
- display: block;"></canvas><div role=3D"presentation" aria-hidden=3D"true" =
-class=3D"visible scrollbar vertical" style=3D"position: absolute; width: 14=
-px; height: 367px; right: 0px; top: 0px;"><div class=3D"slider" style=3D"po=
-sition: absolute; top: 309px; left: 0px; width: 14px; transform: translate3=
-d(0px, 0px, 0px); contain: strict; height: 34px;"></div></div></div><div ro=
-le=3D"presentation" aria-hidden=3D"true" style=3D"width: 760px;" class=3D"s=
-croll-decoration"></div><textarea data-mprt=3D"7" class=3D"inputarea monaco=
--mouse-cursor-text" wrap=3D"on" autocorrect=3D"off" autocapitalize=3D"off" =
-autocomplete=3D"off" spellcheck=3D"false" aria-label=3D"Editor content" ari=
-a-required=3D"false" tabindex=3D"0" role=3D"textbox" aria-roledescription=
-=3D"editor" aria-multiline=3D"true" aria-autocomplete=3D"both" style=3D"tab=
--size: 14.2969px; font-family: Consolas, &quot;Courier New&quot;, monospace=
-; font-weight: normal; font-size: 13px; font-feature-settings: &quot;liga&q=
-uot; 0, &quot;calt&quot; 0; font-variation-settings: normal; line-height: 1=
-8px; letter-spacing: 0px; top: 259px; left: 31px; width: 708px; height: 1px=
-;"></textarea><div class=3D"monaco-editor-background textAreaCover line-num=
-bers" style=3D"position: absolute; top: 0px; left: 0px; width: 0px; height:=
- 0px;"></div><div data-mprt=3D"4" class=3D"overlayWidgets" style=3D"width: =
-760px;"><div class=3D"sticky-widget" widgetid=3D"editor.contrib.stickyScrol=
-lWidget" style=3D"width: 746px; position: absolute; right: 50%; top: 0px; d=
-isplay: block; height: 18px; margin-left: 0px;"><div class=3D"sticky-widget=
--line-numbers" role=3D"none" style=3D"width: 31px; height: 18px;"><span dat=
-a-sticky-line-index=3D"0" data-sticky-is-line-number=3D"" class=3D"sticky-l=
-ine-number" style=3D"line-height: 18px; width: 31px; height: 18px; z-index:=
- 0; top: 0px;"><span class=3D"sticky-line-number-inner" style=3D"line-heigh=
-t: 18px; width: 21px; padding-left: 0px; font-family: Consolas, &quot;Couri=
-er New&quot;, monospace; font-weight: normal; font-size: 13px; font-feature=
--settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings:=
- normal; letter-spacing: 0px;">32</span></span></div><div class=3D"sticky-w=
-idget-lines-scrollable" style=3D"--vscode-editorStickyScroll-scrollableWidt=
-h: 715px; height: 18px;"><div class=3D"sticky-widget-lines" role=3D"list" s=
-tyle=3D"left: 0px;"><span data-sticky-line-index=3D"0" data-sticky-is-line=
-=3D"" role=3D"listitem" tabindex=3D"0" class=3D"sticky-line-content stickyL=
-ine32" style=3D"line-height: 18px; font-family: Consolas, &quot;Courier New=
-&quot;, monospace; font-weight: normal; font-size: 13px; font-feature-setti=
-ngs: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: norma=
-l; letter-spacing: 0px; height: 18px; z-index: 0; top: 0px;"><span><span cl=
-ass=3D"mtk24">Deno</span><span class=3D"mtk10">.</span><span class=3D"mtk1"=
->serve</span><span class=3D"mtk10 bracket-highlighting-0">(</span><span cla=
-ss=3D"mtk9">async</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mt=
-k10 bracket-highlighting-1">(</span><span class=3D"mtk1">req</span><span cl=
-ass=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk2=
-4">Request</span><span class=3D"mtk10 bracket-highlighting-1">)</span><span=
- class=3D"mtk1">&nbsp;</span><span class=3D"mtk10">=3D&gt;</span><span clas=
-s=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-1">{</spa=
-n></span></span></div></div></div><div class=3D"monaco-hover hidden" tabind=
-ex=3D"0" role=3D"tooltip" widgetid=3D"editor.contrib.modesGlyphHoverWidget"=
- style=3D"position: absolute;"><div class=3D"monaco-scrollable-element " ro=
-le=3D"presentation" style=3D"position: relative; overflow: hidden;"><div cl=
-ass=3D"monaco-hover-content" style=3D"overflow: hidden;"></div><div role=3D=
-"presentation" aria-hidden=3D"true" class=3D"invisible scrollbar horizontal=
-" style=3D"position: absolute;"><div class=3D"slider" style=3D"position: ab=
-solute; top: 0px; left: 0px; height: 10px; transform: translate3d(0px, 0px,=
- 0px); contain: strict;"></div></div><div role=3D"presentation" aria-hidden=
-=3D"true" class=3D"invisible scrollbar vertical" style=3D"position: absolut=
-e;"><div class=3D"slider" style=3D"position: absolute; top: 0px; left: 0px;=
- width: 10px; transform: translate3d(0px, 0px, 0px); contain: strict;"></di=
-v></div><div class=3D"shadow"></div><div class=3D"shadow"></div><div class=
-=3D"shadow"></div></div></div></div><div data-mprt=3D"9" class=3D"minimap s=
-lider-mouseover" role=3D"presentation" aria-hidden=3D"true" style=3D"positi=
-on: absolute; left: 0px; width: 0px; height: 367px;"><div class=3D"minimap-=
-shadow-hidden" style=3D"height: 367px;"></div><canvas width=3D"0" height=3D=
-"396" style=3D"position: absolute; left: 0px; width: 0px; height: 367px;"><=
-/canvas><canvas class=3D"minimap-decorations-layer" width=3D"0" height=3D"3=
-96" style=3D"position: absolute; left: 0px; width: 0px; height: 367px;"></c=
-anvas><div class=3D"minimap-slider" style=3D"position: absolute; transform:=
- translate3d(0px, 0px, 0px); contain: strict; width: 0px;"><div class=3D"mi=
-nimap-slider-horizontal" style=3D"position: absolute; width: 0px; height: 0=
-px;"></div></div></div><div role=3D"presentation" aria-hidden=3D"true" clas=
-s=3D"blockDecorations-container"></div></div><div data-mprt=3D"2" class=3D"=
-overflowingContentWidgets"><div widgetid=3D"editor.contrib.resizableContent=
-HoverWidget" style=3D"position: fixed; height: 30px; width: 151px; z-index:=
- 50; display: none; visibility: hidden; max-width: 1333px; top: 319.696px; =
-left: 933.047px;"><div class=3D"monaco-sash vertical" style=3D"left: 149px;=
-"></div><div class=3D"monaco-sash vertical disabled" style=3D"left: -2px;">=
-</div><div class=3D"monaco-sash orthogonal-edge-north horizontal" style=3D"=
-top: -2px;"><div class=3D"orthogonal-drag-handle end"></div></div><div clas=
-s=3D"monaco-sash orthogonal-edge-south horizontal disabled" style=3D"top: 2=
-8px;"><div class=3D"orthogonal-drag-handle end"></div></div><div class=3D"m=
-onaco-hover hidden" tabindex=3D"0" role=3D"tooltip" style=3D"max-width: 501=
-.6px; max-height: 250px; --vscode-hover-maxWidth: 501.6px; width: 151px; he=
-ight: 30px;"><div class=3D"monaco-scrollable-element " role=3D"presentation=
-" style=3D"position: relative; overflow: hidden;"><div class=3D"monaco-hove=
-r-content" style=3D"overflow: hidden; font-size: 13px; line-height: 1.38462=
-; max-width: 501.6px; max-height: 250px; width: 151px; height: 30px;"><div =
-class=3D"hover-row" tabindex=3D"0"><div class=3D"hover-row-contents"><div c=
-lass=3D"markdown-hover"><div class=3D"hover-contents"><div class=3D"rendere=
-d-markdown"><p><a data-href=3D"https://xxx.supabase.co/functions/v1/konnect=
--webhook" href=3D"https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbn=
-du/functions/konnect-initiate/code" title=3D"https://xxx.supabase.co/functi=
-ons/v1/konnect-webhook" draggable=3D"false">Follow link</a> (ctrl + click)<=
-/p></div></div></div></div></div></div><div role=3D"presentation" aria-hidd=
-en=3D"true" class=3D"invisible scrollbar horizontal" style=3D"position: abs=
-olute; width: 141px; height: 10px; left: 0px; bottom: 0px;"><div class=3D"s=
-lider" style=3D"position: absolute; top: 0px; left: 0px; height: 10px; tran=
-sform: translate3d(0px, 0px, 0px); contain: strict; width: 141px;"></div></=
-div><div role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scro=
-llbar vertical" style=3D"position: absolute; width: 10px; height: 30px; rig=
-ht: 0px; top: 0px;"><div class=3D"slider" style=3D"position: absolute; top:=
- 0px; left: 0px; width: 10px; transform: translate3d(0px, 0px, 0px); contai=
-n: strict; height: 30px;"></div></div><div class=3D"shadow"></div><div clas=
-s=3D"shadow"></div><div class=3D"shadow"></div></div></div></div></div><div=
- data-mprt=3D"5" class=3D"overflowingOverlayWidgets"></div></div></div></se=
-ction></div></div></div></div><div class=3D"flex items-center bg-background=
--muted justify-end p-4 border-t bg-surface-100 shrink-0"><button data-size=
-=3D"medium" type=3D"button" tooltip=3D"[object Object]" class=3D"relative j=
-ustify-center cursor-pointer inline-flex items-center space-x-2 text-center=
- font-regular ease-out duration-200 rounded-md outline-none transition-all =
-outline-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-=
-brand-400 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-f=
-oreground border-brand-500/75 dark:border-brand/30 hover:border-brand-600 d=
-ark:hover:border-brand focus-visible:outline-brand-600 data-[state=3Dopen]:=
-bg-brand-400/80 dark:data-[state=3Dopen]:bg-brand-500/80 data-[state=3Dopen=
-]:outline-brand-600 text-sm px-4 py-2 h-[38px] pointer-events-auto" data-st=
-ate=3D"closed" tabindex=3D"0"> <span class=3D"truncate">Deploy updates</spa=
-n> <div class=3D"[&amp;_svg]:h-[20px] [&amp;_svg]:w-[20px] text-brand-600">=
-<div class=3D"flex items-center space-x-1"><svg xmlns=3D"http://www.w3.org/=
-2000/svg" width=3D"10" height=3D"10" viewBox=3D"0 0 24 24" fill=3D"none" st=
-roke=3D"currentColor" stroke-width=3D"1.5" stroke-linecap=3D"round" stroke-=
-linejoin=3D"round" class=3D"lucide lucide-corner-down-left"><polyline point=
-s=3D"9 10 4 15 9 20"></polyline><path d=3D"M20 4v7a4 4 0 0 1-4 4H4"></path>=
-</svg></div></div></button></div></div></div></main></div></div></div></div=
-></div></div></div></div></div></div></div></div><iframe name=3D"__privateS=
-tripeController8941" frameborder=3D"0" allowtransparency=3D"true" scrolling=
-=3D"no" role=3D"presentation" allow=3D"payment *" src=3D"cid:frame-9A57BA06=
-64C70E5D6C0AAB7E1BE4483E@mhtml.blink" aria-hidden=3D"true" tabindex=3D"-1" =
-style=3D"border: none !important; margin: 0px !important; padding: 0px !imp=
-ortant; width: 1px !important; min-width: 100% !important; overflow: hidden=
- !important; display: block !important; visibility: hidden !important; posi=
-tion: fixed !important; height: 1px !important; pointer-events: none !impor=
-tant; user-select: none !important;"></iframe><iframe name=3D"__privateStri=
-peMetricsController8940" frameborder=3D"0" allowtransparency=3D"true" scrol=
-ling=3D"no" role=3D"presentation" allow=3D"payment *" src=3D"cid:frame-E15F=
-01BA9E593CB1EA5926B91D66BDD6@mhtml.blink" aria-hidden=3D"true" tabindex=3D"=
--1" style=3D"border: none !important; margin: 0px !important; padding: 0px =
-!important; width: 1px !important; min-width: 100% !important; overflow: hi=
-dden !important; display: block !important; visibility: hidden !important; =
-position: fixed !important; height: 1px !important; pointer-events: none !i=
-mportant; user-select: none !important;"></iframe><next-route-announcer><p =
-aria-live=3D"assertive" id=3D"__next-route-announcer__" role=3D"alert" styl=
-e=3D"border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; margin: -1px=
-; overflow: hidden; padding: 0px; position: absolute; top: 0px; width: 1px;=
- white-space: nowrap; overflow-wrap: normal;">konnect-initiate | Code | Edg=
-e Functions | ZAWAJ AI | mohamed.jouini029@gmail.com's Org | Supabase</p></=
-next-route-announcer><iframe height=3D"0" width=3D"0" style=3D"display: non=
-e; visibility: hidden;"></iframe><iframe name=3D"__tcfapiLocator" style=3D"=
-display: none;"></iframe><div class=3D"context-view" aria-hidden=3D"true" s=
-tyle=3D"display: none;"></div><div class=3D"monaco-aria-container"><div cla=
-ss=3D"monaco-alert" role=3D"alert" aria-atomic=3D"true"></div><div class=3D=
-"monaco-alert" role=3D"alert" aria-atomic=3D"true"></div><div class=3D"mona=
-co-status" aria-live=3D"polite" aria-atomic=3D"true"></div><div class=3D"mo=
-naco-status" aria-live=3D"polite" aria-atomic=3D"true"></div></div></body><=
-/html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+nbsp;&nbsp;&nbsp;</span><span class=3D"mtk10">.</span><span class=3D"mtk1">=
+eq</span><span class=3D"mtk10 bracket-highlighting-3">(</span><span class=
+=3D"mtk5">'payment_id'</span><span class=3D"mtk10">,</span><span class=3D"m=
+tk1">&nbsp;payment</span><span class=3D"mtk10">.</span><span class=3D"mtk1"=
+>payment_id</span><span class=3D"mtk10 bracket-highlighting-3">)</span><spa=
+n class=3D"mtk10">;</span></span></div><div style=3D"top:2576px;height:18px=
+;" class=3D"view-line"><span><span></span></span></div><div style=3D"top:25=
+94px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nb=
+sp;&nbsp;&nbsp;</span><span class=3D"mtk9">return</span><span class=3D"mtk1=
+">&nbsp;json</span><span class=3D"mtk10 bracket-highlighting-3">(</span><sp=
+an class=3D"mtk10 bracket-highlighting-4">{</span></span></div><div style=
+=3D"top:2612px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1"=
+>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payUrl</span><span class=3D"mtk10">,</=
+span><span class=3D"mtk1">&nbsp;paymentId</span><span class=3D"mtk10">:</sp=
+an><span class=3D"mtk1">&nbsp;payment</span><span class=3D"mtk10">.</span><=
+span class=3D"mtk1">payment_id</span><span class=3D"mtk10">,</span></span><=
+/div><div style=3D"top:2630px;height:18px;" class=3D"view-line"><span><span=
+ class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;summary</span><span cla=
+ss=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10=
+ bracket-highlighting-5">{</span><span class=3D"mtk1">&nbsp;coins</span><sp=
+an class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;label</span><span cla=
+ss=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;displayPrice</span><span cl=
+ass=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;currencySymbol</span><span=
+ class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;currencyConf</span><spa=
+n class=3D"mtk10">.</span><span class=3D"mtk9">symbol</span><span class=3D"=
+mtk10">,</span><span class=3D"mtk1">&nbsp;currency&nbsp;</span><span class=
+=3D"mtk10 bracket-highlighting-5">}</span><span class=3D"mtk10">,</span></s=
+pan></div><div style=3D"top:2648px;height:18px;" class=3D"view-line"><span>=
+<span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk10 br=
+acket-highlighting-4">}</span><span class=3D"mtk10 bracket-highlighting-3">=
+)</span><span class=3D"mtk10">;</span></span></div><div style=3D"top: 2666p=
+x; height: 18px;" class=3D"view-line"><span><span></span></span></div><div =
+style=3D"top:2684px;height:18px;" class=3D"view-line"><span><span class=3D"=
+mtk1">&nbsp;&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2">}</sp=
+an><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk9">catch</span><span=
+ class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2">(=
+</span><span class=3D"mtk1">err</span><span class=3D"mtk10 bracket-highligh=
+ting-2">)</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 brac=
+ket-highlighting-2">{</span></span></div><div style=3D"top:2702px;height:18=
+px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp=
+;console</span><span class=3D"mtk10">.</span><span class=3D"mtk1">error</sp=
+an><span class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk5=
+">'[unexpected]'</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&=
+nbsp;err</span><span class=3D"mtk10 bracket-highlighting-3">)</span><span c=
+lass=3D"mtk10">;</span></span></div><div style=3D"top:2720px;height:18px;" =
+class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</sp=
+an><span class=3D"mtk9">return</span><span class=3D"mtk1">&nbsp;json</span>=
+<span class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk10 b=
+racket-highlighting-4">{</span><span class=3D"mtk1">&nbsp;error</span><span=
+ class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=3D"m=
+tk5">'Internal&nbsp;server&nbsp;error'</span><span class=3D"mtk1">&nbsp;</s=
+pan><span class=3D"mtk10 bracket-highlighting-4">}</span><span class=3D"mtk=
+10">,</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk6">500</spa=
+n><span class=3D"mtk10 bracket-highlighting-3">)</span><span class=3D"mtk10=
+">;</span></span></div><div style=3D"top:2738px;height:18px;" class=3D"view=
+-line"><span><span class=3D"mtk1">&nbsp;&nbsp;</span><span class=3D"mtk10 b=
+racket-highlighting-2">}</span></span></div><div style=3D"top:2756px;height=
+:18px;" class=3D"view-line"><span><span class=3D"mtk10 bracket-highlighting=
+-1">}</span><span class=3D"mtk10 bracket-highlighting-0">)</span><span clas=
+s=3D"mtk10">;</span></span></div></div><div data-mprt=3D"1" class=3D"conten=
+tWidgets" style=3D"position: absolute; top: 0px;"><div class=3D"lightBulbWi=
+dget" role=3D"listbox" widgetid=3D"LightBulbWidget" style=3D"position: abso=
+lute; display: none; visibility: hidden; max-width: 729px;"></div></div><di=
+v role=3D"presentation" aria-hidden=3D"true" class=3D"cursors-layer cursor-=
+line-style cursor-solid"><div class=3D"cursor  monaco-mouse-cursor-text " s=
+tyle=3D"height: 18px; top: 2756px; left: 21px; font-family: Consolas, &quot=
+;Courier New&quot;, monospace; font-weight: normal; font-size: 13px; font-f=
+eature-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-set=
+tings: normal; line-height: 18px; letter-spacing: 0px; display: block; visi=
+bility: hidden; padding-left: 0px; width: 1.85185px;"></div></div></div><di=
+v role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollbar h=
+orizontal" style=3D"position: absolute; width: 715px; height: 12px; left: 0=
+px; bottom: 0px;"><div class=3D"slider" style=3D"position: absolute; top: 0=
+px; left: 0px; height: 12px; transform: translate3d(0px, 0px, 0px); contain=
+: strict; width: 715px;"></div></div><canvas class=3D"decorationsOverviewRu=
+ler" aria-hidden=3D"true" width=3D"15" height=3D"396" style=3D"position: ab=
+solute; transform: translate3d(0px, 0px, 0px); contain: strict; top: 0px; r=
+ight: 0px; width: 14px; height: 367px; display: block;"></canvas><div role=
+=3D"presentation" aria-hidden=3D"true" class=3D"visible scrollbar vertical"=
+ style=3D"position: absolute; width: 14px; height: 367px; right: 0px; top: =
+0px;"><div class=3D"slider" style=3D"position: absolute; top: 294px; left: =
+0px; width: 14px; transform: translate3d(0px, 0px, 0px); contain: strict; h=
+eight: 43px;"></div></div></div><div role=3D"presentation" aria-hidden=3D"t=
+rue" style=3D"width: 760px;" class=3D"scroll-decoration"></div><textarea da=
+ta-mprt=3D"7" class=3D"inputarea monaco-mouse-cursor-text" wrap=3D"on" auto=
+correct=3D"off" autocapitalize=3D"off" autocomplete=3D"off" spellcheck=3D"f=
+alse" aria-label=3D"Editor content" aria-required=3D"false" tabindex=3D"0" =
+role=3D"textbox" aria-roledescription=3D"editor" aria-multiline=3D"true" ar=
+ia-autocomplete=3D"both" style=3D"tab-size: 14.2969px; font-family: Consola=
+s, &quot;Courier New&quot;, monospace; font-weight: normal; font-size: 13px=
+; font-feature-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-varia=
+tion-settings: normal; line-height: 18px; letter-spacing: 0px; top: 259px; =
+left: 31px; width: 708px; height: 1px;"></textarea><div class=3D"monaco-edi=
+tor-background textAreaCover line-numbers" style=3D"position: absolute; top=
+: 0px; left: 0px; width: 0px; height: 0px;"></div><div data-mprt=3D"4" clas=
+s=3D"overlayWidgets" style=3D"width: 760px;"><div class=3D"sticky-widget" w=
+idgetid=3D"editor.contrib.stickyScrollWidget" style=3D"width: 746px; positi=
+on: absolute; right: 50%; top: 0px; display: block; height: 18px; margin-le=
+ft: 0px;"><div class=3D"sticky-widget-line-numbers" role=3D"none" style=3D"=
+width: 31px; height: 18px;"><span data-sticky-line-index=3D"0" data-sticky-=
+is-line-number=3D"" class=3D"sticky-line-number" style=3D"line-height: 18px=
+; width: 31px; height: 18px; z-index: 0; top: 0px;"><span class=3D"sticky-l=
+ine-number-inner" style=3D"line-height: 18px; width: 21px; padding-left: 0p=
+x; font-family: Consolas, &quot;Courier New&quot;, monospace; font-weight: =
+normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;c=
+alt&quot; 0; font-variation-settings: normal; letter-spacing: 0px;">26</spa=
+n></span></div><div class=3D"sticky-widget-lines-scrollable" style=3D"--vsc=
+ode-editorStickyScroll-scrollableWidth: 715px; height: 18px;"><div class=3D=
+"sticky-widget-lines" role=3D"list" style=3D"left: 0px;"><span data-sticky-=
+line-index=3D"0" data-sticky-is-line=3D"" role=3D"listitem" tabindex=3D"0" =
+class=3D"sticky-line-content stickyLine26" style=3D"line-height: 18px; font=
+-family: Consolas, &quot;Courier New&quot;, monospace; font-weight: normal;=
+ font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;calt&quo=
+t; 0; font-variation-settings: normal; letter-spacing: 0px; height: 18px; z=
+-index: 0; top: 0px;"><span><span class=3D"mtk24">Deno</span><span class=3D=
+"mtk10">.</span><span class=3D"mtk1">serve</span><span class=3D"mtk10 brack=
+et-highlighting-0">(</span><span class=3D"mtk9">async</span><span class=3D"=
+mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-1">(</span><sp=
+an class=3D"mtk1">req</span><span class=3D"mtk10">:</span><span class=3D"mt=
+k1">&nbsp;</span><span class=3D"mtk24">Request</span><span class=3D"mtk10 b=
+racket-highlighting-1">)</span><span class=3D"mtk1">&nbsp;</span><span clas=
+s=3D"mtk10">=3D&gt;</span><span class=3D"mtk1">&nbsp;</span><span class=3D"=
+mtk10 bracket-highlighting-1">{</span></span></span></div></div></div><div =
+class=3D"monaco-hover hidden" tabindex=3D"0" role=3D"tooltip" widgetid=3D"e=
+ditor.contrib.modesGlyphHoverWidget" style=3D"position: absolute;"><div cla=
+ss=3D"monaco-scrollable-element " role=3D"presentation" style=3D"position: =
+relative; overflow: hidden;"><div class=3D"monaco-hover-content" style=3D"o=
+verflow: hidden;"></div><div role=3D"presentation" aria-hidden=3D"true" cla=
+ss=3D"invisible scrollbar horizontal" style=3D"position: absolute;"><div cl=
+ass=3D"slider" style=3D"position: absolute; top: 0px; left: 0px; height: 10=
+px; transform: translate3d(0px, 0px, 0px); contain: strict;"></div></div><d=
+iv role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollbar =
+vertical" style=3D"position: absolute;"><div class=3D"slider" style=3D"posi=
+tion: absolute; top: 0px; left: 0px; width: 10px; transform: translate3d(0p=
+x, 0px, 0px); contain: strict;"></div></div><div class=3D"shadow"></div><di=
+v class=3D"shadow"></div><div class=3D"shadow"></div></div></div></div><div=
+ data-mprt=3D"9" class=3D"minimap slider-mouseover" role=3D"presentation" a=
+ria-hidden=3D"true" style=3D"position: absolute; left: 0px; width: 0px; hei=
+ght: 367px;"><div class=3D"minimap-shadow-hidden" style=3D"height: 367px;">=
+</div><canvas width=3D"0" height=3D"396" style=3D"position: absolute; left:=
+ 0px; width: 0px; height: 367px;"></canvas><canvas class=3D"minimap-decorat=
+ions-layer" width=3D"0" height=3D"396" style=3D"position: absolute; left: 0=
+px; width: 0px; height: 367px;"></canvas><div class=3D"minimap-slider" styl=
+e=3D"position: absolute; transform: translate3d(0px, 0px, 0px); contain: st=
+rict; width: 0px;"><div class=3D"minimap-slider-horizontal" style=3D"positi=
+on: absolute; width: 0px; height: 0px;"></div></div></div><div role=3D"pres=
+entation" aria-hidden=3D"true" class=3D"blockDecorations-container"></div><=
+/div><div data-mprt=3D"2" class=3D"overflowingContentWidgets"><div widgetid=
+=3D"editor.contrib.resizableContentHoverWidget" style=3D"position: fixed; h=
+eight: 30px; width: 151px; z-index: 50; display: none; visibility: hidden; =
+max-width: 1333px; top: 440.696px; left: 933.047px;"><div class=3D"monaco-s=
+ash vertical" style=3D"left: 149px;"></div><div class=3D"monaco-sash vertic=
+al disabled" style=3D"left: -2px;"></div><div class=3D"monaco-sash orthogon=
+al-edge-north horizontal" style=3D"top: -2px;"><div class=3D"orthogonal-dra=
+g-handle end"></div></div><div class=3D"monaco-sash orthogonal-edge-south h=
+orizontal disabled" style=3D"top: 28px;"><div class=3D"orthogonal-drag-hand=
+le end"></div></div><div class=3D"monaco-hover hidden" tabindex=3D"0" role=
+=3D"tooltip" style=3D"max-width: 501.6px; max-height: 250px; --vscode-hover=
+-maxWidth: 501.6px; width: 151px; height: 30px;"><div class=3D"monaco-scrol=
+lable-element " role=3D"presentation" style=3D"position: relative; overflow=
+: hidden;"><div class=3D"monaco-hover-content" style=3D"overflow: hidden; f=
+ont-size: 13px; line-height: 1.38462; max-width: 501.6px; max-height: 250px=
+; width: 151px; height: 30px;"><div class=3D"hover-row" tabindex=3D"0"><div=
+ class=3D"hover-row-contents"><div class=3D"markdown-hover"><div class=3D"h=
+over-contents"><div class=3D"rendered-markdown"><p><a data-href=3D"https://=
+xxx.supabase.co/functions/v1/konnect-webhook" href=3D"https://supabase.com/=
+dashboard/project/lbftmbutvtjtkxgdbndu/functions/konnect-initiate/code" tit=
+le=3D"https://xxx.supabase.co/functions/v1/konnect-webhook" draggable=3D"fa=
+lse">Follow link</a> (ctrl + click)</p></div></div></div></div></div></div>=
+<div role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollba=
+r horizontal" style=3D"position: absolute; width: 141px; height: 10px; left=
+: 0px; bottom: 0px;"><div class=3D"slider" style=3D"position: absolute; top=
+: 0px; left: 0px; height: 10px; transform: translate3d(0px, 0px, 0px); cont=
+ain: strict; width: 141px;"></div></div><div role=3D"presentation" aria-hid=
+den=3D"true" class=3D"invisible scrollbar vertical" style=3D"position: abso=
+lute; width: 10px; height: 30px; right: 0px; top: 0px;"><div class=3D"slide=
+r" style=3D"position: absolute; top: 0px; left: 0px; width: 10px; transform=
+: translate3d(0px, 0px, 0px); contain: strict; height: 30px;"></div></div><=
+div class=3D"shadow"></div><div class=3D"shadow"></div><div class=3D"shadow=
+"></div></div></div></div></div><div data-mprt=3D"5" class=3D"overflowingOv=
+erlayWidgets"></div></div></div></section></div></div></div></div><div clas=
+s=3D"flex items-center bg-background-muted justify-end p-4 border-t bg-surf=
+ace-100 shrink-0"><button data-size=3D"medium" type=3D"button" tooltip=3D"[=
+object Object]" class=3D"relative justify-center cursor-pointer inline-flex=
+ items-center space-x-2 text-center font-regular ease-out duration-200 roun=
+ded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-=
+visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-bra=
+nd/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:borde=
+r-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:out=
+line-brand-600 data-[state=3Dopen]:bg-brand-400/80 dark:data-[state=3Dopen]=
+:bg-brand-500/80 data-[state=3Dopen]:outline-brand-600 text-sm px-4 py-2 h-=
+[38px] pointer-events-auto" data-state=3D"closed" tabindex=3D"0"> <span cla=
+ss=3D"truncate">Deploy updates</span> <div class=3D"[&amp;_svg]:h-[20px] [&=
+amp;_svg]:w-[20px] text-brand-600"><div class=3D"flex items-center space-x-=
+1"><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D"10" height=3D"10" vie=
+wBox=3D"0 0 24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"1.=
+5" stroke-linecap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucid=
+e-corner-down-left"><polyline points=3D"9 10 4 15 9 20"></polyline><path d=
+=3D"M20 4v7a4 4 0 0 1-4 4H4"></path></svg></div></div></button></div></div>=
+</div></main></div></div></div></div></div></div></div></div></div></div></=
+div></div><iframe name=3D"__privateStripeController8941" frameborder=3D"0" =
+allowtransparency=3D"true" scrolling=3D"no" role=3D"presentation" allow=3D"=
+payment *" src=3D"cid:frame-9A57BA0664C70E5D6C0AAB7E1BE4483E@mhtml.blink" a=
+ria-hidden=3D"true" tabindex=3D"-1" style=3D"border: none !important; margi=
+n: 0px !important; padding: 0px !important; width: 1px !important; min-widt=
+h: 100% !important; overflow: hidden !important; display: block !important;=
+ visibility: hidden !important; position: fixed !important; height: 1px !im=
+portant; pointer-events: none !important; user-select: none !important;"></=
+iframe><iframe name=3D"__privateStripeMetricsController8940" frameborder=3D=
+"0" allowtransparency=3D"true" scrolling=3D"no" role=3D"presentation" allow=
+=3D"payment *" src=3D"cid:frame-E15F01BA9E593CB1EA5926B91D66BDD6@mhtml.blin=
+k" aria-hidden=3D"true" tabindex=3D"-1" style=3D"border: none !important; m=
+argin: 0px !important; padding: 0px !important; width: 1px !important; min-=
+width: 100% !important; overflow: hidden !important; display: block !import=
+ant; visibility: hidden !important; position: fixed !important; height: 1px=
+ !important; pointer-events: none !important; user-select: none !important;=
+"></iframe><next-route-announcer><p aria-live=3D"assertive" id=3D"__next-ro=
+ute-announcer__" role=3D"alert" style=3D"border: 0px; clip: rect(0px, 0px, =
+0px, 0px); height: 1px; margin: -1px; overflow: hidden; padding: 0px; posit=
+ion: absolute; top: 0px; width: 1px; white-space: nowrap; overflow-wrap: no=
+rmal;">konnect-initiate | Code | Edge Functions | ZAWAJ AI | mohamed.jouini=
+029@gmail.com's Org | Supabase</p></next-route-announcer><iframe height=3D"=
+0" width=3D"0" style=3D"display: none; visibility: hidden;"></iframe><ifram=
+e name=3D"__tcfapiLocator" style=3D"display: none;"></iframe><div class=3D"=
+context-view" aria-hidden=3D"true" style=3D"display: none;"></div><div clas=
+s=3D"monaco-aria-container"><div class=3D"monaco-alert" role=3D"alert" aria=
+-atomic=3D"true"></div><div class=3D"monaco-alert" role=3D"alert" aria-atom=
+ic=3D"true"></div><div class=3D"monaco-status" aria-live=3D"polite" aria-at=
+omic=3D"true"></div><div class=3D"monaco-status" aria-live=3D"polite" aria-=
+atomic=3D"true"></div></div></body></html>
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: image/svg+xml
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://supabase.com/dashboard/img/supabase-logo.svg
@@ -1635,7 +1626,7 @@ L53.9738 40.0625L99.1935 40.0625C107.384 40.0625 111.952 49.5226 106.859 55=
 </linearGradient>
 </defs>
 </svg>=0A
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/d6b027c1caf7f6e2.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -2019,7 +2010,7 @@ om { width: 100%; height: 1px; left: 0px; transform: translateY(-50%); }
 
 .react-flow__edge-text { fill: var(--xy-edge-label-color,var(--xy-edge-labe=
 l-color-default)); }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/bf5db31e86ef4bb1.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -2742,7 +2733,7 @@ Code Pro", "Office Code Pro", Menlo, monospace; font-style: normal; }
 
 .source_code_pro_ac234141-module__BliKCW__variable { --font-source-code-pro=
 : "Source Code Pro",Source Code Pro,Office Code Pro,Menlo,monospace; }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/dcfd020fd38cd438.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -3573,7 +3564,7 @@ x 100%; animation: 2s linear 0s infinite normal none running shimmer; }
   0% { background-position: -1000px 0px; }
   100% { background-position: 1000px 0px; }
 }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/dd9072817ba6ed19.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -13691,7 +13682,7 @@ oter-dark:hover { background-color: hsl(var(--background-surface-100)); }
 
 [data-variant=3D"legend"] + .\[\[data-variant\=3Dlegend\]\+\&\]\:-mt-1\.5 {=
  margin-top: -0.375rem; }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/147b7a4ec7488f38.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -14104,7 +14095,7 @@ wn; }
 
 .toast-message div[role=3D"status"] { overflow-wrap: break-word; word-break=
 : break-word; justify-content: flex-start; width: 100%; }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/5ddc098370b8c64f.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -16728,7 +16719,7 @@ verflow: inherit; }
 .grid-monaco-editor .monaco-list-row.focused .main, .monaco-editor .suggest=
 -widget .monaco-list-row.focused .main { background: var(--vscode-quickInpu=
 t-background); }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/editor/editor.main.css
@@ -20347,10 +20338,10 @@ markers-panel .marker-icon.info, .monaco-editor .zone-widget .codicon.codic=
 on-info, .preferences-editor .codicon.codicon-info, .text-search-provider-m=
 essages .providerMessage .codicon.codicon-info { color: var(--vscode-proble=
 msInfoIcon-foreground); }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
-Content-Location: cid:css-b1ffbad1-b1f7-4ec4-88b7-f240d1741427@mhtml.blink
+Content-Location: cid:css-a9d85b9f-0a58-4fc3-8457-830e3863314b@mhtml.blink
 
 @charset "utf-8";
 
@@ -23054,10 +23045,10 @@ code-editorMarkerNavigation-background: #1f1f1f; }
 
 .mtks.mtku { text-decoration: underline line-through; text-underline-positi=
 on: under; }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
-Content-Location: cid:css-709d1922-09dc-49eb-a155-e8b73b30f9fb@mhtml.blink
+Content-Location: cid:css-87ea9166-d52f-48c8-98f8-8f00a178b8ca@mhtml.blink
 
 @charset "utf-8";
 
@@ -23385,17 +23376,17 @@ ate(-50%, -50%); transform-origin: center center; transition: opacity 0.2s,=
 
 .sonner-loader[data-visible=3D"false"] { opacity: 0; transform: scale(0.8) =
 translate(-50%, -50%); }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
-Content-Location: cid:css-2deea880-c729-4280-9434-1668e1968b8e@mhtml.blink
+Content-Location: cid:css-e3ef4a0e-9f66-4198-a89c-a6cd7c2005fd@mhtml.blink
 
 @charset "utf-8";
 
 :root { --font-custom: 'customFont', 'customFont Fallback', Circular, custo=
 m-font, Helvetica Neue, Helvetica, Arial, sans-serif; --font-source-code-pr=
 o: 'Source Code Pro', Source Code Pro, Office Code Pro, Menlo, monospace; }
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-9A57BA0664C70E5D6C0AAB7E1BE4483E@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23409,7 +23400,7 @@ ntent=3D"text/html; charset=3DUTF-8"><link rel=3D"preconnect" href=3D"https=
 nC11KuzrvT903WrEU+N9Ik/RpiCRTAEAAABbeyJvcmlnaW4iOiJodHRwczovL3N0cmlwZS5jb20=
 6NDQzIiwiZmVhdHVyZSI6IlRwY2QiLCJleHBpcnkiOjE3MzUzNDM5OTksImlzU3ViZG9tYWluIj=
 p0cnVlfQ=3D=3D"></head><body></body></html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-E15F01BA9E593CB1EA5926B91D66BDD6@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23418,14 +23409,14 @@ Content-Location: https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9
 <!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
 t/html; charset=3DUTF-8"></head><body><iframe src=3D"cid:frame-654A48BE4D96=
 5E0B5444F3C709CF0592@mhtml.blink"></iframe></body></html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-05EC01014B13D4DCCBD59F7A5090B893@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
 
 <html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=
 =3DUTF-8"></head><body></body></html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-632D7701C91E1D60390D1FD31AD6B31C@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23434,7 +23425,7 @@ Content-Transfer-Encoding: quoted-printable
 =3DUTF-8"></head><body><iframe height=3D"0" width=3D"0" src=3D"cid:frame-84=
 EDC93FC448DF776F3C6ED17F0BB22A@mhtml.blink" style=3D"display: none; visibil=
 ity: hidden;"></iframe></body></html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-654A48BE4D965E0B5444F3C709CF0592@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23443,7 +23434,7 @@ Content-Location: https://m.stripe.network/inner.html#url=https%3A%2F%2Fsupabase
 <!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
 t/html; charset=3DUTF-8"><title>StripeM-Inner</title></head><body></body></=
 html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj----
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
 Content-Type: text/html
 Content-ID: <frame-84EDC93FC448DF776F3C6ED17F0BB22A@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23458,4 +23449,4 @@ icon">
  =20
 
 </body></html>
-------MultipartBoundary--Chh98RwoPGatE8FdgpvpYaJhlEqDjJmHkLUKyuTdpj------
+------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI------

@@ -1,53 +1,35 @@
 /**
  * 📁 supabase/functions/konnect-initiate/index.ts — ZAWAJ AI
- * 
- * Edge Function تستبدل app/api/payments/initiate/route.ts
- * تعمل مع output:'export' (static build) — لا تحتاج Next.js server
- *
- * ── النشر ─────────────────────────────────────────────────────
- *   supabase functions deploy konnect-initiate
- *
- * ── المتغيرات المطلوبة ────────────────────────────────────────
- *   supabase secrets set KONNECT_API_KEY=xxx
- *   supabase secrets set KONNECT_WALLET_ID=xxx
- *   supabase secrets set APP_URL=https://zawaj-ai.vercel.app
- *   supabase secrets set KONNECT_WEBHOOK_URL=https://xxx.supabase.co/functions/v1/konnect-webhook
+ * ✅ successUrl/failUrl تستخدم zawaj:// scheme للـ deep link على Android
  */
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const KONNECT_API = 'https://api.preprod.konnect.network/api/v2';
+const KONNECT_API    = 'https://api.preprod.konnect.network/api/v2'; // sandbox
 const KONNECT_KEY    = Deno.env.get('KONNECT_API_KEY')!;
 const KONNECT_WALLET = Deno.env.get('KONNECT_WALLET_ID')!;
-const APP_URL        = Deno.env.get('APP_URL')!;
-const WEBHOOK_URL    = Deno.env.get('KONNECT_WEBHOOK_URL')!;
 
-// ── CORS Headers ──────────────────────────────────────────────
+// ✅ Deep link scheme مسجّل في AndroidManifest.xml
+const SUCCESS_URL = 'zawaj://payment/success';
+const FAIL_URL    = 'zawaj://payment/fail';
+
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+const json = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status, headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
+
 Deno.serve(async (req: Request) => {
-
-  // OPTIONS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: CORS });
-  }
-
-  if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405, headers: CORS });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  if (req.method !== 'POST')   return new Response('Method Not Allowed', { status: 405 });
 
   try {
-    // ── التحقق من هوية المستخدم عبر JWT ───────────────────────
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
+    if (!authHeader) return json({ error: 'Unauthorized' }, 401);
 
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL')!,
@@ -56,78 +38,58 @@ Deno.serve(async (req: Request) => {
     );
 
     const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
+    if (authErr || !user) return json({ error: 'Unauthorized' }, 401);
 
-    // ── تحميل إعدادات الاقتصاد من DB ──────────────────────────
+    // ── إعدادات الاقتصاد ──────────────────────────────────
     const { data: configRows, error: cfgErr } = await supabase
       .from('economy_config')
       .select('key, value')
       .in('key', ['currency_pricing', 'tnd_rates', 'packages', 'custom_range']);
 
     if (cfgErr || !configRows?.length) {
-      return new Response(JSON.stringify({ error: 'Config error' }), {
-        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
+      console.error('[config]', cfgErr);
+      return json({ error: 'Config error' }, 500);
     }
 
-    const cfg: Record<string, any> = Object.fromEntries(
-      configRows.map(r => [r.key, r.value])
-    );
+    const cfg: Record<string, any> =
+      Object.fromEntries(configRows.map(r => [r.key, r.value]));
 
-    // ── قراءة المدخلات ─────────────────────────────────────────
     const body     = await req.json();
     const currency = body.currency as string;
     const type     = body.type     as 'package' | 'custom';
 
-    const currencyConf = cfg.currency_pricing[currency];
-    if (!currencyConf) {
-      return new Response(JSON.stringify({ error: 'Invalid currency' }), {
-        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
-    }
+    const currencyConf = cfg.currency_pricing?.[currency];
+    if (!currencyConf) return json({ error: 'Invalid currency' }, 400);
 
-    const tndRate = cfg.tnd_rates[currency] ?? 1;
+    const tndRate = cfg.tnd_rates?.[currency] ?? 1;
 
-    // ── حساب النقاط والسعر ─────────────────────────────────────
     let coins: number, displayPrice: number, packageId: string, label: string;
 
     if (type === 'package') {
       const pid = body.packageId as string;
-      const pkg = (cfg.packages as any[]).find((p: any) => p.id === pid);
-      if (!pkg || !currencyConf.packages[pid]) {
-        return new Response(JSON.stringify({ error: 'Invalid packageId' }), {
-          status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-        });
-      }
-      coins = pkg.coins; displayPrice = currencyConf.packages[pid];
+      const pkg = (cfg.packages as any[])?.find((p: any) => p.id === pid);
+      if (!pkg) return json({ error: 'Invalid packageId' }, 400);
+      coins = pkg.coins; displayPrice = currencyConf.packages[pid] ?? 0;
       packageId = pid;   label = pkg.label;
 
     } else if (type === 'custom') {
       const { min, max, step } = cfg.custom_range;
       const rawCoins = Number(body.coins);
-      if (!Number.isInteger(rawCoins) || rawCoins < min || rawCoins > max || rawCoins % step !== 0) {
-        return new Response(JSON.stringify({ error: `coins must be ${min}–${max} step ${step}` }), {
-          status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-        });
-      }
-      const basePer1000 = currencyConf.packages['pkg_s'];
-      coins = rawCoins; displayPrice = parseFloat(((rawCoins / 1000) * basePer1000).toFixed(3));
-      packageId = `custom_${rawCoins}`; label = `شراء حر — ${rawCoins} نقطة`;
+      if (!Number.isInteger(rawCoins) || rawCoins < min || rawCoins > max || rawCoins % step !== 0)
+        return json({ error: `coins: ${min}–${max} step ${step}` }, 400);
+      coins = rawCoins;
+      displayPrice = parseFloat(((rawCoins / 1000) * (currencyConf.packages['pkg_s'] ?? 0)).toFixed(3));
+      packageId = `custom_${rawCoins}`;
+      label = `شراء حر — ${rawCoins} نقطة`;
 
     } else {
-      return new Response(JSON.stringify({ error: 'Invalid type' }), {
-        status: 400, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Invalid type' }, 400);
     }
 
     const tndPrice = parseFloat((displayPrice * tndRate).toFixed(3));
     const millimes = Math.round(tndPrice * 1000);
 
-    // ── إنشاء سجل pending ──────────────────────────────────────
+    // ── إنشاء سجل الدفع ────────────────────────────────────
     const { data: payment, error: dbErr } = await supabase
       .from('konnect_payments')
       .insert({
@@ -140,12 +102,11 @@ Deno.serve(async (req: Request) => {
       .single();
 
     if (dbErr || !payment) {
-      return new Response(JSON.stringify({ error: 'DB error' }), {
-        status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
+      console.error('[DB]', dbErr);
+      return json({ error: 'DB error' }, 500);
     }
 
-    // ── طلب بدء الدفع من Konnect ───────────────────────────────
+    // ── طلب Konnect ────────────────────────────────────────
     const konnectRes = await fetch(`${KONNECT_API}/payments/init-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': KONNECT_KEY },
@@ -156,21 +117,21 @@ Deno.serve(async (req: Request) => {
         type:                   'immediate',
         description:            `${label} — ZAWAJ AI`,
         orderId:                payment.payment_id,
-        webhook:                WEBHOOK_URL,
+        webhook:                Deno.env.get('KONNECT_WEBHOOK_URL')!,
         silentWebhook:          true,
-        successUrl:             `${APP_URL}/payment/success?pid=${payment.payment_id}`,
-        failUrl:                `${APP_URL}/payment/fail?pid=${payment.payment_id}`,
+        successUrl:             `${SUCCESS_URL}?pid=${payment.payment_id}`,
+        failUrl:                `${FAIL_URL}?pid=${payment.payment_id}`,
         acceptedPaymentMethods: ['wallet', 'bank_card', 'e-DINAR'],
         addPaymentFeesToAmount: false,
       }),
     });
 
     if (!konnectRes.ok) {
+      const kErr = await konnectRes.text();
+      console.error('[Konnect]', konnectRes.status, kErr);
       await supabase.from('konnect_payments')
         .update({ status: 'failed' }).eq('payment_id', payment.payment_id);
-      return new Response(JSON.stringify({ error: 'Payment gateway error' }), {
-        status: 502, headers: { ...CORS, 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Payment gateway error', detail: kErr }, 502);
     }
 
     const { payUrl, paymentRef } = await konnectRes.json();
@@ -179,18 +140,13 @@ Deno.serve(async (req: Request) => {
       .update({ konnect_ref: paymentRef, konnect_pay_url: payUrl })
       .eq('payment_id', payment.payment_id);
 
-    return new Response(JSON.stringify({
+    return json({
       payUrl, paymentId: payment.payment_id,
       summary: { coins, label, displayPrice, currencySymbol: currencyConf.symbol, currency },
-    }), {
-      status: 200,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
     });
 
   } catch (err) {
-    console.error('[konnect-initiate]', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500, headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+    console.error('[unexpected]', err);
+    return json({ error: 'Internal server error' }, 500);
   }
 });
