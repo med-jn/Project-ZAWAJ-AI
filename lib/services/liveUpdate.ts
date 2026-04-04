@@ -1,7 +1,9 @@
 /**
  * 📁 lib/services/liveUpdate.ts — ZAWAJ AI
- * نظام تحديث تلقائي self-hosted
- * التحديث الفعلي يتم عبر server.url الذي يحمّل من Vercel مباشرة
+ * نظام تحديث تلقائي self-hosted بدون Appflow
+ * ✅ يفحص update-info.json على Vercel
+ * ✅ يحمّل app-dist.zip ويفك ضغطه
+ * ✅ يطبق التحديث عند الفتح التالي
  */
 import { Capacitor }  from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';

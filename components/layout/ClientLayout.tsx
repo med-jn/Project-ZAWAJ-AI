@@ -5,7 +5,6 @@ import { usePathname, useRouter }   from 'next/navigation';
 import { toast }                    from 'sonner';
 import { PackagePlus }              from 'lucide-react';
 import { checkAndApplyUpdate }      from '@/lib/services/liveUpdate';
-import { useNativeAndroid }         from '@/hooks/useNativeAndroid';
 
 import Navbar        from '@/components/layout/Navbar';
 import PageHeader    from '@/components/layout/PageHeader';
@@ -50,8 +49,6 @@ function getTitle(path: string) {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
-
-  useNativeAndroid();
 
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
