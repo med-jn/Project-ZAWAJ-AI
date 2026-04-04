@@ -4,7 +4,7 @@ import { useEffect }                from 'react';
 import { usePathname, useRouter }   from 'next/navigation';
 import { toast }                    from 'sonner';
 import { PackagePlus }              from 'lucide-react';
-import { checkAndApplyUpdate, notifyAppReady } from '@/lib/services/liveUpdate';
+import { checkAndApplyUpdate }      from '@/lib/services/liveUpdate';
 import { useNativeAndroid }         from '@/hooks/useNativeAndroid';
 
 import Navbar        from '@/components/layout/Navbar';
@@ -59,13 +59,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const title  = getTitle(path);
 
   useEffect(() => {
-    // ✅ إخبار capgo أن التطبيق بدأ بنجاح
-    notifyAppReady();
-
     const timer = setTimeout(async () => {
       const result = await checkAndApplyUpdate();
-      // إذا وجد تحديث: capgo يعيد تشغيل التطبيق تلقائياً
-      // هذا الكود يُنفَّذ فقط إذا فشل التحديث التلقائي
       if (result.hasUpdate) {
         toast.info(`تحديث v${result.version} جاهز`, {
           description: 'سيُطبَّق التحديث عند إعادة فتح التطبيق',
@@ -78,7 +73,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         });
       }
     }, 2000);
-
     return () => clearTimeout(timer);
   }, []);
 

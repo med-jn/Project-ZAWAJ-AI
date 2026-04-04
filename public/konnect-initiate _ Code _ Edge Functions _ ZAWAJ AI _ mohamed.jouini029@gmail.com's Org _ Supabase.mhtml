@@ -1,14 +1,14 @@
 From: <Saved by Blink>
 Snapshot-Content-Location: https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/functions/konnect-initiate/code
 Subject: konnect-initiate | Code | Edge Functions | ZAWAJ AI | mohamed.jouini029@gmail.com's Org | Supabase
-Date: Sat, 4 Apr 2026 18:22:15 +0100
+Date: Sat, 4 Apr 2026 22:17:05 +0100
 MIME-Version: 1.0
 Content-Type: multipart/related;
 	type="text/html";
-	boundary="----MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----"
+	boundary="----MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----"
 
 
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-9B4223C141AEAA32027FD0CED67A9884@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -16,11 +16,11 @@ Content-Location: https://supabase.com/dashboard/project/lbftmbutvtjtkxgdbndu/fu
 
 <!DOCTYPE html><html lang=3D"en" data-theme=3D"dark" style=3D"color-scheme:=
  dark;"><head><meta http-equiv=3D"Content-Type" content=3D"text/html; chars=
-et=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-e3ef=
-4a0e-9f66-4198-a89c-a6cd7c2005fd@mhtml.blink" /><link rel=3D"stylesheet" ty=
-pe=3D"text/css" href=3D"cid:css-87ea9166-d52f-48c8-98f8-8f00a178b8ca@mhtml.=
-blink" /><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-a9d85b9=
-f-0a58-4fc3-8457-830e3863314b@mhtml.blink" /><title data-next-head=3D"">kon=
+et=3DUTF-8"><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-9123=
+b1e0-013e-40cb-ab10-835da4177d8c@mhtml.blink" /><link rel=3D"stylesheet" ty=
+pe=3D"text/css" href=3D"cid:css-c966011d-0b3d-414a-85a7-2e56559ffebf@mhtml.=
+blink" /><link rel=3D"stylesheet" type=3D"text/css" href=3D"cid:css-773b3de=
+8-6025-47e8-88a7-1e107abce022@mhtml.blink" /><title data-next-head=3D"">kon=
 nect-initiate | Code | Edge Functions | ZAWAJ AI | mohamed.jouini029@gmail.=
 com's Org | Supabase</title><meta name=3D"viewport" content=3D"initial-scal=
 e=3D1.0, width=3Ddevice-width" data-next-head=3D""><meta property=3D"og:ima=
@@ -1075,38 +1075,38 @@ nd" class=3D"lucide lucide-clock text-foreground-lighter"><circle cx=3D"12"=
  cy=3D"12" r=3D"10"></circle><polyline points=3D"12 6 12 12 16 14"></polyli=
 ne></svg><span class=3D"transition text-foreground-light group-hover:text-f=
 oreground underline decoration-dotted decoration-foreground-muted underline=
--offset-4">a few seconds ago</span></button></div></div><div data-slot=3D"p=
-age-header-actions" class=3D"flex items-center gap-2 shrink-0"><div class=
-=3D"flex items-center space-x-2"><a target=3D"_blank" rel=3D"noopener noref=
-errer" href=3D"https://supabase.com/docs/guides/functions" data-size=3D"tin=
-y" type=3D"button" class=3D"relative justify-center cursor-pointer inline-f=
-lex items-center space-x-2 text-center font-regular ease-out duration-200 r=
-ounded-md outline-none transition-all outline-0 focus-visible:outline-4 foc=
-us-visible:outline-offset-1 border text-foreground bg-alternative dark:bg-m=
-uted hover:bg-selection border-strong hover:border-stronger focus-visible:o=
-utline-brand-600 data-[state=3Dopen]:bg-selection data-[state=3Dopen]:outli=
-ne-brand-600 data-[state=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-=
-[26px]" tabindex=3D"0"><div class=3D"[&amp;_svg]:h-[14px] [&amp;_svg]:w-[14=
-px] text-foreground-lighter"><svg xmlns=3D"http://www.w3.org/2000/svg" widt=
-h=3D"24" height=3D"24" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D"curren=
-tColor" stroke-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=3D"roun=
-d" class=3D"lucide lucide-book-open"><path d=3D"M2 3h6a4 4 0 0 1 4 4v14a3 3=
- 0 0 0-3-3H2z"></path><path d=3D"M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z=
-"></path></svg></div><span class=3D"truncate">Docs</span></a><button data-s=
-ize=3D"tiny" type=3D"button" aria-haspopup=3D"dialog" aria-expanded=3D"fals=
-e" aria-controls=3D"radix-:r13o:" data-state=3D"closed" tabindex=3D"0" clas=
-s=3D"relative justify-center cursor-pointer inline-flex items-center space-=
-x-2 text-center font-regular ease-out duration-200 rounded-md outline-none =
-transition-all outline-0 focus-visible:outline-4 focus-visible:outline-offs=
-et-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection=
- border-strong hover:border-stronger focus-visible:outline-brand-600 data-[=
-state=3Dopen]:bg-selection data-[state=3Dopen]:outline-brand-600 data-[stat=
-e=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-[26px]"><div class=3D"[=
-&amp;_svg]:h-[14px] [&amp;_svg]:w-[14px] text-foreground-lighter"><svg xmln=
-s=3D"http://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 =
-24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-line=
-cap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-download"><p=
-ath d=3D"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points=
+-offset-4">in a few seconds</span></button></div></div><div data-slot=3D"pa=
+ge-header-actions" class=3D"flex items-center gap-2 shrink-0"><div class=3D=
+"flex items-center space-x-2"><a target=3D"_blank" rel=3D"noopener noreferr=
+er" href=3D"https://supabase.com/docs/guides/functions" data-size=3D"tiny" =
+type=3D"button" class=3D"relative justify-center cursor-pointer inline-flex=
+ items-center space-x-2 text-center font-regular ease-out duration-200 roun=
+ded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-=
+visible:outline-offset-1 border text-foreground bg-alternative dark:bg-mute=
+d hover:bg-selection border-strong hover:border-stronger focus-visible:outl=
+ine-brand-600 data-[state=3Dopen]:bg-selection data-[state=3Dopen]:outline-=
+brand-600 data-[state=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-[26=
+px]" tabindex=3D"0"><div class=3D"[&amp;_svg]:h-[14px] [&amp;_svg]:w-[14px]=
+ text-foreground-lighter"><svg xmlns=3D"http://www.w3.org/2000/svg" width=
+=3D"24" height=3D"24" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D"current=
+Color" stroke-width=3D"2" stroke-linecap=3D"round" stroke-linejoin=3D"round=
+" class=3D"lucide lucide-book-open"><path d=3D"M2 3h6a4 4 0 0 1 4 4v14a3 3 =
+0 0 0-3-3H2z"></path><path d=3D"M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"=
+></path></svg></div><span class=3D"truncate">Docs</span></a><button data-si=
+ze=3D"tiny" type=3D"button" aria-haspopup=3D"dialog" aria-expanded=3D"false=
+" aria-controls=3D"radix-:r13o:" data-state=3D"closed" tabindex=3D"0" class=
+=3D"relative justify-center cursor-pointer inline-flex items-center space-x=
+-2 text-center font-regular ease-out duration-200 rounded-md outline-none t=
+ransition-all outline-0 focus-visible:outline-4 focus-visible:outline-offse=
+t-1 border text-foreground bg-alternative dark:bg-muted hover:bg-selection =
+border-strong hover:border-stronger focus-visible:outline-brand-600 data-[s=
+tate=3Dopen]:bg-selection data-[state=3Dopen]:outline-brand-600 data-[state=
+=3Dopen]:border-button-hover text-xs px-2.5 py-1 h-[26px]"><div class=3D"[&=
+amp;_svg]:h-[14px] [&amp;_svg]:w-[14px] text-foreground-lighter"><svg xmlns=
+=3D"http://www.w3.org/2000/svg" width=3D"24" height=3D"24" viewBox=3D"0 0 2=
+4 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"2" stroke-linec=
+ap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucide-download"><pa=
+th d=3D"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points=
 =3D"7 10 12 15 17 10"></polyline><line x1=3D"12" x2=3D"12" y1=3D"15" y2=3D"=
 3"></line></svg></div> <span class=3D"truncate">Download</span> </button><b=
 utton data-size=3D"tiny" type=3D"button" tabindex=3D"0" class=3D"relative j=
@@ -1224,380 +1224,478 @@ owUnused showDeprecated vs-dark" role=3D"code" data-uri=3D"inmemory://model=
 /8" style=3D"width: 760px; height: 367px;"><div data-mprt=3D"3" class=3D"ov=
 erflow-guard" style=3D"width: 760px; height: 367px;"><div class=3D"margin" =
 role=3D"presentation" aria-hidden=3D"true" style=3D"position: absolute; tra=
-nsform: translate3d(0px, 0px, 0px); contain: strict; top: -2497px; height: =
-3123px; width: 31px;"><div class=3D"glyph-margin" style=3D"left: 0px; width=
-: 0px; height: 3123px;"></div><div class=3D"margin-view-zones" role=3D"pres=
-entation" aria-hidden=3D"true" style=3D"position: absolute;"></div><div cla=
-ss=3D"margin-view-overlays" role=3D"presentation" aria-hidden=3D"true" styl=
+nsform: translate3d(0px, 0px, 0px); contain: strict; top: -2530px; height: =
+3156px; width: 31px;"><div class=3D"glyph-margin" style=3D"left: 0px; width=
+: 0px; height: 3156px;"></div><div class=3D"margin-view-zones" role=3D"pres=
+entation" aria-hidden=3D"true" style=3D"position: absolute; width: 31px;"><=
+/div><div class=3D"margin-view-overlays" role=3D"presentation" aria-hidden=
+=3D"true" style=3D"position: absolute; font-family: Consolas, &quot;Courier=
+ New&quot;, monospace; font-weight: normal; font-size: 13px; font-feature-s=
+ettings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: n=
+ormal; line-height: 18px; letter-spacing: 0px; width: 31px; height: 3156px;=
+"><div style=3D"top: 2519px; height: 18px;"><div class=3D"line-numbers" sty=
+le=3D"left:0px;width:21px;">137</div></div><div style=3D"top: 2537px; heigh=
+t: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">138</d=
+iv></div><div style=3D"top: 2555px; height: 18px;"><div class=3D"line-numbe=
+rs" style=3D"left:0px;width:21px;">139</div></div><div style=3D"top: 2573px=
+; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;"=
+>140</div></div><div style=3D"top: 2591px; height: 18px;"><div class=3D"lin=
+e-numbers" style=3D"left:0px;width:21px;">141</div></div><div style=3D"top:=
+ 2609px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width=
+:21px;">142</div></div><div style=3D"top: 2627px; height: 18px;"><div class=
+=3D"line-numbers" style=3D"left:0px;width:21px;">143</div></div><div style=
+=3D"top: 2645px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0=
+px;width:21px;">144</div></div><div style=3D"top: 2663px; height: 18px;"><d=
+iv class=3D"line-numbers" style=3D"left:0px;width:21px;">145</div></div><di=
+v style=3D"top: 2681px; height: 18px;"><div class=3D"line-numbers" style=3D=
+"left:0px;width:21px;">146</div></div><div style=3D"top: 2699px; height: 18=
+px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">147</div></=
+div><div style=3D"top: 2717px; height: 18px;"><div class=3D"line-numbers" s=
+tyle=3D"left:0px;width:21px;">148</div></div><div style=3D"top: 2735px; hei=
+ght: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">149<=
+/div></div><div style=3D"top: 2753px; height: 18px;"><div class=3D"line-num=
+bers" style=3D"left:0px;width:21px;">150</div></div><div style=3D"top: 2771=
+px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px=
+;">151</div></div><div style=3D"top: 2789px; height: 18px;"><div class=3D"c=
+urrent-line current-line-margin-both" style=3D"width:31px"></div><div class=
+=3D"line-numbers active-line-number" style=3D"left:0px;width:21px;">152</di=
+v></div></div><div class=3D"glyph-margin-widgets" style=3D"position: absolu=
+te; top: 0px;"></div></div><div class=3D"monaco-scrollable-element editor-s=
+crollable vs-dark" role=3D"presentation" data-mprt=3D"6" style=3D"position:=
+ absolute; overflow: hidden; left: 31px; height: 367px; width: 729px;"><div=
+ class=3D"lines-content monaco-editor-background" style=3D"position: absolu=
+te; overflow: hidden; width: 1.67772e+07px; height: 1.67772e+07px; transfor=
+m: translate3d(0px, 0px, 0px); contain: strict; top: -2530px; left: 0px;"><=
+div class=3D"view-overlays" role=3D"presentation" aria-hidden=3D"true" styl=
 e=3D"position: absolute; font-family: Consolas, &quot;Courier New&quot;, mo=
 nospace; font-weight: normal; font-size: 13px; font-feature-settings: &quot=
 ;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: normal; line-he=
-ight: 18px; letter-spacing: 0px; width: 31px; height: 3123px;"><div style=
-=3D"top: 2486px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0=
-px;width:21px;">137</div></div><div style=3D"top: 2504px; height: 18px;"><d=
-iv class=3D"line-numbers" style=3D"left:0px;width:21px;">138</div></div><di=
-v style=3D"top: 2522px; height: 18px;"><div class=3D"line-numbers" style=3D=
-"left:0px;width:21px;">139</div></div><div style=3D"top: 2540px; height: 18=
-px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">140</div></=
-div><div style=3D"top: 2558px; height: 18px;"><div class=3D"line-numbers" s=
-tyle=3D"left:0px;width:21px;">141</div></div><div style=3D"top: 2576px; hei=
-ght: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">142<=
-/div></div><div style=3D"top: 2594px; height: 18px;"><div class=3D"line-num=
-bers" style=3D"left:0px;width:21px;">143</div></div><div style=3D"top: 2612=
-px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px=
-;">144</div></div><div style=3D"top: 2630px; height: 18px;"><div class=3D"l=
-ine-numbers" style=3D"left:0px;width:21px;">145</div></div><div style=3D"to=
-p: 2648px; height: 18px;"><div class=3D"line-numbers" style=3D"left:0px;wid=
-th:21px;">146</div></div><div style=3D"top: 2666px; height: 18px;"><div cla=
-ss=3D"line-numbers" style=3D"left:0px;width:21px;">147</div></div><div styl=
-e=3D"top: 2684px; height: 18px;"><div class=3D"line-numbers" style=3D"left:=
-0px;width:21px;">148</div></div><div style=3D"top: 2702px; height: 18px;"><=
-div class=3D"line-numbers" style=3D"left:0px;width:21px;">149</div></div><d=
-iv style=3D"top: 2720px; height: 18px;"><div class=3D"line-numbers" style=
-=3D"left:0px;width:21px;">150</div></div><div style=3D"top: 2738px; height:=
- 18px;"><div class=3D"line-numbers" style=3D"left:0px;width:21px;">151</div=
-></div><div style=3D"top:2756px;height:18px;"><div class=3D"current-line cu=
-rrent-line-margin-both" style=3D"width:31px"></div><div class=3D"line-numbe=
-rs active-line-number" style=3D"left:0px;width:21px;">152</div></div></div>=
-<div class=3D"glyph-margin-widgets" style=3D"position: absolute; top: 0px;"=
-></div></div><div class=3D"monaco-scrollable-element editor-scrollable vs-d=
-ark" role=3D"presentation" data-mprt=3D"6" style=3D"position: absolute; ove=
-rflow: hidden; left: 31px; height: 367px; width: 729px;"><div class=3D"line=
-s-content monaco-editor-background" style=3D"position: absolute; overflow: =
-hidden; width: 1.67772e+07px; height: 1.67772e+07px; transform: translate3d=
-(0px, 0px, 0px); contain: strict; top: -2497px; left: 0px;"><div class=3D"v=
-iew-overlays" role=3D"presentation" aria-hidden=3D"true" style=3D"position:=
- absolute; font-family: Consolas, &quot;Courier New&quot;, monospace; font-=
-weight: normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0,=
- &quot;calt&quot; 0; font-variation-settings: normal; line-height: 18px; le=
-tter-spacing: 0px; height: 0px; width: 729px;"><div style=3D"top:2486px;hei=
-ght:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active v=
-ertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guid=
-e core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.14843=
-75px"></div></div><div style=3D"top:2504px;height:18px;"><div class=3D"core=
--guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;wi=
-dth:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 ver=
-tical" style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=
-=3D"top:2522px;height:18px;"><div class=3D"core-guide core-guide-indent lvl=
--0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div><div =
-class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.2968=
-75px;width:7.1484375px"></div></div><div style=3D"top: 2540px; height: 18px=
-;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vertical"=
- style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core-g=
-uide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></=
-div><div class=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"lef=
-t:28.59375px;width:7.1484375px"></div></div><div style=3D"top: 2558px; heig=
-ht: 18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active v=
-ertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guid=
-e core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.14843=
-75px"></div><div class=3D"core-guide core-guide-indent lvl-2 vertical" styl=
-e=3D"left:28.59375px;width:7.1484375px"></div></div><div style=3D"top:2576p=
-x;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-act=
-ive vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core=
--guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.=
-1484375px"></div><div class=3D"core-guide core-guide-indent lvl-2 vertical"=
- style=3D"left:28.59375px;width:7.1484375px"></div></div><div style=3D"top:=
-2594px;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 inden=
-t-active vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D=
-"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;wid=
-th:7.1484375px"></div></div><div style=3D"top:2612px;height:18px;"><div cla=
-ss=3D"core-guide core-guide-indent lvl-0 indent-active vertical" style=3D"l=
-eft:0px;width:7.1484375px"></div><div class=3D"core-guide core-guide-indent=
- lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></div><div cl=
-ass=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"left:28.59375p=
-x;width:7.1484375px"></div></div><div style=3D"top: 2630px; height: 18px;">=
-<div class=3D"core-guide core-guide-indent lvl-0 indent-active vertical" st=
-yle=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core-guid=
-e-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></div=
-><div class=3D"core-guide core-guide-indent lvl-2 vertical" style=3D"left:2=
-8.59375px;width:7.1484375px"></div></div><div style=3D"top: 2648px; height:=
- 18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vert=
-ical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide c=
-ore-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375p=
-x"></div></div><div style=3D"top: 2666px; height: 18px;"><div class=3D"core=
--guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;wi=
-dth:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 ver=
-tical" style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=
-=3D"top:2684px;height:18px;"><div class=3D"core-guide core-guide-indent lvl=
--0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div></div=
-><div style=3D"top: 2702px; height: 18px;"><div class=3D"core-guide core-gu=
-ide-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375p=
-x"></div><div class=3D"core-guide core-guide-indent lvl-1 vertical" style=
-=3D"left:14.296875px;width:7.1484375px"></div></div><div style=3D"top:2720p=
-x;height:18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-act=
-ive vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core=
--guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.=
-1484375px"></div></div><div style=3D"top:2738px;height:18px;"><div class=3D=
-"core-guide core-guide-indent lvl-0 indent-active vertical" style=3D"left:0=
-px;width:7.1484375px"></div></div><div style=3D"top:2756px;height:18px;"><d=
-iv class=3D"current-line current-line-exact" style=3D"width:729px;"></div><=
-/div></div><div role=3D"presentation" aria-hidden=3D"true" class=3D"view-ru=
-lers"></div><div class=3D"view-zones" role=3D"presentation" aria-hidden=3D"=
-true" style=3D"position: absolute;"></div><div class=3D"view-lines monaco-m=
-ouse-cursor-text" role=3D"presentation" aria-hidden=3D"true" data-mprt=3D"8=
-" style=3D"position: absolute; font-family: Consolas, &quot;Courier New&quo=
-t;, monospace; font-weight: normal; font-size: 13px; font-feature-settings:=
- &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: normal; l=
-ine-height: 18px; letter-spacing: 0px; width: 729px; height: 3123px;"><div =
-style=3D"top:2486px;height:18px;" class=3D"view-line"><span><span class=3D"=
-mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk9">const</span><span=
- class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-3">{=
-</span><span class=3D"mtk1">&nbsp;payUrl</span><span class=3D"mtk10">,</spa=
-n><span class=3D"mtk1">&nbsp;paymentRef&nbsp;</span><span class=3D"mtk10 br=
-acket-highlighting-3">}</span><span class=3D"mtk1">&nbsp;</span><span class=
-=3D"mtk10">=3D</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk9"=
->await</span><span class=3D"mtk1">&nbsp;konnectRes</span><span class=3D"mtk=
-10">.</span><span class=3D"mtk1">json</span><span class=3D"mtk10 bracket-hi=
-ghlighting-3">(</span><span class=3D"mtk10 bracket-highlighting-3">)</span>=
-<span class=3D"mtk10">;</span></span></div><div style=3D"top:2504px;height:=
-18px;" class=3D"view-line"><span><span></span></span></div><div style=3D"to=
-p:2522px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp=
-;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk9">await</span><span class=3D"m=
-tk1">&nbsp;supabase</span><span class=3D"mtk10">.</span><span class=3D"mtk9=
-">from</span><span class=3D"mtk10 bracket-highlighting-3">(</span><span cla=
-ss=3D"mtk5">'konnect_payments'</span><span class=3D"mtk10 bracket-highlight=
-ing-3">)</span></span></div><div style=3D"top:2540px;height:18px;" class=3D=
-"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=
-</span><span class=3D"mtk10">.</span><span class=3D"mtk1">update</span><spa=
-n class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk10 brack=
-et-highlighting-4">{</span><span class=3D"mtk1">&nbsp;konnect_ref</span><sp=
-an class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;paymentRef</span><spa=
-n class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;konnect_pay_url</span>=
-<span class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;payUrl&nbsp;</span=
-><span class=3D"mtk10 bracket-highlighting-4">}</span><span class=3D"mtk10 =
-bracket-highlighting-3">)</span></span></div><div style=3D"top:2558px;heigh=
-t:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&=
-nbsp;&nbsp;&nbsp;</span><span class=3D"mtk10">.</span><span class=3D"mtk1">=
-eq</span><span class=3D"mtk10 bracket-highlighting-3">(</span><span class=
-=3D"mtk5">'payment_id'</span><span class=3D"mtk10">,</span><span class=3D"m=
+ight: 18px; letter-spacing: 0px; height: 0px; width: 729px;"><div style=3D"=
+top: 2519px; height: 18px;"><div class=3D"core-guide core-guide-indent lvl-=
+0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div><div c=
+lass=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.29687=
+5px;width:7.1484375px"></div></div><div style=3D"top: 2537px; height: 18px;=
+"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vertical" =
+style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core-gu=
+ide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"></d=
+iv></div><div style=3D"top: 2555px; height: 18px;"><div class=3D"core-guide=
+ core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.=
+1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 vertical"=
+ style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=3D"top=
+: 2573px; height: 18px;"><div class=3D"core-guide core-guide-indent lvl-0 i=
+ndent-active vertical" style=3D"left:0px;width:7.1484375px"></div><div clas=
+s=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px=
+;width:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-2 =
+vertical" style=3D"left:28.59375px;width:7.1484375px"></div></div><div styl=
+e=3D"top: 2591px; height: 18px;"><div class=3D"core-guide core-guide-indent=
+ lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div><=
+div class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.=
+296875px;width:7.1484375px"></div><div class=3D"core-guide core-guide-inden=
+t lvl-2 vertical" style=3D"left:28.59375px;width:7.1484375px"></div></div><=
+div style=3D"top: 2609px; height: 18px;"><div class=3D"core-guide core-guid=
+e-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px"=
+></div><div class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"=
+left:14.296875px;width:7.1484375px"></div><div class=3D"core-guide core-gui=
+de-indent lvl-2 vertical" style=3D"left:28.59375px;width:7.1484375px"></div=
+></div><div style=3D"top: 2627px; height: 18px;"><div class=3D"core-guide c=
+ore-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.14=
+84375px"></div><div class=3D"core-guide core-guide-indent lvl-1 vertical" s=
+tyle=3D"left:14.296875px;width:7.1484375px"></div></div><div style=3D"top: =
+2645px; height: 18px;"><div class=3D"core-guide core-guide-indent lvl-0 ind=
+ent-active vertical" style=3D"left:0px;width:7.1484375px"></div><div class=
+=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;=
+width:7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-2 v=
+ertical" style=3D"left:28.59375px;width:7.1484375px"></div></div><div style=
+=3D"top: 2663px; height: 18px;"><div class=3D"core-guide core-guide-indent =
+lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px"></div><d=
+iv class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"left:14.2=
+96875px;width:7.1484375px"></div><div class=3D"core-guide core-guide-indent=
+ lvl-2 vertical" style=3D"left:28.59375px;width:7.1484375px"></div></div><d=
+iv style=3D"top: 2681px; height: 18px;"><div class=3D"core-guide core-guide=
+-indent lvl-0 indent-active vertical" style=3D"left:0px;width:7.1484375px">=
+</div><div class=3D"core-guide core-guide-indent lvl-1 vertical" style=3D"l=
+eft:14.296875px;width:7.1484375px"></div></div><div style=3D"top: 2699px; h=
+eight: 18px;"><div class=3D"core-guide core-guide-indent lvl-0 indent-activ=
+e vertical" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-g=
+uide core-guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.14=
+84375px"></div></div><div style=3D"top: 2717px; height: 18px;"><div class=
+=3D"core-guide core-guide-indent lvl-0 indent-active vertical" style=3D"lef=
+t:0px;width:7.1484375px"></div></div><div style=3D"top: 2735px; height: 18p=
+x;"><div class=3D"core-guide core-guide-indent lvl-0 indent-active vertical=
+" style=3D"left:0px;width:7.1484375px"></div><div class=3D"core-guide core-=
+guide-indent lvl-1 vertical" style=3D"left:14.296875px;width:7.1484375px"><=
+/div></div><div style=3D"top: 2753px; height: 18px;"><div class=3D"core-gui=
+de core-guide-indent lvl-0 indent-active vertical" style=3D"left:0px;width:=
+7.1484375px"></div><div class=3D"core-guide core-guide-indent lvl-1 vertica=
+l" style=3D"left:14.296875px;width:7.1484375px"></div></div><div style=3D"t=
+op: 2771px; height: 18px;"><div class=3D"core-guide core-guide-indent lvl-0=
+ indent-active vertical" style=3D"left:0px;width:7.1484375px"></div></div><=
+div style=3D"top:2789px;height:18px;"><div class=3D"current-line current-li=
+ne-exact" style=3D"width:729px;"></div></div></div><div role=3D"presentatio=
+n" aria-hidden=3D"true" class=3D"view-rulers"></div><div class=3D"view-zone=
+s" role=3D"presentation" aria-hidden=3D"true" style=3D"position: absolute; =
+width: 729px;"><div class=3D"dock-find-viewzone" monaco-view-zone=3D"f1" st=
+yle=3D"position: absolute; width: 100%; display: none; top: 0px; height: 0p=
+x;"></div></div><div class=3D"view-lines monaco-mouse-cursor-text" role=3D"=
+presentation" aria-hidden=3D"true" data-mprt=3D"8" style=3D"position: absol=
+ute; font-family: Consolas, &quot;Courier New&quot;, monospace; font-weight=
+: normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot=
+;calt&quot; 0; font-variation-settings: normal; line-height: 18px; letter-s=
+pacing: 0px; width: 729px; height: 3156px;"><div style=3D"top:2519px;height=
+:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&n=
+bsp;</span><span class=3D"mtk9">const</span><span class=3D"mtk1">&nbsp;</sp=
+an><span class=3D"mtk10 bracket-highlighting-3">{</span><span class=3D"mtk1=
+">&nbsp;payUrl</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&nb=
+sp;paymentRef&nbsp;</span><span class=3D"mtk10 bracket-highlighting-3">}</s=
+pan><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10">=3D</span><span=
+ class=3D"mtk1">&nbsp;</span><span class=3D"mtk9">await</span><span class=
+=3D"mtk1">&nbsp;konnectRes</span><span class=3D"mtk10">.</span><span class=
+=3D"mtk1">json</span><span class=3D"mtk10 bracket-highlighting-3">(</span><=
+span class=3D"mtk10 bracket-highlighting-3">)</span><span class=3D"mtk10">;=
+</span></span></div><div style=3D"top: 2537px; height: 18px;" class=3D"view=
+-line"><span><span></span></span></div><div style=3D"top:2555px;height:18px=
+;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;<=
+/span><span class=3D"mtk9">await</span><span class=3D"mtk1">&nbsp;supabase<=
+/span><span class=3D"mtk10">.</span><span class=3D"mtk9">from</span><span c=
+lass=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk5">'konnect=
+_payments'</span><span class=3D"mtk10 bracket-highlighting-3">)</span></spa=
+n></div><div style=3D"top:2573px;height:18px;" class=3D"view-line"><span><s=
+pan class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=
+=3D"mtk10">.</span><span class=3D"mtk1">update</span><span class=3D"mtk10 b=
+racket-highlighting-3">(</span><span class=3D"mtk10 bracket-highlighting-4"=
+>{</span><span class=3D"mtk1">&nbsp;konnect_ref</span><span class=3D"mtk10"=
+>:</span><span class=3D"mtk1">&nbsp;paymentRef</span><span class=3D"mtk10">=
+,</span><span class=3D"mtk1">&nbsp;konnect_pay_url</span><span class=3D"mtk=
+10">:</span><span class=3D"mtk1">&nbsp;payUrl&nbsp;</span><span class=3D"mt=
+k10 bracket-highlighting-4">}</span><span class=3D"mtk10 bracket-highlighti=
+ng-3">)</span></span></div><div style=3D"top:2591px;height:18px;" class=3D"=
+view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<=
+/span><span class=3D"mtk10">.</span><span class=3D"mtk1">eq</span><span cla=
+ss=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk5">'payment_i=
+d'</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;payment</=
+span><span class=3D"mtk10">.</span><span class=3D"mtk1">payment_id</span><s=
+pan class=3D"mtk10 bracket-highlighting-3">)</span><span class=3D"mtk10">;<=
+/span></span></div><div style=3D"top: 2609px; height: 18px;" class=3D"view-=
+line"><span><span></span></span></div><div style=3D"top:2627px;height:18px;=
+" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</=
+span><span class=3D"mtk9">return</span><span class=3D"mtk1">&nbsp;json</spa=
+n><span class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk10=
+ bracket-highlighting-4">{</span></span></div><div style=3D"top:2645px;heig=
+ht:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;=
+&nbsp;&nbsp;&nbsp;payUrl</span><span class=3D"mtk10">,</span><span class=3D=
+"mtk1">&nbsp;paymentId</span><span class=3D"mtk10">:</span><span class=3D"m=
 tk1">&nbsp;payment</span><span class=3D"mtk10">.</span><span class=3D"mtk1"=
->payment_id</span><span class=3D"mtk10 bracket-highlighting-3">)</span><spa=
-n class=3D"mtk10">;</span></span></div><div style=3D"top:2576px;height:18px=
-;" class=3D"view-line"><span><span></span></span></div><div style=3D"top:25=
-94px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nb=
-sp;&nbsp;&nbsp;</span><span class=3D"mtk9">return</span><span class=3D"mtk1=
-">&nbsp;json</span><span class=3D"mtk10 bracket-highlighting-3">(</span><sp=
-an class=3D"mtk10 bracket-highlighting-4">{</span></span></div><div style=
-=3D"top:2612px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1"=
->&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payUrl</span><span class=3D"mtk10">,</=
-span><span class=3D"mtk1">&nbsp;paymentId</span><span class=3D"mtk10">:</sp=
-an><span class=3D"mtk1">&nbsp;payment</span><span class=3D"mtk10">.</span><=
-span class=3D"mtk1">payment_id</span><span class=3D"mtk10">,</span></span><=
-/div><div style=3D"top:2630px;height:18px;" class=3D"view-line"><span><span=
- class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;summary</span><span cla=
-ss=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10=
- bracket-highlighting-5">{</span><span class=3D"mtk1">&nbsp;coins</span><sp=
-an class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;label</span><span cla=
-ss=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;displayPrice</span><span cl=
-ass=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;currencySymbol</span><span=
- class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;currencyConf</span><spa=
-n class=3D"mtk10">.</span><span class=3D"mtk9">symbol</span><span class=3D"=
-mtk10">,</span><span class=3D"mtk1">&nbsp;currency&nbsp;</span><span class=
-=3D"mtk10 bracket-highlighting-5">}</span><span class=3D"mtk10">,</span></s=
-pan></div><div style=3D"top:2648px;height:18px;" class=3D"view-line"><span>=
-<span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk10 br=
-acket-highlighting-4">}</span><span class=3D"mtk10 bracket-highlighting-3">=
-)</span><span class=3D"mtk10">;</span></span></div><div style=3D"top: 2666p=
-x; height: 18px;" class=3D"view-line"><span><span></span></span></div><div =
-style=3D"top:2684px;height:18px;" class=3D"view-line"><span><span class=3D"=
-mtk1">&nbsp;&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2">}</sp=
-an><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk9">catch</span><span=
- class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2">(=
-</span><span class=3D"mtk1">err</span><span class=3D"mtk10 bracket-highligh=
-ting-2">)</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 brac=
-ket-highlighting-2">{</span></span></div><div style=3D"top:2702px;height:18=
-px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp=
-;console</span><span class=3D"mtk10">.</span><span class=3D"mtk1">error</sp=
-an><span class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk5=
-">'[unexpected]'</span><span class=3D"mtk10">,</span><span class=3D"mtk1">&=
-nbsp;err</span><span class=3D"mtk10 bracket-highlighting-3">)</span><span c=
-lass=3D"mtk10">;</span></span></div><div style=3D"top:2720px;height:18px;" =
-class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</sp=
-an><span class=3D"mtk9">return</span><span class=3D"mtk1">&nbsp;json</span>=
-<span class=3D"mtk10 bracket-highlighting-3">(</span><span class=3D"mtk10 b=
-racket-highlighting-4">{</span><span class=3D"mtk1">&nbsp;error</span><span=
- class=3D"mtk10">:</span><span class=3D"mtk1">&nbsp;</span><span class=3D"m=
-tk5">'Internal&nbsp;server&nbsp;error'</span><span class=3D"mtk1">&nbsp;</s=
-pan><span class=3D"mtk10 bracket-highlighting-4">}</span><span class=3D"mtk=
-10">,</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk6">500</spa=
-n><span class=3D"mtk10 bracket-highlighting-3">)</span><span class=3D"mtk10=
-">;</span></span></div><div style=3D"top:2738px;height:18px;" class=3D"view=
--line"><span><span class=3D"mtk1">&nbsp;&nbsp;</span><span class=3D"mtk10 b=
-racket-highlighting-2">}</span></span></div><div style=3D"top:2756px;height=
-:18px;" class=3D"view-line"><span><span class=3D"mtk10 bracket-highlighting=
--1">}</span><span class=3D"mtk10 bracket-highlighting-0">)</span><span clas=
-s=3D"mtk10">;</span></span></div></div><div data-mprt=3D"1" class=3D"conten=
-tWidgets" style=3D"position: absolute; top: 0px;"><div class=3D"lightBulbWi=
-dget" role=3D"listbox" widgetid=3D"LightBulbWidget" style=3D"position: abso=
-lute; display: none; visibility: hidden; max-width: 729px;"></div></div><di=
-v role=3D"presentation" aria-hidden=3D"true" class=3D"cursors-layer cursor-=
-line-style cursor-solid"><div class=3D"cursor  monaco-mouse-cursor-text " s=
-tyle=3D"height: 18px; top: 2756px; left: 21px; font-family: Consolas, &quot=
-;Courier New&quot;, monospace; font-weight: normal; font-size: 13px; font-f=
-eature-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-set=
-tings: normal; line-height: 18px; letter-spacing: 0px; display: block; visi=
-bility: hidden; padding-left: 0px; width: 1.85185px;"></div></div></div><di=
-v role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollbar h=
-orizontal" style=3D"position: absolute; width: 715px; height: 12px; left: 0=
-px; bottom: 0px;"><div class=3D"slider" style=3D"position: absolute; top: 0=
-px; left: 0px; height: 12px; transform: translate3d(0px, 0px, 0px); contain=
-: strict; width: 715px;"></div></div><canvas class=3D"decorationsOverviewRu=
-ler" aria-hidden=3D"true" width=3D"15" height=3D"396" style=3D"position: ab=
-solute; transform: translate3d(0px, 0px, 0px); contain: strict; top: 0px; r=
-ight: 0px; width: 14px; height: 367px; display: block;"></canvas><div role=
-=3D"presentation" aria-hidden=3D"true" class=3D"visible scrollbar vertical"=
- style=3D"position: absolute; width: 14px; height: 367px; right: 0px; top: =
-0px;"><div class=3D"slider" style=3D"position: absolute; top: 294px; left: =
-0px; width: 14px; transform: translate3d(0px, 0px, 0px); contain: strict; h=
-eight: 43px;"></div></div></div><div role=3D"presentation" aria-hidden=3D"t=
-rue" style=3D"width: 760px;" class=3D"scroll-decoration"></div><textarea da=
-ta-mprt=3D"7" class=3D"inputarea monaco-mouse-cursor-text" wrap=3D"on" auto=
-correct=3D"off" autocapitalize=3D"off" autocomplete=3D"off" spellcheck=3D"f=
-alse" aria-label=3D"Editor content" aria-required=3D"false" tabindex=3D"0" =
-role=3D"textbox" aria-roledescription=3D"editor" aria-multiline=3D"true" ar=
-ia-autocomplete=3D"both" style=3D"tab-size: 14.2969px; font-family: Consola=
-s, &quot;Courier New&quot;, monospace; font-weight: normal; font-size: 13px=
-; font-feature-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-varia=
-tion-settings: normal; line-height: 18px; letter-spacing: 0px; top: 259px; =
-left: 31px; width: 708px; height: 1px;"></textarea><div class=3D"monaco-edi=
-tor-background textAreaCover line-numbers" style=3D"position: absolute; top=
-: 0px; left: 0px; width: 0px; height: 0px;"></div><div data-mprt=3D"4" clas=
-s=3D"overlayWidgets" style=3D"width: 760px;"><div class=3D"sticky-widget" w=
-idgetid=3D"editor.contrib.stickyScrollWidget" style=3D"width: 746px; positi=
-on: absolute; right: 50%; top: 0px; display: block; height: 18px; margin-le=
-ft: 0px;"><div class=3D"sticky-widget-line-numbers" role=3D"none" style=3D"=
-width: 31px; height: 18px;"><span data-sticky-line-index=3D"0" data-sticky-=
-is-line-number=3D"" class=3D"sticky-line-number" style=3D"line-height: 18px=
-; width: 31px; height: 18px; z-index: 0; top: 0px;"><span class=3D"sticky-l=
-ine-number-inner" style=3D"line-height: 18px; width: 21px; padding-left: 0p=
-x; font-family: Consolas, &quot;Courier New&quot;, monospace; font-weight: =
-normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;c=
-alt&quot; 0; font-variation-settings: normal; letter-spacing: 0px;">26</spa=
-n></span></div><div class=3D"sticky-widget-lines-scrollable" style=3D"--vsc=
-ode-editorStickyScroll-scrollableWidth: 715px; height: 18px;"><div class=3D=
-"sticky-widget-lines" role=3D"list" style=3D"left: 0px;"><span data-sticky-=
-line-index=3D"0" data-sticky-is-line=3D"" role=3D"listitem" tabindex=3D"0" =
-class=3D"sticky-line-content stickyLine26" style=3D"line-height: 18px; font=
--family: Consolas, &quot;Courier New&quot;, monospace; font-weight: normal;=
- font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;calt&quo=
-t; 0; font-variation-settings: normal; letter-spacing: 0px; height: 18px; z=
--index: 0; top: 0px;"><span><span class=3D"mtk24">Deno</span><span class=3D=
-"mtk10">.</span><span class=3D"mtk1">serve</span><span class=3D"mtk10 brack=
-et-highlighting-0">(</span><span class=3D"mtk9">async</span><span class=3D"=
-mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-1">(</span><sp=
-an class=3D"mtk1">req</span><span class=3D"mtk10">:</span><span class=3D"mt=
-k1">&nbsp;</span><span class=3D"mtk24">Request</span><span class=3D"mtk10 b=
-racket-highlighting-1">)</span><span class=3D"mtk1">&nbsp;</span><span clas=
-s=3D"mtk10">=3D&gt;</span><span class=3D"mtk1">&nbsp;</span><span class=3D"=
-mtk10 bracket-highlighting-1">{</span></span></span></div></div></div><div =
-class=3D"monaco-hover hidden" tabindex=3D"0" role=3D"tooltip" widgetid=3D"e=
-ditor.contrib.modesGlyphHoverWidget" style=3D"position: absolute;"><div cla=
-ss=3D"monaco-scrollable-element " role=3D"presentation" style=3D"position: =
-relative; overflow: hidden;"><div class=3D"monaco-hover-content" style=3D"o=
-verflow: hidden;"></div><div role=3D"presentation" aria-hidden=3D"true" cla=
-ss=3D"invisible scrollbar horizontal" style=3D"position: absolute;"><div cl=
-ass=3D"slider" style=3D"position: absolute; top: 0px; left: 0px; height: 10=
-px; transform: translate3d(0px, 0px, 0px); contain: strict;"></div></div><d=
+>payment_id</span><span class=3D"mtk10">,</span></span></div><div style=3D"=
+top:2663px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nb=
+sp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;summary</span><span class=3D"mtk10">:</spa=
+n><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighti=
+ng-5">{</span><span class=3D"mtk1">&nbsp;coins</span><span class=3D"mtk10">=
+,</span><span class=3D"mtk1">&nbsp;label</span><span class=3D"mtk10">,</spa=
+n><span class=3D"mtk1">&nbsp;displayPrice</span><span class=3D"mtk10">,</sp=
+an><span class=3D"mtk1">&nbsp;currencySymbol</span><span class=3D"mtk10">:<=
+/span><span class=3D"mtk1">&nbsp;currencyConf</span><span class=3D"mtk10">.=
+</span><span class=3D"mtk9">symbol</span><span class=3D"mtk10">,</span><spa=
+n class=3D"mtk1">&nbsp;currency&nbsp;</span><span class=3D"mtk10 bracket-hi=
+ghlighting-5">}</span><span class=3D"mtk10">,</span></span></div><div style=
+=3D"top:2681px;height:18px;" class=3D"view-line"><span><span class=3D"mtk1"=
+>&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"mtk10 bracket-highlighting-4=
+">}</span><span class=3D"mtk10 bracket-highlighting-3">)</span><span class=
+=3D"mtk10">;</span></span></div><div style=3D"top: 2699px; height: 18px;" c=
+lass=3D"view-line"><span><span></span></span></div><div style=3D"top:2717px=
+;height:18px;" class=3D"view-line"><span><span class=3D"mtk1">&nbsp;&nbsp;<=
+/span><span class=3D"mtk10 bracket-highlighting-2">}</span><span class=3D"m=
+tk1">&nbsp;</span><span class=3D"mtk9">catch</span><span class=3D"mtk1">&nb=
+sp;</span><span class=3D"mtk10 bracket-highlighting-2">(</span><span class=
+=3D"mtk1">err</span><span class=3D"mtk10 bracket-highlighting-2">)</span><s=
+pan class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 bracket-highlighting-2=
+">{</span></span></div><div style=3D"top:2735px;height:18px;" class=3D"view=
+-line"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;console</span><sp=
+an class=3D"mtk10">.</span><span class=3D"mtk1">error</span><span class=3D"=
+mtk10 bracket-highlighting-3">(</span><span class=3D"mtk5">'[unexpected]'</=
+span><span class=3D"mtk10">,</span><span class=3D"mtk1">&nbsp;err</span><sp=
+an class=3D"mtk10 bracket-highlighting-3">)</span><span class=3D"mtk10">;</=
+span></span></div><div style=3D"top:2753px;height:18px;" class=3D"view-line=
+"><span><span class=3D"mtk1">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class=3D"=
+mtk9">return</span><span class=3D"mtk1">&nbsp;json</span><span class=3D"mtk=
+10 bracket-highlighting-3">(</span><span class=3D"mtk10 bracket-highlightin=
+g-4">{</span><span class=3D"mtk1">&nbsp;error</span><span class=3D"mtk10">:=
+</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk5">'Internal&nbs=
+p;server&nbsp;error'</span><span class=3D"mtk1">&nbsp;</span><span class=3D=
+"mtk10 bracket-highlighting-4">}</span><span class=3D"mtk10">,</span><span =
+class=3D"mtk1">&nbsp;</span><span class=3D"mtk6">500</span><span class=3D"m=
+tk10 bracket-highlighting-3">)</span><span class=3D"mtk10">;</span></span><=
+/div><div style=3D"top:2771px;height:18px;" class=3D"view-line"><span><span=
+ class=3D"mtk1">&nbsp;&nbsp;</span><span class=3D"mtk10 bracket-highlightin=
+g-2">}</span></span></div><div style=3D"top:2789px;height:18px;" class=3D"v=
+iew-line"><span><span class=3D"mtk10 bracket-highlighting-1">}</span><span =
+class=3D"mtk10 bracket-highlighting-0">)</span><span class=3D"mtk10">;</spa=
+n></span></div></div><div data-mprt=3D"1" class=3D"contentWidgets" style=3D=
+"position: absolute; top: 0px;"><div class=3D"lightBulbWidget" role=3D"list=
+box" widgetid=3D"LightBulbWidget" style=3D"position: absolute; display: non=
+e; visibility: hidden; max-width: 729px;"></div></div><div role=3D"presenta=
+tion" aria-hidden=3D"true" class=3D"cursors-layer cursor-line-style cursor-=
+solid"><div class=3D"cursor  monaco-mouse-cursor-text " style=3D"height: 18=
+px; top: 2789px; left: 21px; font-family: Consolas, &quot;Courier New&quot;=
+, monospace; font-weight: normal; font-size: 13px; font-feature-settings: &=
+quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-settings: normal; lin=
+e-height: 18px; letter-spacing: 0px; display: block; visibility: hidden; pa=
+dding-left: 0px; width: 1.85185px;"></div></div></div><div role=3D"presenta=
+tion" aria-hidden=3D"true" class=3D"invisible scrollbar horizontal" style=
+=3D"position: absolute; width: 715px; height: 12px; left: 0px; bottom: 0px;=
+"><div class=3D"slider" style=3D"position: absolute; top: 0px; left: 0px; h=
+eight: 12px; transform: translate3d(0px, 0px, 0px); contain: strict; width:=
+ 715px;"></div></div><canvas class=3D"decorationsOverviewRuler" aria-hidden=
+=3D"true" width=3D"15" height=3D"396" style=3D"position: absolute; transfor=
+m: translate3d(0px, 0px, 0px); contain: strict; top: 0px; right: 0px; width=
+: 14px; height: 367px; display: block;"></canvas><div role=3D"presentation"=
+ aria-hidden=3D"true" class=3D"invisible scrollbar vertical fade" style=3D"=
+position: absolute; width: 14px; height: 367px; right: 0px; top: 0px;"><div=
+ class=3D"slider" style=3D"position: absolute; top: 295px; left: 0px; width=
+: 14px; transform: translate3d(0px, 0px, 0px); contain: strict; height: 42p=
+x;"></div></div></div><div role=3D"presentation" aria-hidden=3D"true" style=
+=3D"width: 760px;" class=3D"scroll-decoration"></div><textarea data-mprt=3D=
+"7" class=3D"inputarea monaco-mouse-cursor-text" wrap=3D"on" autocorrect=3D=
+"off" autocapitalize=3D"off" autocomplete=3D"off" spellcheck=3D"false" aria=
+-label=3D"Editor content" aria-required=3D"false" tabindex=3D"0" role=3D"te=
+xtbox" aria-roledescription=3D"editor" aria-multiline=3D"true" aria-autocom=
+plete=3D"both" style=3D"tab-size: 14.2969px; font-family: Consolas, &quot;C=
+ourier New&quot;, monospace; font-weight: normal; font-size: 13px; font-fea=
+ture-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font-variation-setti=
+ngs: normal; line-height: 18px; letter-spacing: 0px; top: 259px; left: 31px=
+; width: 708px; height: 1px;"></textarea><div class=3D"monaco-editor-backgr=
+ound textAreaCover line-numbers" style=3D"position: absolute; top: 0px; lef=
+t: 0px; width: 0px; height: 0px;"></div><div data-mprt=3D"4" class=3D"overl=
+ayWidgets" style=3D"width: 760px;"><div class=3D"sticky-widget" widgetid=3D=
+"editor.contrib.stickyScrollWidget" style=3D"width: 746px; position: absolu=
+te; right: 50%; top: 0px; display: block; height: 18px; margin-left: 0px;">=
+<div class=3D"sticky-widget-line-numbers" role=3D"none" style=3D"width: 31p=
+x; height: 18px;"><span data-sticky-line-index=3D"0" data-sticky-is-line-nu=
+mber=3D"" class=3D"sticky-line-number" style=3D"line-height: 18px; width: 3=
+1px; height: 18px; z-index: 0; top: 0px;"><span class=3D"sticky-line-number=
+-inner" style=3D"line-height: 18px; width: 21px; padding-left: 0px; font-fa=
+mily: Consolas, &quot;Courier New&quot;, monospace; font-weight: normal; fo=
+nt-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;calt&quot; =
+0; font-variation-settings: normal; letter-spacing: 0px;">26</span></span><=
+/div><div class=3D"sticky-widget-lines-scrollable" style=3D"--vscode-editor=
+StickyScroll-scrollableWidth: 715px; height: 18px;"><div class=3D"sticky-wi=
+dget-lines" role=3D"list" style=3D"left: 0px;"><span data-sticky-line-index=
+=3D"0" data-sticky-is-line=3D"" role=3D"listitem" tabindex=3D"0" class=3D"s=
+ticky-line-content stickyLine26" style=3D"line-height: 18px; font-family: C=
+onsolas, &quot;Courier New&quot;, monospace; font-weight: normal; font-size=
+: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;calt&quot; 0; font=
+-variation-settings: normal; letter-spacing: 0px; height: 18px; z-index: 0;=
+ top: 0px;"><span><span class=3D"mtk24">Deno</span><span class=3D"mtk10">.<=
+/span><span class=3D"mtk1">serve</span><span class=3D"mtk10 bracket-highlig=
+hting-0">(</span><span class=3D"mtk9">async</span><span class=3D"mtk1">&nbs=
+p;</span><span class=3D"mtk10 bracket-highlighting-1">(</span><span class=
+=3D"mtk1">req</span><span class=3D"mtk10">:</span><span class=3D"mtk1">&nbs=
+p;</span><span class=3D"mtk24">Request</span><span class=3D"mtk10 bracket-h=
+ighlighting-1">)</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk=
+10">=3D&gt;</span><span class=3D"mtk1">&nbsp;</span><span class=3D"mtk10 br=
+acket-highlighting-1">{</span></span></span></div></div></div><div class=3D=
+"monaco-hover hidden" tabindex=3D"0" role=3D"tooltip" widgetid=3D"editor.co=
+ntrib.modesGlyphHoverWidget" style=3D"position: absolute;"><div class=3D"mo=
+naco-scrollable-element " role=3D"presentation" style=3D"position: relative=
+; overflow: hidden;"><div class=3D"monaco-hover-content" style=3D"overflow:=
+ hidden;"></div><div role=3D"presentation" aria-hidden=3D"true" class=3D"in=
+visible scrollbar horizontal" style=3D"position: absolute;"><div class=3D"s=
+lider" style=3D"position: absolute; top: 0px; left: 0px; height: 10px; tran=
+sform: translate3d(0px, 0px, 0px); contain: strict;"></div></div><div role=
+=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollbar vertica=
+l" style=3D"position: absolute;"><div class=3D"slider" style=3D"position: a=
+bsolute; top: 0px; left: 0px; width: 10px; transform: translate3d(0px, 0px,=
+ 0px); contain: strict;"></div></div><div class=3D"shadow"></div><div class=
+=3D"shadow"></div><div class=3D"shadow"></div></div></div><div class=3D"edi=
+tor-widget find-widget visible" aria-hidden=3D"false" aria-label=3D"Find / =
+Replace" role=3D"dialog" widgetid=3D"editor.contrib.findWidget" style=3D"wi=
+dth: 419px; height: 33px; position: absolute; max-width: 717px; top: 0px; r=
+ight: 28px;"><div tabindex=3D"0" class=3D"button toggle left codicon-find-c=
+ollapsed codicon" role=3D"button" aria-label=3D"Toggle Replace" custom-hove=
+r=3D"true" aria-expanded=3D"false" aria-disabled=3D"false"></div><div class=
+=3D"find-part"><div class=3D"monaco-findInput"><div class=3D"monaco-scrolla=
+ble-element " role=3D"presentation" style=3D"position: relative; overflow: =
+hidden;"><div class=3D"monaco-inputbox idle" data-keybinding-context=3D"6" =
+style=3D"overflow: hidden; background-color: var(--vscode-input-background)=
+; color: var(--vscode-input-foreground); border: 1px solid var(--vscode-inp=
+ut-border, transparent);"><div class=3D"ibwrapper"><textarea class=3D"input=
+" autocorrect=3D"off" autocapitalize=3D"off" spellcheck=3D"false" wrap=3D"o=
+ff" aria-label=3D"Find" placeholder=3D"Find" custom-hover=3D"true" style=3D=
+"background-color: inherit; color: var(--vscode-input-foreground); width: c=
+alc(100% - 66px); height: 23px;"></textarea><div class=3D"mirror" style=3D"=
+white-space: pre; overflow-wrap: initial; padding-right: 66px;">v2</div></d=
+iv></div><div role=3D"presentation" aria-hidden=3D"true" class=3D"invisible=
+ scrollbar horizontal" style=3D"position: absolute; width: 0px; height: 10p=
+x; left: 0px; bottom: 0px;"><div class=3D"slider" style=3D"position: absolu=
+te; top: 0px; left: 0px; height: 10px; transform: translate3d(0px, 0px, 0px=
+); contain: strict; width: 0px;"></div></div><div role=3D"presentation" ari=
+a-hidden=3D"true" class=3D"invisible scrollbar vertical" style=3D"position:=
+ absolute; width: 10px; height: 23px; right: 0px; top: 0px;"><div class=3D"=
+slider" style=3D"position: absolute; top: 0px; left: 0px; width: 10px; tran=
+sform: translate3d(0px, 0px, 0px); contain: strict; height: 23px;"></div></=
+div><div class=3D"shadow"></div><div class=3D"shadow"></div><div class=3D"s=
+hadow"></div></div><div class=3D"controls"><div custom-hover=3D"true" class=
+=3D"monaco-custom-toggle codicon codicon-case-sensitive" tabindex=3D"0" rol=
+e=3D"checkbox" aria-checked=3D"false" aria-label=3D"Match Case (Alt+C)" ari=
+a-disabled=3D"false" style=3D"color: inherit;"></div><div custom-hover=3D"t=
+rue" class=3D"monaco-custom-toggle codicon codicon-whole-word" tabindex=3D"=
+0" role=3D"checkbox" aria-checked=3D"false" aria-label=3D"Match Whole Word =
+(Alt+W)" aria-disabled=3D"false" style=3D"color: inherit;"></div><div custo=
+m-hover=3D"true" class=3D"monaco-custom-toggle codicon codicon-regex" tabin=
+dex=3D"0" role=3D"checkbox" aria-checked=3D"false" aria-label=3D"Use Regula=
+r Expression (Alt+R)" aria-disabled=3D"false" style=3D"color: inherit;"></d=
+iv></div></div><div class=3D"find-actions"><div class=3D"matchesCount" titl=
+e=3D"" style=3D"min-width: 69px;">1 of 1</div><div tabindex=3D"0" class=3D"=
+button codicon codicon-find-previous-match" role=3D"button" aria-label=3D"P=
+revious Match (Shift+Enter)" custom-hover=3D"true" aria-disabled=3D"false">=
+</div><div tabindex=3D"0" class=3D"button codicon codicon-find-next-match" =
+role=3D"button" aria-label=3D"Next Match (Enter)" custom-hover=3D"true" ari=
+a-disabled=3D"false"></div><div custom-hover=3D"true" class=3D"monaco-custo=
+m-toggle codicon codicon-find-selection" tabindex=3D"0" role=3D"checkbox" a=
+ria-checked=3D"false" aria-label=3D"Find in Selection (Alt+L)" aria-disable=
+d=3D"true" style=3D"color: inherit;"></div></div></div><div tabindex=3D"0" =
+class=3D"button codicon codicon-widget-close" role=3D"button" aria-label=3D=
+"Close (Escape)" custom-hover=3D"true" aria-disabled=3D"false"></div><div c=
+lass=3D"replace-part"><div class=3D"monaco-findInput disabled"><div class=
+=3D"monaco-scrollable-element " role=3D"presentation" style=3D"position: re=
+lative; overflow: hidden;"><div class=3D"monaco-inputbox idle" data-keybind=
+ing-context=3D"7" style=3D"overflow: hidden; background-color: var(--vscode=
+-input-background); color: var(--vscode-input-foreground); border: 1px soli=
+d var(--vscode-input-border, transparent);"><div class=3D"ibwrapper"><texta=
+rea class=3D"input empty" autocorrect=3D"off" autocapitalize=3D"off" spellc=
+heck=3D"false" wrap=3D"off" aria-label=3D"Replace" placeholder=3D"Replace" =
+custom-hover=3D"true" disabled=3D"" style=3D"background-color: inherit; col=
+or: var(--vscode-input-foreground); height: 0px;"></textarea><div class=3D"=
+mirror" style=3D"white-space: pre; overflow-wrap: initial;">&nbsp;</div></d=
+iv></div><div role=3D"presentation" aria-hidden=3D"true" class=3D"invisible=
+ scrollbar horizontal" style=3D"position: absolute;"><div class=3D"slider" =
+style=3D"position: absolute; top: 0px; left: 0px; height: 10px; transform: =
+translate3d(0px, 0px, 0px); contain: strict;"></div></div><div role=3D"pres=
+entation" aria-hidden=3D"true" class=3D"invisible scrollbar vertical" style=
+=3D"position: absolute;"><div class=3D"slider" style=3D"position: absolute;=
+ top: 0px; left: 0px; width: 10px; transform: translate3d(0px, 0px, 0px); c=
+ontain: strict;"></div></div><div class=3D"shadow"></div><div class=3D"shad=
+ow"></div><div class=3D"shadow"></div></div><div class=3D"controls" style=
+=3D"display: block;"><div custom-hover=3D"true" class=3D"monaco-custom-togg=
+le codicon codicon-preserve-case" tabindex=3D"0" role=3D"checkbox" aria-che=
+cked=3D"false" aria-label=3D"Preserve Case (Alt+P)" aria-disabled=3D"true" =
+style=3D"color: inherit;"></div></div></div><div class=3D"replace-actions">=
+<div tabindex=3D"-1" class=3D"button codicon codicon-find-replace disabled"=
+ role=3D"button" aria-label=3D"Replace (Enter)" custom-hover=3D"true" aria-=
+disabled=3D"true"></div><div tabindex=3D"-1" class=3D"button codicon codico=
+n-find-replace-all disabled" role=3D"button" aria-label=3D"Replace All (Ctr=
+l+Alt+Enter)" custom-hover=3D"true" aria-disabled=3D"true"></div></div></di=
+v><div class=3D"monaco-sash vertical" style=3D"width: 2px; left: -1px;"></d=
+iv></div><div class=3D"findOptionsWidget" role=3D"presentation" aria-hidden=
+=3D"true" widgetid=3D"editor.contrib.findOptionsWidget" style=3D"display: n=
+one; top: 0px; z-index: 12; position: absolute; right: 28px;"><div custom-h=
+over=3D"true" class=3D"monaco-custom-toggle codicon codicon-case-sensitive"=
+ tabindex=3D"0" role=3D"checkbox" aria-checked=3D"false" aria-label=3D"Matc=
+h Case (Alt+C)" style=3D"color: inherit;"></div><div custom-hover=3D"true" =
+class=3D"monaco-custom-toggle codicon codicon-whole-word" tabindex=3D"0" ro=
+le=3D"checkbox" aria-checked=3D"false" aria-label=3D"Match Whole Word (Alt+=
+W)" style=3D"color: inherit;"></div><div custom-hover=3D"true" class=3D"mon=
+aco-custom-toggle codicon codicon-regex" tabindex=3D"0" role=3D"checkbox" a=
+ria-checked=3D"false" aria-label=3D"Use Regular Expression (Alt+R)" style=
+=3D"color: inherit;"></div></div></div><div data-mprt=3D"9" class=3D"minima=
+p slider-mouseover" role=3D"presentation" aria-hidden=3D"true" style=3D"pos=
+ition: absolute; left: 0px; width: 0px; height: 367px;"><div class=3D"minim=
+ap-shadow-hidden" style=3D"height: 367px;"></div><canvas width=3D"0" height=
+=3D"396" style=3D"position: absolute; left: 0px; width: 0px; height: 367px;=
+"></canvas><canvas class=3D"minimap-decorations-layer" width=3D"0" height=
+=3D"396" style=3D"position: absolute; left: 0px; width: 0px; height: 367px;=
+"></canvas><div class=3D"minimap-slider" style=3D"position: absolute; trans=
+form: translate3d(0px, 0px, 0px); contain: strict; width: 0px;"><div class=
+=3D"minimap-slider-horizontal" style=3D"position: absolute; width: 0px; hei=
+ght: 0px;"></div></div></div><div role=3D"presentation" aria-hidden=3D"true=
+" class=3D"blockDecorations-container"></div></div><div data-mprt=3D"2" cla=
+ss=3D"overflowingContentWidgets"><div widgetid=3D"editor.contrib.resizableC=
+ontentHoverWidget" style=3D"position: fixed; height: 30px; width: 213px; z-=
+index: 50; display: none; visibility: hidden; max-width: 1333px; top: 229.6=
+96px; left: 718.047px;"><div class=3D"monaco-sash vertical" style=3D"left: =
+211px;"></div><div class=3D"monaco-sash vertical disabled" style=3D"left: -=
+2px;"></div><div class=3D"monaco-sash orthogonal-edge-north horizontal" sty=
+le=3D"top: -2px;"><div class=3D"orthogonal-drag-handle end"></div></div><di=
+v class=3D"monaco-sash orthogonal-edge-south horizontal disabled" style=3D"=
+top: 28px;"><div class=3D"orthogonal-drag-handle end"></div></div><div clas=
+s=3D"monaco-hover hidden" tabindex=3D"0" role=3D"tooltip" style=3D"max-widt=
+h: 501.6px; max-height: 250px; --vscode-hover-maxWidth: 501.6px; width: 213=
+px; height: 30px;"><div class=3D"monaco-scrollable-element " role=3D"presen=
+tation" style=3D"position: relative; overflow: hidden;"><div class=3D"monac=
+o-hover-content" style=3D"overflow: hidden; font-size: 13px; line-height: 1=
+.38462; max-width: 501.6px; max-height: 250px; width: 213px; height: 30px;"=
+><div class=3D"hover-row" tabindex=3D"0"><div class=3D"hover-row-contents">=
+<div class=3D"markdown-hover"><div class=3D"hover-contents code-hover-conte=
+nts"><div class=3D"rendered-markdown"><div data-code=3D"id#4"><span style=
+=3D"font-family: Consolas, &quot;Courier New&quot;, monospace; font-weight:=
+ normal; font-size: 13px; font-feature-settings: &quot;liga&quot; 0, &quot;=
+calt&quot; 0; font-variation-settings: normal; line-height: 18px; letter-sp=
+acing: 0px;"><div class=3D"monaco-tokenized-source"><span class=3D"mtk10">(=
+</span><span class=3D"mtk1">property</span><span class=3D"mtk10">)</span><s=
+pan class=3D"mtk1"> konnect_ref</span><span class=3D"mtk10">:</span><span c=
+lass=3D"mtk1"> </span><span class=3D"mtk9">any</span></div></span></div></d=
+iv></div></div></div></div></div><div role=3D"presentation" aria-hidden=3D"=
+true" class=3D"invisible scrollbar horizontal" style=3D"position: absolute;=
+ width: 203px; height: 10px; left: 0px; bottom: 0px;"><div class=3D"slider"=
+ style=3D"position: absolute; top: 0px; left: 0px; height: 10px; transform:=
+ translate3d(0px, 0px, 0px); contain: strict; width: 203px;"></div></div><d=
 iv role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollbar =
-vertical" style=3D"position: absolute;"><div class=3D"slider" style=3D"posi=
-tion: absolute; top: 0px; left: 0px; width: 10px; transform: translate3d(0p=
-x, 0px, 0px); contain: strict;"></div></div><div class=3D"shadow"></div><di=
-v class=3D"shadow"></div><div class=3D"shadow"></div></div></div></div><div=
- data-mprt=3D"9" class=3D"minimap slider-mouseover" role=3D"presentation" a=
-ria-hidden=3D"true" style=3D"position: absolute; left: 0px; width: 0px; hei=
-ght: 367px;"><div class=3D"minimap-shadow-hidden" style=3D"height: 367px;">=
-</div><canvas width=3D"0" height=3D"396" style=3D"position: absolute; left:=
- 0px; width: 0px; height: 367px;"></canvas><canvas class=3D"minimap-decorat=
-ions-layer" width=3D"0" height=3D"396" style=3D"position: absolute; left: 0=
-px; width: 0px; height: 367px;"></canvas><div class=3D"minimap-slider" styl=
-e=3D"position: absolute; transform: translate3d(0px, 0px, 0px); contain: st=
-rict; width: 0px;"><div class=3D"minimap-slider-horizontal" style=3D"positi=
-on: absolute; width: 0px; height: 0px;"></div></div></div><div role=3D"pres=
-entation" aria-hidden=3D"true" class=3D"blockDecorations-container"></div><=
-/div><div data-mprt=3D"2" class=3D"overflowingContentWidgets"><div widgetid=
-=3D"editor.contrib.resizableContentHoverWidget" style=3D"position: fixed; h=
-eight: 30px; width: 151px; z-index: 50; display: none; visibility: hidden; =
-max-width: 1333px; top: 440.696px; left: 933.047px;"><div class=3D"monaco-s=
-ash vertical" style=3D"left: 149px;"></div><div class=3D"monaco-sash vertic=
-al disabled" style=3D"left: -2px;"></div><div class=3D"monaco-sash orthogon=
-al-edge-north horizontal" style=3D"top: -2px;"><div class=3D"orthogonal-dra=
-g-handle end"></div></div><div class=3D"monaco-sash orthogonal-edge-south h=
-orizontal disabled" style=3D"top: 28px;"><div class=3D"orthogonal-drag-hand=
-le end"></div></div><div class=3D"monaco-hover hidden" tabindex=3D"0" role=
-=3D"tooltip" style=3D"max-width: 501.6px; max-height: 250px; --vscode-hover=
--maxWidth: 501.6px; width: 151px; height: 30px;"><div class=3D"monaco-scrol=
-lable-element " role=3D"presentation" style=3D"position: relative; overflow=
-: hidden;"><div class=3D"monaco-hover-content" style=3D"overflow: hidden; f=
-ont-size: 13px; line-height: 1.38462; max-width: 501.6px; max-height: 250px=
-; width: 151px; height: 30px;"><div class=3D"hover-row" tabindex=3D"0"><div=
- class=3D"hover-row-contents"><div class=3D"markdown-hover"><div class=3D"h=
-over-contents"><div class=3D"rendered-markdown"><p><a data-href=3D"https://=
-xxx.supabase.co/functions/v1/konnect-webhook" href=3D"https://supabase.com/=
-dashboard/project/lbftmbutvtjtkxgdbndu/functions/konnect-initiate/code" tit=
-le=3D"https://xxx.supabase.co/functions/v1/konnect-webhook" draggable=3D"fa=
-lse">Follow link</a> (ctrl + click)</p></div></div></div></div></div></div>=
-<div role=3D"presentation" aria-hidden=3D"true" class=3D"invisible scrollba=
-r horizontal" style=3D"position: absolute; width: 141px; height: 10px; left=
-: 0px; bottom: 0px;"><div class=3D"slider" style=3D"position: absolute; top=
-: 0px; left: 0px; height: 10px; transform: translate3d(0px, 0px, 0px); cont=
-ain: strict; width: 141px;"></div></div><div role=3D"presentation" aria-hid=
-den=3D"true" class=3D"invisible scrollbar vertical" style=3D"position: abso=
-lute; width: 10px; height: 30px; right: 0px; top: 0px;"><div class=3D"slide=
-r" style=3D"position: absolute; top: 0px; left: 0px; width: 10px; transform=
-: translate3d(0px, 0px, 0px); contain: strict; height: 30px;"></div></div><=
-div class=3D"shadow"></div><div class=3D"shadow"></div><div class=3D"shadow=
-"></div></div></div></div></div><div data-mprt=3D"5" class=3D"overflowingOv=
-erlayWidgets"></div></div></div></section></div></div></div></div><div clas=
-s=3D"flex items-center bg-background-muted justify-end p-4 border-t bg-surf=
-ace-100 shrink-0"><button data-size=3D"medium" type=3D"button" tooltip=3D"[=
-object Object]" class=3D"relative justify-center cursor-pointer inline-flex=
- items-center space-x-2 text-center font-regular ease-out duration-200 roun=
-ded-md outline-none transition-all outline-0 focus-visible:outline-4 focus-=
-visible:outline-offset-1 border bg-brand-400 dark:bg-brand-500 hover:bg-bra=
-nd/80 dark:hover:bg-brand/50 text-foreground border-brand-500/75 dark:borde=
-r-brand/30 hover:border-brand-600 dark:hover:border-brand focus-visible:out=
-line-brand-600 data-[state=3Dopen]:bg-brand-400/80 dark:data-[state=3Dopen]=
-:bg-brand-500/80 data-[state=3Dopen]:outline-brand-600 text-sm px-4 py-2 h-=
-[38px] pointer-events-auto" data-state=3D"closed" tabindex=3D"0"> <span cla=
-ss=3D"truncate">Deploy updates</span> <div class=3D"[&amp;_svg]:h-[20px] [&=
-amp;_svg]:w-[20px] text-brand-600"><div class=3D"flex items-center space-x-=
-1"><svg xmlns=3D"http://www.w3.org/2000/svg" width=3D"10" height=3D"10" vie=
-wBox=3D"0 0 24 24" fill=3D"none" stroke=3D"currentColor" stroke-width=3D"1.=
-5" stroke-linecap=3D"round" stroke-linejoin=3D"round" class=3D"lucide lucid=
-e-corner-down-left"><polyline points=3D"9 10 4 15 9 20"></polyline><path d=
-=3D"M20 4v7a4 4 0 0 1-4 4H4"></path></svg></div></div></button></div></div>=
-</div></main></div></div></div></div></div></div></div></div></div></div></=
-div></div><iframe name=3D"__privateStripeController8941" frameborder=3D"0" =
-allowtransparency=3D"true" scrolling=3D"no" role=3D"presentation" allow=3D"=
-payment *" src=3D"cid:frame-9A57BA0664C70E5D6C0AAB7E1BE4483E@mhtml.blink" a=
-ria-hidden=3D"true" tabindex=3D"-1" style=3D"border: none !important; margi=
-n: 0px !important; padding: 0px !important; width: 1px !important; min-widt=
-h: 100% !important; overflow: hidden !important; display: block !important;=
- visibility: hidden !important; position: fixed !important; height: 1px !im=
-portant; pointer-events: none !important; user-select: none !important;"></=
-iframe><iframe name=3D"__privateStripeMetricsController8940" frameborder=3D=
-"0" allowtransparency=3D"true" scrolling=3D"no" role=3D"presentation" allow=
-=3D"payment *" src=3D"cid:frame-E15F01BA9E593CB1EA5926B91D66BDD6@mhtml.blin=
-k" aria-hidden=3D"true" tabindex=3D"-1" style=3D"border: none !important; m=
-argin: 0px !important; padding: 0px !important; width: 1px !important; min-=
-width: 100% !important; overflow: hidden !important; display: block !import=
-ant; visibility: hidden !important; position: fixed !important; height: 1px=
- !important; pointer-events: none !important; user-select: none !important;=
-"></iframe><next-route-announcer><p aria-live=3D"assertive" id=3D"__next-ro=
-ute-announcer__" role=3D"alert" style=3D"border: 0px; clip: rect(0px, 0px, =
-0px, 0px); height: 1px; margin: -1px; overflow: hidden; padding: 0px; posit=
-ion: absolute; top: 0px; width: 1px; white-space: nowrap; overflow-wrap: no=
-rmal;">konnect-initiate | Code | Edge Functions | ZAWAJ AI | mohamed.jouini=
-029@gmail.com's Org | Supabase</p></next-route-announcer><iframe height=3D"=
-0" width=3D"0" style=3D"display: none; visibility: hidden;"></iframe><ifram=
-e name=3D"__tcfapiLocator" style=3D"display: none;"></iframe><div class=3D"=
-context-view" aria-hidden=3D"true" style=3D"display: none;"></div><div clas=
-s=3D"monaco-aria-container"><div class=3D"monaco-alert" role=3D"alert" aria=
--atomic=3D"true"></div><div class=3D"monaco-alert" role=3D"alert" aria-atom=
-ic=3D"true"></div><div class=3D"monaco-status" aria-live=3D"polite" aria-at=
-omic=3D"true"></div><div class=3D"monaco-status" aria-live=3D"polite" aria-=
-atomic=3D"true"></div></div></body></html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+vertical" style=3D"position: absolute; width: 10px; height: 30px; right: 0p=
+x; top: 0px;"><div class=3D"slider" style=3D"position: absolute; top: 0px; =
+left: 0px; width: 10px; transform: translate3d(0px, 0px, 0px); contain: str=
+ict; height: 30px;"></div></div><div class=3D"shadow"></div><div class=3D"s=
+hadow"></div><div class=3D"shadow"></div></div></div></div></div><div data-=
+mprt=3D"5" class=3D"overflowingOverlayWidgets"></div></div></div></section>=
+</div></div></div></div><div class=3D"flex items-center bg-background-muted=
+ justify-end p-4 border-t bg-surface-100 shrink-0"><button data-size=3D"med=
+ium" type=3D"button" tooltip=3D"[object Object]" class=3D"relative justify-=
+center cursor-pointer inline-flex items-center space-x-2 text-center font-r=
+egular ease-out duration-200 rounded-md outline-none transition-all outline=
+-0 focus-visible:outline-4 focus-visible:outline-offset-1 border bg-brand-4=
+00 dark:bg-brand-500 hover:bg-brand/80 dark:hover:bg-brand/50 text-foregrou=
+nd border-brand-500/75 dark:border-brand/30 hover:border-brand-600 dark:hov=
+er:border-brand focus-visible:outline-brand-600 data-[state=3Dopen]:bg-bran=
+d-400/80 dark:data-[state=3Dopen]:bg-brand-500/80 data-[state=3Dopen]:outli=
+ne-brand-600 text-sm px-4 py-2 h-[38px] pointer-events-auto" data-state=3D"=
+closed" tabindex=3D"0"> <span class=3D"truncate">Deploy updates</span> <div=
+ class=3D"[&amp;_svg]:h-[20px] [&amp;_svg]:w-[20px] text-brand-600"><div cl=
+ass=3D"flex items-center space-x-1"><svg xmlns=3D"http://www.w3.org/2000/sv=
+g" width=3D"10" height=3D"10" viewBox=3D"0 0 24 24" fill=3D"none" stroke=3D=
+"currentColor" stroke-width=3D"1.5" stroke-linecap=3D"round" stroke-linejoi=
+n=3D"round" class=3D"lucide lucide-corner-down-left"><polyline points=3D"9 =
+10 4 15 9 20"></polyline><path d=3D"M20 4v7a4 4 0 0 1-4 4H4"></path></svg><=
+/div></div></button></div></div></div></main></div></div></div></div></div>=
+</div></div></div></div></div></div></div><iframe name=3D"__privateStripeCo=
+ntroller8941" frameborder=3D"0" allowtransparency=3D"true" scrolling=3D"no"=
+ role=3D"presentation" allow=3D"payment *" src=3D"cid:frame-9A57BA0664C70E5=
+D6C0AAB7E1BE4483E@mhtml.blink" aria-hidden=3D"true" tabindex=3D"-1" style=
+=3D"border: none !important; margin: 0px !important; padding: 0px !importan=
+t; width: 1px !important; min-width: 100% !important; overflow: hidden !imp=
+ortant; display: block !important; visibility: hidden !important; position:=
+ fixed !important; height: 1px !important; pointer-events: none !important;=
+ user-select: none !important;"></iframe><iframe name=3D"__privateStripeMet=
+ricsController8940" frameborder=3D"0" allowtransparency=3D"true" scrolling=
+=3D"no" role=3D"presentation" allow=3D"payment *" src=3D"cid:frame-E15F01BA=
+9E593CB1EA5926B91D66BDD6@mhtml.blink" aria-hidden=3D"true" tabindex=3D"-1" =
+style=3D"border: none !important; margin: 0px !important; padding: 0px !imp=
+ortant; width: 1px !important; min-width: 100% !important; overflow: hidden=
+ !important; display: block !important; visibility: hidden !important; posi=
+tion: fixed !important; height: 1px !important; pointer-events: none !impor=
+tant; user-select: none !important;"></iframe><next-route-announcer><p aria=
+-live=3D"assertive" id=3D"__next-route-announcer__" role=3D"alert" style=3D=
+"border: 0px; clip: rect(0px, 0px, 0px, 0px); height: 1px; margin: -1px; ov=
+erflow: hidden; padding: 0px; position: absolute; top: 0px; width: 1px; whi=
+te-space: nowrap; overflow-wrap: normal;">konnect-initiate | Code | Edge Fu=
+nctions | ZAWAJ AI | mohamed.jouini029@gmail.com's Org | Supabase</p></next=
+-route-announcer><iframe height=3D"0" width=3D"0" style=3D"display: none; v=
+isibility: hidden;"></iframe><iframe name=3D"__tcfapiLocator" style=3D"disp=
+lay: none;"></iframe><div class=3D"context-view" aria-hidden=3D"true" style=
+=3D"display: none;"></div><div class=3D"monaco-aria-container"><div class=
+=3D"monaco-alert" role=3D"alert" aria-atomic=3D"true" style=3D"visibility: =
+visible;">1 of 1 found for 'v2', at 300:39</div><div class=3D"monaco-alert"=
+ role=3D"alert" aria-atomic=3D"true"></div><div class=3D"monaco-status" ari=
+a-live=3D"polite" aria-atomic=3D"true"></div><div class=3D"monaco-status" a=
+ria-live=3D"polite" aria-atomic=3D"true"></div></div></body></html>
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: image/svg+xml
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://supabase.com/dashboard/img/supabase-logo.svg
@@ -1626,7 +1724,7 @@ L53.9738 40.0625L99.1935 40.0625C107.384 40.0625 111.952 49.5226 106.859 55=
 </linearGradient>
 </defs>
 </svg>=0A
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/d6b027c1caf7f6e2.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -2010,7 +2108,7 @@ om { width: 100%; height: 1px; left: 0px; transform: translateY(-50%); }
 
 .react-flow__edge-text { fill: var(--xy-edge-label-color,var(--xy-edge-labe=
 l-color-default)); }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/bf5db31e86ef4bb1.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -2733,7 +2831,7 @@ Code Pro", "Office Code Pro", Menlo, monospace; font-style: normal; }
 
 .source_code_pro_ac234141-module__BliKCW__variable { --font-source-code-pro=
 : "Source Code Pro",Source Code Pro,Office Code Pro,Menlo,monospace; }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/dcfd020fd38cd438.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -3564,7 +3662,7 @@ x 100%; animation: 2s linear 0s infinite normal none running shimmer; }
   0% { background-position: -1000px 0px; }
   100% { background-position: 1000px 0px; }
 }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/dd9072817ba6ed19.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -13682,7 +13780,7 @@ oter-dark:hover { background-color: hsl(var(--background-surface-100)); }
 
 [data-variant=3D"legend"] + .\[\[data-variant\=3Dlegend\]\+\&\]\:-mt-1\.5 {=
  margin-top: -0.375rem; }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/147b7a4ec7488f38.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -14095,7 +14193,7 @@ wn; }
 
 .toast-message div[role=3D"status"] { overflow-wrap: break-word; word-break=
 : break-word; justify-content: flex-start; width: 100%; }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://frontend-assets.supabase.com/studio/b9e83b25e1ba/_next/static/chunks/5ddc098370b8c64f.css?dpl=dpl_Gm6W8TQVETHWv7avCPjdeugRfZzv
@@ -16719,7 +16817,7 @@ verflow: inherit; }
 .grid-monaco-editor .monaco-list-row.focused .main, .monaco-editor .suggest=
 -widget .monaco-list-row.focused .main { background: var(--vscode-quickInpu=
 t-background); }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
 Content-Location: https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.52.2/min/vs/editor/editor.main.css
@@ -20338,10 +20436,10 @@ markers-panel .marker-icon.info, .monaco-editor .zone-widget .codicon.codic=
 on-info, .preferences-editor .codicon.codicon-info, .text-search-provider-m=
 essages .providerMessage .codicon.codicon-info { color: var(--vscode-proble=
 msInfoIcon-foreground); }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
-Content-Location: cid:css-a9d85b9f-0a58-4fc3-8457-830e3863314b@mhtml.blink
+Content-Location: cid:css-773b3de8-6025-47e8-88a7-1e107abce022@mhtml.blink
 
 @charset "utf-8";
 
@@ -23045,10 +23143,10 @@ code-editorMarkerNavigation-background: #1f1f1f; }
 
 .mtks.mtku { text-decoration: underline line-through; text-underline-positi=
 on: under; }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
-Content-Location: cid:css-87ea9166-d52f-48c8-98f8-8f00a178b8ca@mhtml.blink
+Content-Location: cid:css-c966011d-0b3d-414a-85a7-2e56559ffebf@mhtml.blink
 
 @charset "utf-8";
 
@@ -23376,17 +23474,17 @@ ate(-50%, -50%); transform-origin: center center; transition: opacity 0.2s,=
 
 .sonner-loader[data-visible=3D"false"] { opacity: 0; transform: scale(0.8) =
 translate(-50%, -50%); }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/css
 Content-Transfer-Encoding: quoted-printable
-Content-Location: cid:css-e3ef4a0e-9f66-4198-a89c-a6cd7c2005fd@mhtml.blink
+Content-Location: cid:css-9123b1e0-013e-40cb-ab10-835da4177d8c@mhtml.blink
 
 @charset "utf-8";
 
 :root { --font-custom: 'customFont', 'customFont Fallback', Circular, custo=
 m-font, Helvetica Neue, Helvetica, Arial, sans-serif; --font-source-code-pr=
 o: 'Source Code Pro', Source Code Pro, Office Code Pro, Menlo, monospace; }
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-9A57BA0664C70E5D6C0AAB7E1BE4483E@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23400,7 +23498,7 @@ ntent=3D"text/html; charset=3DUTF-8"><link rel=3D"preconnect" href=3D"https=
 nC11KuzrvT903WrEU+N9Ik/RpiCRTAEAAABbeyJvcmlnaW4iOiJodHRwczovL3N0cmlwZS5jb20=
 6NDQzIiwiZmVhdHVyZSI6IlRwY2QiLCJleHBpcnkiOjE3MzUzNDM5OTksImlzU3ViZG9tYWluIj=
 p0cnVlfQ=3D=3D"></head><body></body></html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-E15F01BA9E593CB1EA5926B91D66BDD6@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23409,14 +23507,14 @@ Content-Location: https://js.stripe.com/v3/m-outer-3437aaddcdf6922d623e172c2d6f9
 <!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
 t/html; charset=3DUTF-8"></head><body><iframe src=3D"cid:frame-654A48BE4D96=
 5E0B5444F3C709CF0592@mhtml.blink"></iframe></body></html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-05EC01014B13D4DCCBD59F7A5090B893@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
 
 <html><head><meta http-equiv=3D"Content-Type" content=3D"text/html; charset=
 =3DUTF-8"></head><body></body></html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-632D7701C91E1D60390D1FD31AD6B31C@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23425,7 +23523,7 @@ Content-Transfer-Encoding: quoted-printable
 =3DUTF-8"></head><body><iframe height=3D"0" width=3D"0" src=3D"cid:frame-84=
 EDC93FC448DF776F3C6ED17F0BB22A@mhtml.blink" style=3D"display: none; visibil=
 ity: hidden;"></iframe></body></html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-654A48BE4D965E0B5444F3C709CF0592@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23434,7 +23532,7 @@ Content-Location: https://m.stripe.network/inner.html#url=https%3A%2F%2Fsupabase
 <!DOCTYPE html><html><head><meta http-equiv=3D"Content-Type" content=3D"tex=
 t/html; charset=3DUTF-8"><title>StripeM-Inner</title></head><body></body></=
 html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI----
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf----
 Content-Type: text/html
 Content-ID: <frame-84EDC93FC448DF776F3C6ED17F0BB22A@mhtml.blink>
 Content-Transfer-Encoding: quoted-printable
@@ -23449,4 +23547,4 @@ icon">
  =20
 
 </body></html>
-------MultipartBoundary--X4mTil4i6LuTDVG0X370rTpNeEmoMzpK8TmVf21oGI------
+------MultipartBoundary--hYdC9WeeIZjqsHtNrCMkOiMrfe7S2PZszFVPbqzzEf------
