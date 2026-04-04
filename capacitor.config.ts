@@ -5,12 +5,8 @@ const config: CapacitorConfig = {
   appName: 'ZAWAJ AI',
   webDir:  'out',
 
-  server: {
-    // ✅ يحمّل من Vercel — كل deploy = تحديث فوري (نظام OTA الفعلي)
-    url:           'https://zawaj-ai.vercel.app',
-    androidScheme: 'https',
-    cleartext:     false,
-  },
+  // ✅ server.url محذوف — التطبيق يحمّل من out/ محلياً = سريع جداً
+  // التحديث يتم عبر @capgo/capacitor-updater في الخلفية
 
   plugins: {
 
@@ -18,23 +14,29 @@ const config: CapacitorConfig = {
       presentationStyle: 'popover',
     },
 
-    // شريط الحالة — لا يتداخل مع المحتوى
-    StatusBar: {
-      style:           'DARK',        // نص أبيض (للمود الداكن)
-      backgroundColor: '#080008',     // --bg-main الداكن
-      overlaysWebView: false,         // ✅ لا تداخل مع المحتوى
+    // ✅ capgo — تحديث يدوي بدون auto (نحن نتحكم في التوقيت)
+    CapacitorUpdater: {
+      autoUpdate:           false,
+      statsUrl:             '',       // لا إرسال إحصائيات لـ capgo
+      privateKey:           '',
+      directUpdate:         false,
+      resetWhenUpdate:      false,
     },
 
-    // لوحة المفاتيح — تدفع المحتوى للأعلى بدلاً من التداخل
+    StatusBar: {
+      style:           'DARK',
+      backgroundColor: '#080008',
+      overlaysWebView: false,
+    },
+
     Keyboard: {
       resize:             'body',
       style:              'DARK',
       resizeOnFullScreen: true,
     },
 
-    // شاشة البداية
     SplashScreen: {
-      launchShowDuration:        0,       // إخفاء فوري
+      launchShowDuration:        0,
       launchAutoHide:            true,
       backgroundColor:           '#080008',
       androidSplashResourceName: 'splash',

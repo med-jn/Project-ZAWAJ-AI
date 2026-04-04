@@ -1,85 +1,60 @@
 /**
  * 📁 lib/services/liveUpdate.ts — ZAWAJ AI
- * نظام تحديث تلقائي self-hosted بدون Appflow
- * ✅ يفحص update-info.json على Vercel
- * ✅ يحمّل app-dist.zip ويفك ضغطه
- * ✅ يطبق التحديث عند الفتح التالي
+ * ✅ نظام تحديث حقيقي باستخدام @capgo/capacitor-updater
+ * ✅ self-hosted على Vercel — مجاني تماماً
+ * ✅ يحمّل zip في الخلفية ويطبّقه فعلياً
+ * ✅ zip-build.js و update-info.json لم يتغيرا
  */
-import { Capacitor }  from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Capacitor }        from '@capacitor/core';
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
 
 const UPDATE_INFO_URL = 'https://zawaj-ai.vercel.app/update-info.json';
 const ZIP_URL         = 'https://zawaj-ai.vercel.app/app-dist.zip';
-const VERSION_FILE    = 'current_version.txt';
 
-// ── قراءة الإصدار المثبّت محلياً ─────────────────────────────
-async function getInstalledVersion(): Promise<string> {
+// ── إخبار المكتبة أن التطبيق بدأ بنجاح ──────────────────────
+// يجب استدعاؤه عند كل بدء تشغيل ناجح
+export async function notifyAppReady(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
   try {
-    const { data } = await Filesystem.readFile({
-      path:      VERSION_FILE,
-      directory: Directory.Data,
-      encoding:  'utf8' as any,
-    });
-    return (data as string).trim();
-  } catch {
-    return '0.0.0'; // أول تشغيل
+    await CapacitorUpdater.notifyAppReady();
+  } catch (e) {
+    console.warn('[LiveUpdate] notifyAppReady failed:', e);
   }
 }
 
-// ── حفظ الإصدار الجديد ───────────────────────────────────────
-async function saveInstalledVersion(version: string): Promise<void> {
-  await Filesystem.writeFile({
-    path:      VERSION_FILE,
-    directory: Directory.Data,
-    data:      version,
-    encoding:  'utf8' as any,
-    recursive: true,
-  });
-}
-
-// ── الدالة الرئيسية ───────────────────────────────────────────
+// ── الدالة الرئيسية: فحص وتحميل التحديث ────────────────────
 export async function checkAndApplyUpdate(): Promise<{
   hasUpdate: boolean;
   version?:  string;
   error?:    string;
 }> {
-  // يعمل فقط على Android/iOS
-  if (!Capacitor.isNativePlatform()) {
-    return { hasUpdate: false };
-  }
+  if (!Capacitor.isNativePlatform()) return { hasUpdate: false };
 
   try {
-    // 1. جلب معلومات التحديث من Vercel
+    // 1. جلب معلومات التحديث
     const res = await fetch(UPDATE_INFO_URL, { cache: 'no-store' });
     if (!res.ok) throw new Error('فشل جلب معلومات التحديث');
     const info: { version: string; url: string } = await res.json();
 
-    // 2. مقارنة مع الإصدار المثبّت
-    const installed = await getInstalledVersion();
-    if (installed === info.version) {
+    // 2. التحقق من الإصدار الحالي
+    const current = await CapacitorUpdater.current();
+    const installedVersion = current.bundle?.version ?? 'builtin';
+
+    if (installedVersion === info.version) {
       return { hasUpdate: false };
     }
 
-    // 3. تحميل الـ zip
-    const zipRes = await fetch(ZIP_URL, { cache: 'no-store' });
-    if (!zipRes.ok) throw new Error('فشل تحميل التحديث');
-
-    // 4. تحويل لـ base64 وحفظه
-    const buffer    = await zipRes.arrayBuffer();
-    const bytes     = new Uint8Array(buffer);
-    const binary    = bytes.reduce((acc, b) => acc + String.fromCharCode(b), '');
-    const base64    = btoa(binary);
-
-    await Filesystem.writeFile({
-      path:      'update/app-dist.zip',
-      directory: Directory.Cache,
-      data:      base64,
-      recursive: true,
+    // 3. تحميل الـ zip الجديد في الخلفية
+    console.log(`[LiveUpdate] تحميل v${info.version}...`);
+    const bundle = await CapacitorUpdater.download({
+      url:     ZIP_URL,
+      version: info.version,
     });
 
-    // 5. حفظ الإصدار الجديد
-    await saveInstalledVersion(info.version);
+    // 4. تطبيق التحديث — سيُعاد تشغيل التطبيق فوراً
+    await CapacitorUpdater.set(bundle);
 
+    // لن يصل الكود لهنا لأن set() يعيد تشغيل التطبيق
     return { hasUpdate: true, version: info.version };
 
   } catch (e: any) {
