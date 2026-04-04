@@ -1,63 +1,42 @@
 'use client';
 /**
  * 📁 hooks/useNativeAndroid.ts — ZAWAJ AI
- * ✅ Back button يُعدّ مرة واحدة فقط (لا تكرار)
- * ✅ StatusBar يُعدّ مرة واحدة فقط عند فتح التطبيق
- * ✅ لا dynamic imports في كل تنقل (كانت تسبب البطء)
+ * ✅ Back button فقط — لا imports ثقيلة
+ * ✅ StatusBar يُضبط من capacitor.config.ts تلقائياً
  */
-import { useEffect, useRef } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { Capacitor } from '@capacitor/core';
+import { useEffect, useRef }          from 'react';
+import { useRouter, usePathname }     from 'next/navigation';
+import { Capacitor }                  from '@capacitor/core';
+import { App }                        from '@capacitor/app';
 
-const IS_NATIVE = Capacitor.isNativePlatform();
+const IS_NATIVE  = Capacitor.isNativePlatform();
 const EXIT_PAGES = ['/', '/home', '/login', '/register'];
 
 export function useNativeAndroid() {
-  const router   = useRouter();
-  const pathname = usePathname();
+  const router      = useRouter();
+  const pathname    = usePathname();
+  const pathRef     = useRef(pathname);
 
-  // ref للمسار الحالي — يتجنب إعادة إنشاء الـ listener
-  const pathnameRef = useRef(pathname);
-  useEffect(() => { pathnameRef.current = pathname; }, [pathname]);
+  // تحديث الـ ref عند كل تغيير — بدون إعادة إنشاء الـ listener
+  useEffect(() => { pathRef.current = pathname; }, [pathname]);
 
-  // ── Back Button: يُعدّ مرة واحدة فقط ──────────────────────
+  // Back button — مرة واحدة فقط طوال عمر التطبيق
   useEffect(() => {
     if (!IS_NATIVE) return;
 
-    let removeListener: (() => void) | null = null;
+    let handle: any = null;
 
-    const setup = async () => {
-      const { App } = await import('@capacitor/app');
-      const handle = await App.addListener('backButton', ({ canGoBack }) => {
-        const path = pathnameRef.current;
-        const clean = path.endsWith('/') && path !== '/' ? path.slice(0, -1) : path;
-        const isExit = EXIT_PAGES.includes(clean);
+    App.addListener('backButton', ({ canGoBack }) => {
+      const p     = pathRef.current;
+      const clean = p.endsWith('/') && p !== '/' ? p.slice(0, -1) : p;
 
-        if (isExit || !canGoBack) {
-          App.exitApp();
-        } else {
-          router.back();
-        }
-      });
-      removeListener = () => handle.remove();
-    };
+      if (EXIT_PAGES.includes(clean) || !canGoBack) {
+        App.exitApp();
+      } else {
+        router.back();
+      }
+    }).then(h => { handle = h; });
 
-    setup();
-    return () => { removeListener?.(); };
-  }, []); // [] — مرة واحدة فقط
-
-  // ── StatusBar: مرة واحدة عند فتح التطبيق ──────────────────
-  useEffect(() => {
-    if (!IS_NATIVE) return;
-
-    const setup = async () => {
-      try {
-        const { StatusBar, Style } = await import('@capacitor/status-bar');
-        await StatusBar.setStyle({ style: Style.Dark });
-        await StatusBar.setBackgroundColor({ color: '#080008' });
-      } catch {}
-    };
-
-    setup();
-  }, []); // [] — مرة واحدة فقط
+    return () => { handle?.remove(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }

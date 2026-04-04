@@ -451,32 +451,11 @@ html.light {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   NATIVE ANDROID — نسخة آمنة لا تأثر على لوحة المفاتيح
-   أضف هذا في نهاية globals.css بدلاً من النسخة السابقة
+   NATIVE ANDROID — الحد الأدنى الآمن
+   أضف هذا في نهاية globals.css (بعد @keyframes coinShine)
    ═══════════════════════════════════════════════════════════ */
 
-/* منع تحديد النص — فقط على العناصر غير التفاعلية */
-p, h1, h2, h3, h4, h5, h6, span, div, label {
-  -webkit-user-select: none;
-  user-select: none;
-  -webkit-touch-callout: none;
-}
-
-/* ✅ الحقول تبقى تفاعلية كاملاً */
-input, textarea, select, [contenteditable] {
-  -webkit-user-select: text !important;
-  user-select: text !important;
-  touch-action: auto !important;
-  -webkit-touch-callout: default !important;
-  cursor: text !important;
-}
-
-/* منع الارتداد */
+/* منع الارتداد عند التمرير فقط */
 html, body {
   overscroll-behavior: none;
-}
-
-/* Safe Area */
-.pb-safe {
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
 }
