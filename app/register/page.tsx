@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import Footer from '@/components/layout/Footer';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -129,6 +130,7 @@ export default function RegisterPage() {
           </button>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }

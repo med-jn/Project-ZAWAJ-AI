@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
+import Footer from '@/components/layout/Footer';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -91,6 +92,7 @@ export default function LoginPage() {
           </button>
         </div>
       </section>
+      <Footer />
     </main>
   );
 }
