@@ -1,10 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
 
-  // ── ✅ حُذف output:'export' — API Routes تعمل الآن ──────────
-  // Capacitor يحمّل من Vercel (server.url) لا من out/
-  // zip-build.js يجد مجلد out/ فارغاً (موجود في git) فلا يفشل
-
+  // ✅ ضروري لبناء out/ — يستخدمه zip-build.js لإنشاء app-dist.zip
+  output:        'export',
   trailingSlash: true,
 
   images: {
