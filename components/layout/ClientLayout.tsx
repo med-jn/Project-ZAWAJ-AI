@@ -11,6 +11,7 @@ import PageHeader    from '@/components/layout/PageHeader';
 import TopBar        from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { useAuthHandshake }  from '@/hooks/useAuthHandshake'; // ← إضافة
 
 const requestPermissions = async () => {
   let permStatus = await PushNotifications.checkPermissions();
@@ -49,6 +50,8 @@ function getTitle(path: string) {
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
+
+  useAuthHandshake(); // ← تفعيل نظام الدخول السريع مع OrcaVibe
 
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
