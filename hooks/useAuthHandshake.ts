@@ -6,15 +6,9 @@ import { Browser }   from '@capacitor/browser';
 import { supabase }  from '@/lib/supabase/client';
 
 /**
- * useAuthHandshake
- * ─────────────────────────────────────────────────────────────
+ * useAuthHandshake — ZAWAJ AI
  * يستمع لـ deep link: zawaj://auth-handshake?return=<callbackUrl>
- *
- * عند الاستقبال:
- *  1. يتحقق من أن المستخدم مسجل دخوله
- *  2. ينشئ رمز 6 أرقام في جدول auth_handshakes (صالح 90 ثانية)
- *  3. يفتح المتصفح على: <callbackUrl>?code=XXXXXX
- * ─────────────────────────────────────────────────────────────
+ * ينشئ رمز 6 أرقام في auth_handshakes ويفتح المتصفح على callback الموقع
  */
 export function useAuthHandshake() {
   useEffect(() => {
@@ -22,8 +16,8 @@ export function useAuthHandshake() {
       try {
         const parsed = new URL(url);
 
-        // تجاهل أي deep link آخر
-        if (parsed.scheme !== 'zawaj' || parsed.host !== 'auth-handshake') return;
+        // ✅ protocol بدلاً من scheme
+        if (parsed.protocol !== 'zawaj:' || parsed.host !== 'auth-handshake') return;
 
         const returnUrl = parsed.searchParams.get('return');
         if (!returnUrl) {
@@ -31,17 +25,14 @@ export function useAuthHandshake() {
           return;
         }
 
-        // ─── التحقق من الجلسة ──────────────────────────────
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
           console.warn('[useAuthHandshake] no active session');
           return;
         }
 
-        // ─── توليد رمز 6 أرقام فريد ───────────────────────
-        const code = String(Math.floor(100000 + Math.random() * 900000));
-
-        const expiresAt = new Date(Date.now() + 90 * 1000).toISOString(); // 90 ثانية
+        const code      = String(Math.floor(100000 + Math.random() * 900000));
+        const expiresAt = new Date(Date.now() + 90 * 1000).toISOString();
 
         const { error } = await supabase.from('auth_handshakes').insert({
           code,
@@ -55,11 +46,12 @@ export function useAuthHandshake() {
           return;
         }
 
-        // ─── فتح المتصفح على صفحة callback الموقع ─────────
-        const callbackUrl = new URL(returnUrl.startsWith('http')
+        // ✅ يدعم http:// و https:// و المسارات بدون بروتوكول
+        const fullUrl = returnUrl.startsWith('http://') || returnUrl.startsWith('https://')
           ? returnUrl
-          : `https://${returnUrl}`
-        );
+          : `https://${returnUrl}`;
+
+        const callbackUrl = new URL(fullUrl);
         callbackUrl.searchParams.set('code', code);
 
         await Browser.open({ url: callbackUrl.toString() });
@@ -69,7 +61,6 @@ export function useAuthHandshake() {
       }
     });
 
-    // تنظيف المستمع عند unmount
     return () => { listener.then(l => l.remove()); };
   }, []);
 }
