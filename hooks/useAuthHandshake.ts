@@ -7,32 +7,53 @@ import { supabase }  from '@/lib/supabase/client';
 
 /**
  * useAuthHandshake — ZAWAJ AI
- * يستمع لـ deep link: zawaj://auth-handshake?return=<callbackUrl>
- * ينشئ رمز 6 أرقام في auth_handshakes ويفتح المتصفح على callback الموقع
+ * ─────────────────────────────────────────────────────
+ * يعالج deep link: zawaj://auth-handshake?return=<url>
+ *
+ * حالتان:
+ *  1. التطبيق في الخلفية → appUrlOpen
+ *  2. التطبيق مغلق تماماً → getLaunchUrl (cold start)
+ * ─────────────────────────────────────────────────────
  */
 export function useAuthHandshake() {
   useEffect(() => {
-    const listener = App.addListener('appUrlOpen', async ({ url }) => {
+
+    // ── دالة معالجة الـ URL ────────────────────────────
+    const handleUrl = async (url: string) => {
       try {
-        const parsed = new URL(url);
+        console.log('[useAuthHandshake] received url:', url);
 
-        // ✅ protocol بدلاً من scheme
-        if (parsed.protocol !== 'zawaj:' || parsed.host !== 'auth-handshake') return;
+        // تحقق أن الـ URL هو handshake
+        if (!url.startsWith('zawaj://auth-handshake')) {
+          console.log('[useAuthHandshake] not a handshake url, ignoring');
+          return;
+        }
 
-        const returnUrl = parsed.searchParams.get('return');
-        if (!returnUrl) {
+        // استخرج الـ return URL يدوياً بدلاً من new URL() لتجنب مشاكل parsing
+        const match = url.match(/[?&]return=([^&]+)/);
+        const returnRaw = match ? match[1] : null;
+
+        if (!returnRaw) {
           console.warn('[useAuthHandshake] missing return param');
           return;
         }
 
+        // فك التشفير
+        const returnUrl = decodeURIComponent(returnRaw);
+        console.log('[useAuthHandshake] returnUrl:', returnUrl);
+
+        // تحقق من الجلسة
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) {
           console.warn('[useAuthHandshake] no active session');
           return;
         }
 
+        // أنشئ رمز 6 أرقام
         const code      = String(Math.floor(100000 + Math.random() * 900000));
         const expiresAt = new Date(Date.now() + 90 * 1000).toISOString();
+
+        console.log('[useAuthHandshake] inserting code:', code);
 
         const { error } = await supabase.from('auth_handshakes').insert({
           code,
@@ -46,21 +67,36 @@ export function useAuthHandshake() {
           return;
         }
 
-        // ✅ يدعم http:// و https:// و المسارات بدون بروتوكول
-        const fullUrl = returnUrl.startsWith('http://') || returnUrl.startsWith('https://')
-          ? returnUrl
-          : `https://${returnUrl}`;
+        // أضف الرمز للـ callback URL
+        const separator = returnUrl.includes('?') ? '&' : '?';
+        const callbackUrl = `${returnUrl}${separator}code=${code}`;
 
-        const callbackUrl = new URL(fullUrl);
-        callbackUrl.searchParams.set('code', code);
+        console.log('[useAuthHandshake] opening:', callbackUrl);
 
-        await Browser.open({ url: callbackUrl.toString() });
+        // افتح المتصفح على صفحة الـ callback
+        await Browser.open({ url: callbackUrl });
 
       } catch (err) {
-        console.error('[useAuthHandshake] unexpected error:', err);
+        console.error('[useAuthHandshake] error:', err);
+      }
+    };
+
+    // ── الحالة 1: التطبيق في الخلفية ──────────────────
+    const listenerPromise = App.addListener('appUrlOpen', ({ url }) => {
+      console.log('[useAuthHandshake] appUrlOpen fired:', url);
+      handleUrl(url);
+    });
+
+    // ── الحالة 2: التطبيق مغلق (cold start) ───────────
+    App.getLaunchUrl().then(({ url }) => {
+      if (url) {
+        console.log('[useAuthHandshake] getLaunchUrl fired:', url);
+        handleUrl(url);
       }
     });
 
-    return () => { listener.then(l => l.remove()); };
+    return () => {
+      listenerPromise.then(l => l.remove());
+    };
   }, []);
 }
