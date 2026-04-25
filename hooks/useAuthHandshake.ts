@@ -1,35 +1,41 @@
 'use client';
 
-import { useEffect } from 'react';
-import { App }       from '@capacitor/app';
-import { Browser }   from '@capacitor/browser';
-import { supabase }  from '@/lib/supabase/client';
+import { useEffect, useRef } from 'react';
+import { App }               from '@capacitor/app';
+import { Browser }           from '@capacitor/browser';
+import { supabase }          from '@/lib/supabase/client';
 
 /**
  * useAuthHandshake — ZAWAJ AI
  * ─────────────────────────────────────────────────────
  * يعالج deep link: zawaj://auth-handshake?return=<url>
- *
- * حالتان:
- *  1. التطبيق في الخلفية → appUrlOpen
- *  2. التطبيق مغلق تماماً → getLaunchUrl (cold start)
+ * ✅ يمنع التنفيذ المزدوج من appUrlOpen + getLaunchUrl
  * ─────────────────────────────────────────────────────
  */
 export function useAuthHandshake() {
+  // ✅ flag يمنع تنفيذ العملية مرتين في نفس الوقت
+  const processing = useRef(false);
+
   useEffect(() => {
 
-    // ── دالة معالجة الـ URL ────────────────────────────
     const handleUrl = async (url: string) => {
+      // ✅ إذا كانت العملية جارية بالفعل → تجاهل
+      if (processing.current) {
+        console.log('[useAuthHandshake] already processing, ignoring duplicate');
+        return;
+      }
+
+      if (!url.startsWith('zawaj://auth-handshake')) {
+        console.log('[useAuthHandshake] not a handshake url, ignoring');
+        return;
+      }
+
+      processing.current = true;
+
       try {
-        console.log('[useAuthHandshake] received url:', url);
+        console.log('[useAuthHandshake] processing:', url);
 
-        // تحقق أن الـ URL هو handshake
-        if (!url.startsWith('zawaj://auth-handshake')) {
-          console.log('[useAuthHandshake] not a handshake url, ignoring');
-          return;
-        }
-
-        // استخرج الـ return URL يدوياً بدلاً من new URL() لتجنب مشاكل parsing
+        // استخرج الـ return URL
         const match = url.match(/[?&]return=([^&]+)/);
         const returnRaw = match ? match[1] : null;
 
@@ -38,7 +44,6 @@ export function useAuthHandshake() {
           return;
         }
 
-        // فك التشفير
         const returnUrl = decodeURIComponent(returnRaw);
         console.log('[useAuthHandshake] returnUrl:', returnUrl);
 
@@ -49,7 +54,7 @@ export function useAuthHandshake() {
           return;
         }
 
-        // أنشئ رمز 6 أرقام
+        // أنشئ رمز واحد فقط
         const code      = String(Math.floor(100000 + Math.random() * 900000));
         const expiresAt = new Date(Date.now() + 90 * 1000).toISOString();
 
@@ -63,21 +68,22 @@ export function useAuthHandshake() {
         });
 
         if (error) {
-          console.error('[useAuthHandshake] insert error:', error);
+          console.error('[useAuthHandshake] insert error:', JSON.stringify(error));
           return;
         }
 
-        // أضف الرمز للـ callback URL
-        const separator = returnUrl.includes('?') ? '&' : '?';
+        // افتح المتصفح على الـ callback
+        const separator  = returnUrl.includes('?') ? '&' : '?';
         const callbackUrl = `${returnUrl}${separator}code=${code}`;
 
         console.log('[useAuthHandshake] opening:', callbackUrl);
-
-        // افتح المتصفح على صفحة الـ callback
         await Browser.open({ url: callbackUrl });
 
       } catch (err) {
         console.error('[useAuthHandshake] error:', err);
+      } finally {
+        // ✅ أعد تفعيل الـ flag بعد 3 ثوانٍ للسماح بمحاولة جديدة
+        setTimeout(() => { processing.current = false; }, 3000);
       }
     };
 
@@ -88,12 +94,15 @@ export function useAuthHandshake() {
     });
 
     // ── الحالة 2: التطبيق مغلق (cold start) ───────────
-    App.getLaunchUrl().then(({ url }) => {
-      if (url) {
-        console.log('[useAuthHandshake] getLaunchUrl fired:', url);
-        handleUrl(url);
-      }
-    });
+    // نؤخر قليلاً حتى لا يتعارض مع appUrlOpen
+    setTimeout(() => {
+      App.getLaunchUrl().then(({ url }) => {
+        if (url) {
+          console.log('[useAuthHandshake] getLaunchUrl fired:', url);
+          handleUrl(url);
+        }
+      });
+    }, 200);
 
     return () => {
       listenerPromise.then(l => l.remove());
