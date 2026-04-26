@@ -47,7 +47,7 @@ export function useAuthHandshake() {
         }
 
         const code      = String(Math.floor(100000 + Math.random() * 900000));
-        const expiresAt = new Date(Date.now() + 90 * 1000).toISOString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
         console.log('[useAuthHandshake] inserting code:', code);
 
