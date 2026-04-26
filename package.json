@@ -1,7 +1,7 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.1.81",
+  "version": "0.1.82",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
