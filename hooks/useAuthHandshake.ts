@@ -1,101 +1,101 @@
 'use client';
-
-import { useEffect, useRef } from 'react';
-import { App }               from '@capacitor/app';
-import { supabase }          from '@/lib/supabase/client';
-
 /**
- * useAuthHandshake — ZAWAJ AI
- * ✅ يفتح Chrome الخارجي بدلاً من In-App Browser
+ * 📁 hooks/useAuthHandshake.ts — ZAWAJ AI
+ * ✅ يستقبل zawaj://auth-handshake?return=...
+ * ✅ ينشئ رمز 6 أرقام في auth_handshakes
+ * ✅ يفتح المتصفح مع الرمز — الموقع يقرأه تلقائياً
  */
+import { useEffect } from 'react';
+import { App }       from '@capacitor/app';
+import { Browser }   from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
+import { supabase }  from '@/lib/supabase/client';
+
+const IS_NATIVE = Capacitor.isNativePlatform();
+
+function generateCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
 export function useAuthHandshake() {
-  const processing = useRef(false);
-
   useEffect(() => {
+    if (!IS_NATIVE) return;
 
-    const handleUrl = async (url: string) => {
-      if (processing.current) {
-        console.log('[useAuthHandshake] already processing, ignoring duplicate');
-        return;
-      }
+    let handle: any = null;
 
-      if (!url.startsWith('zawaj://auth-handshake')) {
-        console.log('[useAuthHandshake] not a handshake url, ignoring');
-        return;
-      }
+    App.addListener('appUrlOpen', async ({ url }) => {
+      if (!url.startsWith('zawaj://auth-handshake')) return;
 
-      processing.current = true;
+      console.log('[useAuthHandshake] appUrlOpen fired:', url);
+      console.log('[useAuthHandshake] processing:', url);
 
       try {
-        console.log('[useAuthHandshake] processing:', url);
+        // استخراج return URL
+        const cleaned   = url.replace('zawaj://', 'https://dummy/');
+        const parsed    = new URL(cleaned);
+        const returnUrl = parsed.searchParams.get('return');
 
-        const match      = url.match(/[?&]return=([^&]+)/);
-        const returnRaw  = match ? match[1] : null;
-
-        if (!returnRaw) {
-          console.warn('[useAuthHandshake] missing return param');
-          return;
-        }
-
-        const returnUrl = decodeURIComponent(returnRaw);
         console.log('[useAuthHandshake] returnUrl:', returnUrl);
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session?.user) {
-          console.warn('[useAuthHandshake] no active session');
+        if (!returnUrl) return;
+
+        // التحقق من المستخدم
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          // فتح صفحة الدخول العادية
+          await Browser.open({ url: decodeURIComponent(returnUrl).replace('/callback', ''), windowName: '_blank' });
           return;
         }
 
-        const code      = String(Math.floor(100000 + Math.random() * 900000));
-        const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+        // إنشاء رمز فريد
+        let code     = generateCode();
+        let attempts = 0;
+        while (attempts < 5) {
+          const { data } = await supabase
+            .from('auth_handshakes')
+            .select('code')
+            .eq('code', code)
+            .eq('used', false)
+            .gt('expires_at', new Date().toISOString())
+            .single();
+          if (!data) break;
+          code = generateCode();
+          attempts++;
+        }
 
         console.log('[useAuthHandshake] inserting code:', code);
 
-        const { error } = await supabase.from('auth_handshakes').insert({
-          code,
-          user_id:    session.user.id,
-          expires_at: expiresAt,
-          used:       false,
-        });
+        const { error } = await supabase
+          .from('auth_handshakes')
+          .insert({
+            code,
+            user_id:    user.id,
+            expires_at: new Date(Date.now() + 90_000).toISOString(),
+            used:       false,
+          });
 
         if (error) {
-          console.error('[useAuthHandshake] insert error:', JSON.stringify(error));
+          console.error('[useAuthHandshake] DB error:', error.message);
           return;
         }
 
-        const separator   = returnUrl.includes('?') ? '&' : '?';
-        const callbackUrl = `${returnUrl}${separator}code=${code}`;
+        // ✅ الرابط يحتوي الـ code — الموقع يقرأه تلقائياً
+        const decodedReturn = decodeURIComponent(returnUrl);
+        const callbackUrl   = `${decodedReturn}?code=${code}`;
 
         console.log('[useAuthHandshake] opening external browser:', callbackUrl);
 
-        // ✅ يفتح Chrome الخارجي مباشرة — لا In-App Browser
-        window.open(callbackUrl, '_system');
+        await Browser.open({
+          url:              callbackUrl,
+          windowName:       '_blank',
+          presentationStyle:'popover',
+        });
 
-      } catch (err) {
-        console.error('[useAuthHandshake] error:', err);
-      } finally {
-        setTimeout(() => { processing.current = false; }, 3000);
+      } catch (e) {
+        console.error('[useAuthHandshake]', e);
       }
-    };
+    }).then(h => { handle = h; });
 
-    // الحالة 1: التطبيق في الخلفية
-    const listenerPromise = App.addListener('appUrlOpen', ({ url }) => {
-      console.log('[useAuthHandshake] appUrlOpen fired:', url);
-      handleUrl(url);
-    });
-
-    // الحالة 2: التطبيق مغلق (cold start)
-    setTimeout(() => {
-      App.getLaunchUrl().then(({ url }) => {
-        if (url) {
-          console.log('[useAuthHandshake] getLaunchUrl fired:', url);
-          handleUrl(url);
-        }
-      });
-    }, 200);
-
-    return () => {
-      listenerPromise.then(l => l.remove());
-    };
+    return () => { handle?.remove(); };
   }, []);
 }
