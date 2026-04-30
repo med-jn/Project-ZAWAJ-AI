@@ -71,7 +71,12 @@ export function useAuthHandshake() {
           return;
         }
 
-        const callbackUrl = `${decodedReturn}?code=${code}`;
+        const ensureLang = (url: string) => {
+          const hasLang = /\/(en|ar|fr)\//.test(url);
+          if (hasLang) return url;
+          return url.replace('orcavibe.vercel.app/', 'orcavibe.vercel.app/en/');
+        };
+        const callbackUrl = `${ensureLang(decodedReturn)}?code=${code}`;
         console.log('[useAuthHandshake] opening external browser:', callbackUrl);
 
         await Browser.open({

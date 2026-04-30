@@ -275,7 +275,7 @@ html.light {
   :root:not(html.light) .btn-premium:hover::after { left: 150%; }
 
   .bg-luxury-gradient {
-    background: radial-gradient(ellipse at 50% 0%,
+    background: radial-gradient(ellipse at 100% 0%,
       rgba(179,51,75,0.5) 0%, var(--bg-main) 90%);
     min-height: 100dvh;
     width: 100%;
