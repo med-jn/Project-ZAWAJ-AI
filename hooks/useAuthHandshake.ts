@@ -1,10 +1,4 @@
 'use client';
-/**
- * 📁 hooks/useAuthHandshake.ts — ZAWAJ AI
- * ✅ إصلاح: الـ callback URL يحتوي /en/ (مطلوب مع بنية [lang])
- * الـ intent URL من OrcaVibe يرسل: return=https://orcavibe.vercel.app/en/auth/callback
- * التطبيق يُضيف code ويفتح: https://orcavibe.vercel.app/en/auth/callback?code=XXXXXX
- */
 import { useEffect } from 'react';
 import { App }       from '@capacitor/app';
 import { Browser }   from '@capacitor/browser';
@@ -33,20 +27,21 @@ export function useAuthHandshake() {
         const parsed    = new URL(cleaned);
         const returnUrl = parsed.searchParams.get('return');
 
-        console.log('[useAuthHandshake] returnUrl:', returnUrl);
         if (!returnUrl) return;
 
         const decodedReturn = decodeURIComponent(returnUrl);
 
-        // التحقق من المستخدم
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+        // الـ session كاملة تحتوي على tokens
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
           const authPage = decodedReturn.replace('/callback', '');
           await Browser.open({ url: authPage, windowName: '_blank' });
           return;
         }
 
-        // إنشاء رمز فريد
+        const { user, access_token, refresh_token } = session;
+
+        // رمز فريد مع التحقق من التكرار
         let code = generateCode();
         for (let i = 0; i < 5; i++) {
           const { data } = await supabase
@@ -61,9 +56,11 @@ export function useAuthHandshake() {
 
         const { error } = await supabase.from('auth_handshakes').insert({
           code,
-          user_id:    user.id,
-          expires_at: new Date(Date.now() + 90_000).toISOString(),
-          used:       false,
+          user_id:       user.id,
+          expires_at:    new Date(Date.now() + 90_000).toISOString(),
+          used:          false,
+          access_token,
+          refresh_token,
         });
 
         if (error) {
@@ -71,13 +68,14 @@ export function useAuthHandshake() {
           return;
         }
 
-        const ensureLang = (url: string) => {
-          const hasLang = /\/(en|ar|fr)\//.test(url);
-          if (hasLang) return url;
-          return url.replace('orcavibe.vercel.app/', 'orcavibe.vercel.app/en/');
+        const ensureLang = (u: string) => {
+          const hasLang = /\/(en|ar|fr)\//.test(u);
+          if (hasLang) return u;
+          return u.replace('orcavibe.vercel.app/', 'orcavibe.vercel.app/en/');
         };
+
         const callbackUrl = `${ensureLang(decodedReturn)}?code=${code}`;
-        console.log('[useAuthHandshake] opening external browser:', callbackUrl);
+        console.log('[useAuthHandshake] opening browser:', callbackUrl);
 
         await Browser.open({
           url: callbackUrl,
