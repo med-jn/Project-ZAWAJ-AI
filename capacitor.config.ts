@@ -5,13 +5,6 @@ const config: CapacitorConfig = {
   appName: 'ZAWAJ AI',
   webDir:  'out',
 
-  server: {
-    // ✅ يحمّل من Vercel مباشرة — تحديث فوري عند كل deploy
-    url:           'https://zawaj-ai.vercel.app',
-    androidScheme: 'https',
-    cleartext:     false,
-  },
-
   plugins: {
     Browser: {
       presentationStyle: 'popover',
