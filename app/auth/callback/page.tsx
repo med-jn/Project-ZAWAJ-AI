@@ -1,38 +1,57 @@
 'use client';
-/**
- * 📁 app/auth/callback/page.tsx
- * يستقبل OAuth redirect من جوجل
- * يعمل على Web و Capacitor (custom scheme)
- */
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import { Browser } from '@capacitor/browser';
+import { supabase }  from '@/lib/supabase/client';
+import { Browser }   from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
+import { App }       from '@capacitor/app';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
 
   useEffect(() => {
     const handleAuth = async () => {
-      // إغلاق متصفح Capacitor الداخلي إن كان مفتوحاً
+
+      // ── استخرج tokens من الـ URL ──
+      const hash = window.location.hash;
+
+      // ── إذا على Vercel (Web) وجاء من Native ──
+      // نعيد توجيه للتطبيق مباشرة بالـ tokens
+      if (!Capacitor.isNativePlatform() && hash) {
+        const isFromApp = document.referrer.includes('accounts.google.com')
+          || hash.includes('access_token')
+          || hash.includes('code=');
+
+        if (isFromApp) {
+          // أرسل الـ tokens للتطبيق عبر Deep Link
+          window.location.href = `com.zawaj.ai://auth/callback${hash}`;
+          return;
+        }
+      }
+
+      // ── إغلاق المتصفح الداخلي ──
       if (Capacitor.isNativePlatform()) {
         try { await Browser.close(); } catch {}
       }
 
-      // انتظر قليلاً حتى تُعالج Supabase الجلسة من الـ URL
-      await new Promise(r => setTimeout(r, 500));
+      // ── معالجة الجلسة ──
+      if (hash) {
+        await supabase.auth.exchangeCodeForSession(
+          window.location.href
+        ).catch(() => {});
+      }
 
-      const { data: { session }, error } = await supabase.auth.getSession();
+      await new Promise(r => setTimeout(r, 800));
+
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {
         const { data: profile } = await supabase
           .from('profiles').select('is_completed')
           .eq('id', session.user.id).maybeSingle();
-
         router.replace(profile?.is_completed ? '/home' : '/onboarding');
       } else {
-        router.replace('/login');
+        router.replace('/');
       }
     };
 

@@ -324,65 +324,65 @@ Project ZAWAJ AI
 │  │     │  │     ├─ update-info.json
 │  │     │  │     ├─ vercel.svg
 │  │     │  │     ├─ _next
-│  │     │  │     │  ├─ pi1QsG7lfatkE99mM6GYU
+│  │     │  │     │  ├─ 9vmW7FMJZSdu0S9SLiWeO
 │  │     │  │     │  └─ static
+│  │     │  │     │     ├─ 9vmW7FMJZSdu0S9SLiWeO
+│  │     │  │     │     │  ├─ _buildManifest.js
+│  │     │  │     │     │  ├─ _clientMiddlewareManifest.js
+│  │     │  │     │     │  └─ _ssgManifest.js
 │  │     │  │     │     ├─ chunks
-│  │     │  │     │     │  ├─ 0-ijsxfo2gunu.js
+│  │     │  │     │     │  ├─ 0-c_-3laq3cl5.js
 │  │     │  │     │     │  ├─ 0-ve4t0ht.zpu.js
 │  │     │  │     │     │  ├─ 0.zofpm.-~6qy.js
+│  │     │  │     │     │  ├─ 00grxb.h_mbtu.js
 │  │     │  │     │     │  ├─ 016k~ybb.84~w.js
 │  │     │  │     │     │  ├─ 01i242yl83c~k.js
 │  │     │  │     │     │  ├─ 01lr2i68clsmy.js
-│  │     │  │     │     │  ├─ 01scsoy86_zt_.js
 │  │     │  │     │     │  ├─ 01xlw8hd842-c.js
 │  │     │  │     │     │  ├─ 02552lpjs3uh~.js
 │  │     │  │     │     │  ├─ 03~yq9q893hmn.js
-│  │     │  │     │     │  ├─ 05kj6mkv~~u59.js
 │  │     │  │     │     │  ├─ 05qd2rvqbnz8d.js
 │  │     │  │     │     │  ├─ 06ipk54nzi664.js
+│  │     │  │     │     │  ├─ 06kgpli__i7tc.js
 │  │     │  │     │     │  ├─ 06w1wimc1.jfo.js
+│  │     │  │     │     │  ├─ 07sx0scplll_7.js
+│  │     │  │     │     │  ├─ 08qph09p~u1ma.js
 │  │     │  │     │     │  ├─ 08~mdtbzo3wns.js
 │  │     │  │     │     │  ├─ 09bqac6e2jhiy.js
+│  │     │  │     │     │  ├─ 0aup8u1wz~r.-.js
 │  │     │  │     │     │  ├─ 0c014f80k8gpa.js
-│  │     │  │     │     │  ├─ 0cgkbeh~vk4hy.js
-│  │     │  │     │     │  ├─ 0e9ohjy15jxp5.js
 │  │     │  │     │     │  ├─ 0f.u8wpww7qab.js
 │  │     │  │     │     │  ├─ 0fp71cjlk~t90.js
 │  │     │  │     │     │  ├─ 0iak57vv4yuol.js
 │  │     │  │     │     │  ├─ 0k59br~m50d4g.js
-│  │     │  │     │     │  ├─ 0lctxza1n6q.~.js
+│  │     │  │     │     │  ├─ 0l~~cbyo9kdly.js
 │  │     │  │     │     │  ├─ 0nmr~r757x57d.js
-│  │     │  │     │     │  ├─ 0oe0-o608kk57.js
 │  │     │  │     │     │  ├─ 0psf73p_ku73~.js
 │  │     │  │     │     │  ├─ 0q10hv4xk6q~u.js
 │  │     │  │     │     │  ├─ 0q70ygtwk5eb9.js
 │  │     │  │     │     │  ├─ 0r0cmw1ts-j84.js
 │  │     │  │     │     │  ├─ 0tm2ob4h_qzdo.js
 │  │     │  │     │     │  ├─ 0uopldyjstu1o.js
+│  │     │  │     │     │  ├─ 0wctqlwv9-24_.css
 │  │     │  │     │     │  ├─ 0wlzrw.xnrkit.js
 │  │     │  │     │     │  ├─ 0z3j~hwt4tkbb.js
 │  │     │  │     │     │  ├─ 0zfdp28mphqzu.js
 │  │     │  │     │     │  ├─ 0zx6.p148l3~0.js
+│  │     │  │     │     │  ├─ 0_1k049_nj7-v.js
 │  │     │  │     │     │  ├─ 0_bi6qbvxhzcg.js
-│  │     │  │     │     │  ├─ 0_y-scotzf.bt.css
 │  │     │  │     │     │  ├─ 0~0hd5c3hpv-l.js
 │  │     │  │     │     │  ├─ 10615h2r7_kt8.js
+│  │     │  │     │     │  ├─ 117h~qkuo9ybp.js
 │  │     │  │     │     │  ├─ 12im2.l9pd-1x.js
 │  │     │  │     │     │  ├─ 12kb.se6_2y61.js
-│  │     │  │     │     │  ├─ 12r12nqzrh-0f.js
-│  │     │  │     │     │  ├─ 16cspgdyhrx2..js
 │  │     │  │     │     │  ├─ 16m5pw12w83me.js
 │  │     │  │     │     │  ├─ 17nd0a0yu297j.js
 │  │     │  │     │     │  ├─ 181w0~w1md9c2.js
-│  │     │  │     │     │  └─ turbopack-0kbm_qq8dvnsn.js
-│  │     │  │     │     ├─ media
-│  │     │  │     │     │  ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
-│  │     │  │     │     │  ├─ a5b03b231ce290a0-s.079wdgm0e~ep~.woff2
-│  │     │  │     │     │  └─ d41831e24743a3c1-s.p.02r-fjhi~6g_a.woff2
-│  │     │  │     │     └─ pi1QsG7lfatkE99mM6GYU
-│  │     │  │     │        ├─ _buildManifest.js
-│  │     │  │     │        ├─ _clientMiddlewareManifest.js
-│  │     │  │     │        └─ _ssgManifest.js
+│  │     │  │     │     │  └─ turbopack-16150ps30fsvd.js
+│  │     │  │     │     └─ media
+│  │     │  │     │        ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
+│  │     │  │     │        ├─ a5b03b231ce290a0-s.079wdgm0e~ep~.woff2
+│  │     │  │     │        └─ d41831e24743a3c1-s.p.02r-fjhi~6g_a.woff2
 │  │     │  │     ├─ _not-found
 │  │     │  │     │  ├─ index.html
 │  │     │  │     │  ├─ index.txt
@@ -492,7 +492,6 @@ Project ZAWAJ AI
 │  ├─ gradle.properties
 │  ├─ gradlew
 │  ├─ gradlew.bat
-│  ├─ local.properties
 │  ├─ settings.gradle
 │  └─ variables.gradle
 ├─ app
@@ -551,6 +550,7 @@ Project ZAWAJ AI
 │  └─ terms
 │     ├─ page.tsx
 │     └─ TermsContent.tsx
+├─ build-release.bat
 ├─ capacitor.config.json
 ├─ capacitor.config.ts
 ├─ components
@@ -629,6 +629,9 @@ Project ZAWAJ AI
 │  ├─ sitemap.xml
 │  ├─ update-info.json
 │  └─ vercel.svg
+├─ releases
+│  ├─ zawaj-ai-v0.2.1.aab
+│  └─ zawaj-ai-v0.2.1.apk
 ├─ supabase
 │  ├─ .temp
 │  │  └─ cli-latest

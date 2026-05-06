@@ -77,7 +77,7 @@ export default function LandingPage() {
       const isNative = Capacitor.isNativePlatform();
 
       const redirectUrl = isNative
-        ? 'com.zawaj.ai://auth/callback'   // custom scheme للتطبيق
+        ? 'https://zawaj-ai.vercel.app/auth/callback'  // ← HTTPS دائماً
         : window.location.origin + '/auth/callback';
 
       if (isNative) {
