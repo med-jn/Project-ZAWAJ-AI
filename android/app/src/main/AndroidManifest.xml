@@ -97,14 +97,24 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep link: Supabase Auth (com.zawaj.ai://auth/callback) -->
-            <intent-filter android:autoVerify="true">
+            <!-- Deep link: Supabase Auth (custom scheme - للتوافق) -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:scheme="com.zawaj.ai"
                       android:host="auth"
                       android:pathPrefix="/callback" />
+            </intent-filter>
+
+            <!-- ✅ App Link: Google OAuth Callback (https - الحل الجديد) -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                      android:host="zawaj-ai.vercel.app"
+                      android:pathPrefix="/auth/callback" />
             </intent-filter>
 
             <!-- Deep link: Konnect دفع ناجح -->
