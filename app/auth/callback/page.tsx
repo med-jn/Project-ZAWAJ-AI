@@ -1,10 +1,10 @@
 'use client';
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { supabase }  from '@/lib/supabase/client';
-import { Browser }   from '@capacitor/browser';
-import { Capacitor } from '@capacitor/core';
-import { App }       from '@capacitor/app';
+import { useEffect }    from 'react';
+import { useRouter }    from 'next/navigation';
+import { supabase }     from '@/lib/supabase/client';
+import { Browser }      from '@capacitor/browser';
+import { Capacitor }    from '@capacitor/core';
+import { App }          from '@capacitor/app';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -12,37 +12,62 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     const handleAuth = async () => {
 
-      // ── استخرج tokens من الـ URL ──
-      const hash = window.location.hash;
+      // ── على Vercel (Web) وعندنا tokens في الـ URL ──
+      // نعيد للتطبيق مباشرة عبر Deep Link
+      if (!Capacitor.isNativePlatform()) {
+        const hash   = window.location.hash;
+        const search = window.location.search;
 
-      // ── إذا على Vercel (Web) وجاء من Native ──
-      // نعيد توجيه للتطبيق مباشرة بالـ tokens
-      if (!Capacitor.isNativePlatform() && hash) {
-        const isFromApp = document.referrer.includes('accounts.google.com')
-          || hash.includes('access_token')
-          || hash.includes('code=');
+        if (hash || search) {
+          // حاول تبادل الكود أولاً
+          try {
+            await supabase.auth.exchangeCodeForSession(window.location.href);
+          } catch {}
 
-        if (isFromApp) {
-          // أرسل الـ tokens للتطبيق عبر Deep Link
-          window.location.href = `com.zawaj.ai://auth/callback${hash}`;
+          // أعد التوجيه للتطبيق
+          const params = hash || search;
+          window.location.href = `com.zawaj.ai://auth/callback${params}`;
           return;
         }
+
+        // لا tokens — ارجع للصفحة الرئيسية
+        router.replace('/');
+        return;
       }
 
-      // ── إغلاق المتصفح الداخلي ──
-      if (Capacitor.isNativePlatform()) {
-        try { await Browser.close(); } catch {}
-      }
+      // ── على الجهاز (Native) ──
+      // أغلق المتصفح
+      try { await Browser.close(); } catch {}
 
-      // ── معالجة الجلسة ──
-      if (hash) {
-        await supabase.auth.exchangeCodeForSession(
-          window.location.href
-        ).catch(() => {});
-      }
+      // استمع للـ Deep Link القادم
+      const listener = await App.addListener('appUrlOpen', async ({ url }) => {
+        listener.remove();
 
-      await new Promise(r => setTimeout(r, 800));
+        if (url.includes('auth/callback')) {
+          const fragment = url.includes('#')
+            ? url.split('#')[1]
+            : url.split('?')[1];
 
+          if (fragment) {
+            try {
+              await supabase.auth.exchangeCodeForSession(
+                `${window.location.origin}/auth/callback#${fragment}`
+              );
+            } catch {}
+          }
+        }
+        await redirect();
+      });
+
+      // timeout 20 ثانية
+      setTimeout(async () => {
+        listener.remove();
+        await redirect();
+      }, 20000);
+    };
+
+    const redirect = async () => {
+      await new Promise(r => setTimeout(r, 500));
       const { data: { session } } = await supabase.auth.getSession();
 
       if (session) {

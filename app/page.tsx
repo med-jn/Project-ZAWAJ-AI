@@ -76,37 +76,38 @@ export default function LandingPage() {
     try {
       const isNative = Capacitor.isNativePlatform();
 
-      const redirectUrl = isNative
-        ? 'https://zawaj-ai.vercel.app/auth/callback'  // ← HTTPS دائماً
-        : window.location.origin + '/auth/callback';
-
       if (isNative) {
-        // ── Capacitor: نفتح OAuth داخل التطبيق بـ @capacitor/browser ──
+        // ── Native: افتح OAuth في Chrome Custom Tab ──
+        // Supabase سيعيد لـ Vercel ثم Vercel لـ Deep Link
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
           options: {
-            redirectTo: redirectUrl,
-            skipBrowserRedirect: true,  // ✅ نمنع فتح المتصفح الخارجي
+            redirectTo:         'https://zawaj-ai.vercel.app/auth/callback',
+            skipBrowserRedirect: false, // ← اتركه يفتح المتصفح تلقائياً
           },
         });
         if (error) throw error;
 
-        // نفتح URL الـ OAuth في متصفح داخلي
+        // افتح الـ URL يدوياً في متصفح النظام
         if (data?.url) {
           await Browser.open({
-            url: data.url,
-            windowName: '_self',
+            url:               data.url,
+            windowName:        '_blank',
             presentationStyle: 'popover',
           });
         }
+
       } else {
         // ── Web: السلوك العادي ──
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: { redirectTo: redirectUrl },
+          options: {
+            redirectTo: window.location.origin + '/auth/callback',
+          },
         });
         if (error) throw error;
       }
+
     } catch (error: any) {
       toast.error('حدث خطأ أثناء تسجيل الدخول: ' + error.message);
     }
