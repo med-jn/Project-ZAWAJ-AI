@@ -1,12 +1,6 @@
 @echo off
 chcp 65001 >nul
-title ZAWAJ AI — Release Builder
-
-echo.
-echo  ╔══════════════════════════════════════╗
-echo  ║       ZAWAJ AI — Release Builder     ║
-echo  ╚══════════════════════════════════════╝
-echo.
+title ZAWAJ AI - Release Builder
 
 set PROJECT_DIR=C:\Users\lumina\Desktop\Project ZAWAJ AI
 set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr
@@ -16,59 +10,65 @@ set RELEASE_DIR=%PROJECT_DIR%\releases
 
 cd /d "%PROJECT_DIR%"
 
-:: ═══ 1. رفع رقم الإصدار ═══
-echo [1/5] تحديث رقم الإصدار...
+echo.
+echo  ==========================================
+echo   ZAWAJ AI - Release Builder
+echo  ==========================================
+echo.
+
+:: === 1. Bump version (patch) ===
+echo [1/6] Bumping version...
 call npm version patch --no-git-tag-version
+if errorlevel 1 ( echo FAILED: version bump & pause & exit /b 1 )
+
+:: === 2. Sync version to build.gradle + update-info.json ===
+echo [2/6] Syncing version...
 call node sync-version.js
-if errorlevel 1 ( echo ❌ فشل تحديث الإصدار & pause & exit /b 1 )
-echo ✅ الإصدار محدّث
-echo.
+if errorlevel 1 ( echo FAILED: sync-version & pause & exit /b 1 )
 
-:: ═══ 2. بناء Next.js ═══
-echo [2/5] بناء Next.js...
+:: === 3. Build Next.js + zip ===
+echo [3/6] Building Next.js...
 call npm run build
-if errorlevel 1 ( echo ❌ فشل بناء Next.js & pause & exit /b 1 )
-echo ✅ Next.js جاهز
-echo.
+if errorlevel 1 ( echo FAILED: next build & pause & exit /b 1 )
 
-:: ═══ 3. مزامنة Capacitor ═══
-echo [3/5] مزامنة Capacitor...
+:: === 4. Sync Capacitor ===
+echo [4/6] Syncing Capacitor...
 call npx cap sync android
-if errorlevel 1 ( echo ❌ فشلت المزامنة & pause & exit /b 1 )
-echo ✅ Capacitor جاهز
-echo.
+if errorlevel 1 ( echo FAILED: cap sync & pause & exit /b 1 )
 
-:: ═══ 4. بناء APK + AAB ═══
-echo [4/5] بناء APK و AAB...
+:: === 5. Build APK + AAB ===
+echo [5/6] Building APK + AAB...
 cd android
 call gradlew assembleRelease bundleRelease
-if errorlevel 1 ( echo ❌ فشل البناء & pause & exit /b 1 )
-echo ✅ البناء ناجح
-echo.
-
-:: ═══ 5. حفظ الملفات ═══
-echo [5/5] حفظ الملفات...
+if errorlevel 1 ( echo FAILED: gradle build & pause & exit /b 1 )
 cd /d "%PROJECT_DIR%"
+
+:: === 6. Copy to releases + Git push ===
+echo [6/6] Saving files + pushing to Vercel...
 if not exist "%RELEASE_DIR%" mkdir "%RELEASE_DIR%"
 
-:: قراءة رقم الإصدار الحالي
-for /f "tokens=2 delims=:, " %%v in ('findstr "version" package.json') do (
-    set VERSION=%%~v
-    goto :found
+:: Read version from package.json
+for /f "tokens=2 delims=:, " %%v in ('findstr "\"version\"" package.json') do (
+    set RAW=%%~v
+    goto :gotver
 )
-:found
+:gotver
+set VERSION=%RAW: =%
 
 copy /y "%OUTPUT_APK%" "%RELEASE_DIR%\zawaj-ai-v%VERSION%.apk" >nul
 copy /y "%OUTPUT_AAB%" "%RELEASE_DIR%\zawaj-ai-v%VERSION%.aab" >nul
 
+git add .
+git commit -m "Release v%VERSION%"
+git push
+if errorlevel 1 ( echo WARNING: git push failed & pause )
+
 echo.
-echo  ╔══════════════════════════════════════════════╗
-echo  ║              ✅ تم بنجاح!                    ║
-echo  ║                                              ║
-echo  ║  📱 APK: releases\zawaj-ai-v%VERSION%.apk    ║
-echo  ║  📦 AAB: releases\zawaj-ai-v%VERSION%.aab    ║
-echo  ║                                              ║
-echo  ║  ⬆️  لا تنسَ: git push لرفع التحديث OTA     ║
-echo  ╚══════════════════════════════════════════════╝
+echo  ==========================================
+echo   SUCCESS! v%VERSION%
+echo   APK: releases\zawaj-ai-v%VERSION%.apk
+echo   AAB: releases\zawaj-ai-v%VERSION%.aab
+echo   Vercel: deployed
+echo  ==========================================
 echo.
 pause
