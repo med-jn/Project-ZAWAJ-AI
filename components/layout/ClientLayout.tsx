@@ -10,8 +10,8 @@ import Navbar        from '@/components/layout/Navbar';
 import PageHeader    from '@/components/layout/PageHeader';
 import TopBar        from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
-import { PushNotifications } from '@capacitor/push-notifications';
-import { useAuthHandshake }  from '@/hooks/useAuthHandshake'; // ← إضافة
+import { PushNotifications }  from '@capacitor/push-notifications';
+import { useAuthHandshake }   from '@/hooks/useAuthHandshake';
 
 const requestPermissions = async () => {
   let permStatus = await PushNotifications.checkPermissions();
@@ -51,7 +51,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router   = useRouter();
 
-  useAuthHandshake(); // ← تفعيل نظام الدخول السريع مع OrcaVibe
+  useAuthHandshake();
 
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
@@ -90,9 +90,11 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   };
 
   const NAV_ROUTES: Record<string, string> = {
-    home: '/home', likes: '/likes',
+    home:          '/home',
+    likes:         '/likes',
     notifications: '/notifications',
-    profile: '/profile', mediator: '/mediators',
+    profile:       '/profile',
+    mediator:      '/mediators',
   };
 
   const showNavbar =
@@ -111,15 +113,14 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {!isAuth && !isHome && <PageHeader title={title} onBack={() => router.back()} />}
 
       <main style={{
-        paddingTop: isAuth ? 0 : 'var(--header-h)',
-        paddingBottom: (
-          isHome                        ||
-          path.startsWith('/mediators') ||
-          path.startsWith('/dash')      ||
-          path.startsWith('/subscribers')
-        ) ? 'var(--nav-h)' : 0,
-        minHeight: '100vh',
-        background: 'var(--bg-main)',
+        paddingTop:    isAuth ? 0 : 'var(--header-h)',
+        // body عنده padding-bottom: safe-bottom بالفعل (من globals.css)
+        // لذا main يحتاج فقط --nav-h (ارتفاع الـ navbar بدون safe area)
+        // لكن الـ Navbar نفسه يأخذ مساحة safe area داخله →
+        // نستخدم --nav-h-safe = nav-h + safe-bottom لضمان عدم التغطية
+        paddingBottom: showNavbar ? 'var(--nav-h-safe)' : 'var(--safe-bottom)',
+        minHeight:     '100vh',
+        background:    'var(--bg-main)',
       }}>
         {children}
       </main>

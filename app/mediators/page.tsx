@@ -426,9 +426,10 @@ function SubscribeSheet({
                   </div>
                   <div className="h-px" style={{ background: 'var(--glass-border)' }} />
                   <div className="mt-3 space-y-2">
-                    <ConfirmRow label="الرصيد الحالي" value={balance} />
+                    <ConfirmRow label="الرصيد الحالي"
+                      value={balance} />
                     <ConfirmRow label="العملات المخصومة"
-                      value={-(selectedTier?.coins ?? 0)} isNeg />
+                      value={selectedTier?.coins ?? 0} isNeg />
                     <div className="h-px" style={{ background: 'var(--glass-border)' }} />
                     <ConfirmRow label="الرصيد بعد الاشتراك"
                       value={balanceAfter}
@@ -500,18 +501,24 @@ function SubscribeSheet({
   );
 }
 
-function ConfirmRow({ label, value, isNeg, isBold }: {
-  label: string; value: number; isNeg?: boolean; isBold?: boolean;
+function ConfirmRow({ label, value, isNeg, isBold, showSign }: {
+  label: string; value: number;
+  isNeg?: boolean; isBold?: boolean;
+  showSign?: boolean; // ← أظهر + فقط عند الحاجة الصريحة
 }) {
+  const displayValue = Math.abs(value).toLocaleString('ar-TN');
+  const prefix = isNeg ? '−' : showSign && value > 0 ? '+' : '';
+  const color  = isNeg ? 'var(--color-primary)' : isBold ? '#22c55e' : 'var(--text-main)';
+
   return (
     <div className="flex items-center justify-between">
       <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{label}</span>
       <span className={`flex items-center gap-1 ${isBold ? 'font-black' : 'font-bold'}`}
         style={{
           fontSize: isBold ? 'var(--text-base)' : 'var(--text-xs)',
-          color: isNeg ? 'var(--color-primary)' : '#22c55e',
+          color,
         }}>
-        {value > 0 && !isNeg && '+'}{value.toLocaleString('ar-TN')} <LoveCoin size={isBold ? 14 : 12} />
+        {prefix}{displayValue} <LoveCoin size={isBold ? 14 : 12} />
       </span>
     </div>
   );

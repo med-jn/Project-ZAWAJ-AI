@@ -459,3 +459,28 @@ html.light {
 html, body {
   overscroll-behavior: none;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   SAFE AREA — شريط الحالة وشريط التنقل الأصلي
+   أضف هذا في نهاية globals.css
+   ═══════════════════════════════════════════════════════════ */
+
+/* ✅ دعم safe-area على كل الأجهزة */
+:root {
+  --safe-top:    env(safe-area-inset-top,    0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left:   env(safe-area-inset-left,   0px);
+  --safe-right:  env(safe-area-inset-right,  0px);
+
+  /* header و nav يأخذان الـ safe area بالحسبان */
+  --header-h-safe: calc(var(--header-h) + var(--safe-top));
+  --nav-h-safe:    calc(var(--nav-h)    + var(--safe-bottom));
+}
+
+/* ✅ الـ body لا يختبئ تحت أي شريط نظام */
+body {
+  padding-top:    var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  padding-left:   var(--safe-left);
+  padding-right:  var(--safe-right);
+}

@@ -7,9 +7,9 @@ import { Brand }               from '@/components/ui/brand';
 import { GoogleButton }        from '@/components/ui/googlebutton';
 import { Mail }                from 'lucide-react';
 import { toast }               from 'sonner';
-import { Capacitor }          from '@capacitor/core';
-import { Browser }            from '@capacitor/browser';
-import Footer from '@/components/layout/Footer';
+import { Capacitor }           from '@capacitor/core';
+import { Browser }             from '@capacitor/browser';
+import Footer                  from '@/components/layout/Footer';
 
 export default function LandingPage() {
   const [loading, setLoading] = useState(true);
@@ -18,25 +18,28 @@ export default function LandingPage() {
   useEffect(() => {
     const checkUser = async () => {
       try {
-        const timeout = new Promise<null>(res => setTimeout(() => res(null), 5000));
-        const authPromise = supabase.auth.getUser();
-        const result = await Promise.race([authPromise, timeout]);
+        // ✅ getSession() يقرأ من localStorage أولاً — يعمل بدون نت
+        // ❌ getUser() كان يتصل بالخادم دائماً — يفشل بدون نت
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (!result || !('data' in result)) {
+        if (!session) {
           setLoading(false);
           return;
         }
 
-        const { data } = result;
-        if (data?.user) {
+        // ✅ عنده جلسة — اقرأ الملف الشخصي
+        // إذا فشل الطلب (بدون نت) → وجّهه للـ home مباشرة
+        try {
           const { data: profile } = await supabase
             .from('profiles').select('is_completed')
-            .eq('id', data.user.id).maybeSingle();
-          
+            .eq('id', session.user.id).maybeSingle();
+
           router.push(profile?.is_completed ? '/home' : '/onboarding');
-        } else {
-          setLoading(false);
+        } catch {
+          // ✅ بدون نت — وجّهه للـ home على أي حال (عنده جلسة)
+          router.push('/home');
         }
+
       } catch {
         setLoading(false);
       }
@@ -85,7 +88,6 @@ export default function LandingPage() {
       });
       if (error) throw error;
 
-      // على Native افتح المتصفح يدوياً
       if (isNative && data?.url) {
         await Browser.open({
           url: data.url,
@@ -121,16 +123,14 @@ export default function LandingPage() {
 
         <div style={{ marginBottom: 'var(--sp-8)' }}>
           <Brand />
-        
-                <p style={{
-          marginTop: 'var(--sp-3)', fontSize: 'var(--text-xs)',
-          color: 'var(--text-primary)', opacity: 0.8,
-          lineHeight: 'var(--lh-relaxed)',
-        }}>
-          ابحث عن شريك حياتك بآمان وذكاء
-        </p>
+          <p style={{
+            marginTop: 'var(--sp-3)', fontSize: 'var(--text-xs)',
+            color: 'var(--text-primary)', opacity: 0.8,
+            lineHeight: 'var(--lh-relaxed)',
+          }}>
+            ابحث عن شريك حياتك بآمان وذكاء
+          </p>
         </div>
-
 
         <div style={{
           display: 'flex', alignItems: 'center',
@@ -140,7 +140,7 @@ export default function LandingPage() {
           <span style={{
             fontSize: 'var(--text-sm)', fontWeight: 700,
             color: 'var(--text-secondary)', textTransform: 'uppercase',
-          }}> تسجيل الدخول عبر</span>
+          }}>تسجيل الدخول عبر</span>
           <div style={{ height: 1, flex: 1, background: 'var(--border-soft)' }} />
         </div>
 
