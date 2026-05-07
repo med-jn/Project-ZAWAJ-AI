@@ -612,26 +612,57 @@ export default function MediatorsPage() {
     if (!currentUser || !selected) return;
     setUnsubscribeLoading(true);
     try {
-      // 1. إلغاء الاشتراك في mediator_clients
-      await supabase
-        .from('mediator_clients')
-        .update({ status: 'cancelled' })
-        .eq('user_id', currentUser.id)
-        .eq('mediator_id', selected.id)
-        .eq('status', 'active');
+      const now = new Date().toISOString();
 
-      // 2. إزالة الوسيط من profile المستخدم
-      await supabase
-        .from('profiles')
-        .update({ mediator_id: null })
-        .eq('id', currentUser.id);
+      // تحديث الجداول الثلاثة بشكل متوازٍ
+      const [r1, r2, r3] = await Promise.all([
+
+        // 1. profiles.mediator_id = null (مصدر الحقيقة)
+        supabase
+          .from('profiles')
+          .update({ mediator_id: null, updated_at: now })
+          .eq('id', currentUser.id),
+
+        // 2. mediator_clients → آخر اشتراك نشط = cancelled
+        //    نحتفظ بالسجل المالي كاملاً لضمان حق الوسيط
+        supabase
+          .from('mediator_clients')
+          .update({ status: 'cancelled' })
+          .eq('user_id', currentUser.id)
+          .eq('mediator_id', selected.id)
+          .eq('status', 'active'),
+
+        // 3. mediator_subscriptions (الجدول القديم — توافق مع RPC)
+        supabase
+          .from('mediator_subscriptions')
+          .update({ status: 'cancelled' })
+          .eq('id', currentUser.id)
+          .eq('mediator_id', selected.id)
+          .eq('status', 'active'),
+      ]);
+
+      const errs = [r1, r2, r3].map((r, i) => r.error ? `step${i + 1}: ${r.error.message}` : null).filter(Boolean);
+      if (errs.length > 0) console.warn('[unsubscribe] partial:', errs);
+
+      // تسجيل الإلغاء في point_transactions للمحاسبة
+      await supabase.from('point_transactions').insert({
+        user_id:   currentUser.id,
+        mediator_id: selected.id,
+        amount:    0,
+        balance_after: 0,
+        action:   'unsubscription',
+        source:   'subscription',
+        user_name: currentUser.full_name ?? 'مستخدم',
+        notes:    `إلغاء الاشتراك مع الوسيط ${selected.full_name}`,
+      });
 
       setShowUnsubscribe(false);
       setSelected(null);
       setSubscribers([]);
-      toast.success('تم إلغاء الاشتراك');
+      toast.success('تم إلغاء الاشتراك بنجاح');
       load();
-    } catch {
+    } catch (e) {
+      console.error('[unsubscribe]', e);
       toast.error('حدث خطأ، حاول مرة أخرى');
     } finally {
       setUnsubscribeLoading(false);
