@@ -1,18 +1,20 @@
 'use client';
-import { useState } from 'react';
+import { useState }  from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import Footer from '@/components/layout/Footer';
+import { supabase }  from '@/lib/supabase/client';
+import { Brand }     from '@/components/ui/brand';
+import Footer        from '@/components/layout/Footer';
+import { Eye, EyeOff, Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail]                   = useState('');
+  const [password, setPassword]             = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [emailSent, setEmailSent] = useState(false);
+  const [showPass, setShowPass]             = useState(false);
+  const [loading, setLoading]               = useState(false);
+  const [error, setError]                   = useState('');
+  const [emailSent, setEmailSent]           = useState(false);
 
   const handleRegister = async () => {
     setError('');
@@ -24,11 +26,13 @@ export default function RegisterPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email: email.trim(),
       password,
-      options: { emailRedirectTo: window.location.origin + '/auth/callback' }
+      options: { emailRedirectTo: window.location.origin + '/auth/callback' },
     });
 
     if (signUpError) {
-      setError(signUpError.message.includes('already') ? 'هذا البريد مسجل مسبقاً — جرب تسجيل الدخول' : 'حدث خطأ: ' + signUpError.message);
+      setError(signUpError.message.includes('already')
+        ? 'هذا البريد مسجل مسبقاً — جرب تسجيل الدخول'
+        : 'حدث خطأ: ' + signUpError.message);
       setLoading(false); return;
     }
 
@@ -37,100 +41,249 @@ export default function RegisterPage() {
         { id: data.user.id, created_at: new Date().toISOString(), is_completed: false },
         { onConflict: 'id' }
       );
-      if (data.session) {
-        router.push('/onboarding');
-      } else {
-        setEmailSent(true);
-      }
+      if (data.session) { router.push('/onboarding'); }
+      else { setEmailSent(true); }
     }
     setLoading(false);
   };
 
+  // ── شاشة تأكيد البريد ────────────────────────────────────
   if (emailSent) {
     return (
-      <main className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden bg-luxury-gradient">
-        <div className="main-bg" />
-        <section className="glass-panel w-full max-w-[420px] p-10 text-center relative z-10">
-          <div className="text-5xl mb-6">📬</div>
-          <h2 className="text-2xl font-black text-white mb-3">تحقق من بريدك</h2>
-          <p className="text-white/50 text-sm mb-2">أرسلنا رابط التأكيد إلى</p>
-          <p className="text-[#c0002a] font-bold text-sm mb-6 break-all">{email}</p>
-          <button onClick={() => setEmailSent(false)}
-            className="w-full py-3 rounded-full border border-white/15 text-white/50 text-sm hover:border-white/30 transition-all">
-            ← تغيير البريد الإلكتروني
+      <main style={{
+        minHeight: '100dvh', width: '100%',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 'var(--sp-8)',
+      }} className="bg-luxury-gradient">
+        <section className="glass-panel" style={{
+          width: '100%', maxWidth: 420,
+          padding: 'var(--sp-10)', textAlign: 'center',
+        }}>
+          <div style={{
+            width: '5rem', height: '5rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-primary-soft)',
+            border: '1px solid var(--border-soft)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto var(--sp-6)',
+          }}>
+            <Mail size={32} style={{ color: 'var(--color-primary)' }} />
+          </div>
+          <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 900, color: 'var(--text-main)', marginBottom: 'var(--sp-3)' }}>
+            تحقق من بريدك
+          </h2>
+          <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--sp-2)' }}>
+            أرسلنا رابط التأكيد إلى
+          </p>
+          <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 'var(--sp-8)', wordBreak: 'break-all' }}>
+            {email}
+          </p>
+          <button
+            onClick={() => setEmailSent(false)}
+            style={{
+              width: '100%', height: 'var(--btn-h)',
+              borderRadius: 'var(--radius-full)',
+              background: 'transparent',
+              border: '1px solid var(--border-soft)',
+              color: 'var(--text-secondary)',
+              fontSize: 'var(--text-sm)', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            تغيير البريد الإلكتروني
           </button>
         </section>
       </main>
     );
   }
 
+  // ── الحقل المشترك ─────────────────────────────────────────
+  const inputStyle: React.CSSProperties = {
+    direction: 'ltr',
+    width: '100%',
+    padding: 'var(--sp-4) var(--sp-4) var(--sp-4) 3rem',
+    borderRadius: 'var(--radius-sm)',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid var(--glass-border)',
+    color: 'var(--text-main)',
+    fontSize: 'var(--text-sm)',
+    outline: 'none',
+    transition: 'border-color 0.2s',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box' as const,
+  };
+
   return (
-    <main className="min-h-screen w-full flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="main-bg" />
-      <section className="glass-panel w-full max-w-[420px] p-10 text-center relative z-10 border-white/5 shadow-[0_30px_100px_rgba(0,0,0,0.5)]">
+    <main style={{
+      minHeight: '100dvh', width: '100%',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      padding: 'var(--sp-8)', position: 'relative', overflow: 'hidden',
+    }} className="bg-luxury-gradient">
 
-        <div className="text-4xl mb-4 inline-block">💍</div>
-        <h1 className="text-4xl font-black mb-1 tracking-tighter">
-          <span className="text-white">ZAWAJ </span>
-          <span className="text-[#c0002a] drop-shadow-[0_0_20px_rgba(192,0,42,0.6)]">AI</span>
-        </h1>
-        <p className="text-white/50 text-sm mb-6">إنشاء حساب جديد</p>
+      {/* ── زر الرجوع ── */}
+      <button
+        onClick={() => router.push('/')}
+        style={{
+          position: 'fixed',
+          top: 'calc(var(--safe-top, 0px) + var(--sp-4))',
+          right: 'var(--sp-4)',
+          zIndex: 100,
+          width: '2.5rem', height: '2.5rem',
+          borderRadius: 'var(--radius-full)',
+          background: 'var(--glass-bg)',
+          border: '1px solid var(--glass-border)',
+          backdropFilter: 'var(--glass-blur)',
+          WebkitBackdropFilter: 'var(--glass-blur)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', color: 'var(--text-main)',
+        }}
+      >
+        <ArrowRight size={18} />
+      </button>
 
-        <div className="space-y-4 text-right">
+      <section className="glass-panel" style={{
+        width: '100%', maxWidth: 420,
+        padding: 'var(--sp-10)', textAlign: 'center',
+        position: 'relative', zIndex: 10,
+      }}>
+
+        {/* ── الهيدر ── */}
+        <div style={{ marginBottom: 'var(--sp-8)' }}>
+          <Brand />
+          <p style={{
+            marginTop: 'var(--sp-3)', fontSize: 'var(--text-xs)',
+            color: 'var(--text-secondary)', opacity: 0.8,
+            lineHeight: 'var(--lh-relaxed)',
+          }}>
+            إنشاء حساب جديد
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-5)', textAlign: 'right' }}>
+
+          {/* البريد */}
           <div>
-            <label className="text-white/50 text-xs mb-1 block">البريد الإلكتروني</label>
-            <input type="email" placeholder="example@email.com"
-              value={email} onChange={e => setEmail(e.target.value)}
-              style={{ direction: 'ltr' }}
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 outline-none focus:border-[#c0002a]/60 transition-all text-sm" />
+            <label style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
+              البريد الإلكتروني
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input type="email" placeholder="example@email.com"
+                value={email} onChange={e => setEmail(e.target.value)}
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
+                onBlur={e => e.target.style.borderColor = 'var(--glass-border)'}
+              />
+              <Mail size={16} style={{ position: 'absolute', left: 'var(--sp-4)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none' }} />
+            </div>
           </div>
 
+          {/* كلمة المرور */}
           <div>
-            <label className="text-white/50 text-xs mb-1 block">كلمة المرور</label>
-            <div className="relative">
+            <label style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
+              كلمة المرور
+            </label>
+            <div style={{ position: 'relative' }}>
               <input type={showPass ? 'text' : 'password'} placeholder="6 أحرف على الأقل"
                 value={password} onChange={e => setPassword(e.target.value)}
-                style={{ direction: 'ltr' }}
-                className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 outline-none focus:border-[#c0002a]/60 transition-all text-sm" />
+                style={{ ...inputStyle, paddingRight: '3rem' }}
+                onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
+                onBlur={e => e.target.style.borderColor = 'var(--glass-border)'}
+              />
+              <Lock size={16} style={{ position: 'absolute', left: 'var(--sp-4)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none' }} />
               <button onClick={() => setShowPass(p => !p)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/70">
-                {showPass ? '🙈' : '👁️'}
+                style={{ position: 'absolute', right: 'var(--sp-4)', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', padding: 0 }}>
+                {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
           </div>
 
+          {/* تأكيد كلمة المرور */}
           <div>
-            <label className="text-white/50 text-xs mb-1 block">تأكيد كلمة المرور</label>
-            <input type={showPass ? 'text' : 'password'} placeholder="أعد كتابة كلمة المرور"
-              value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-              style={{ direction: 'ltr' }}
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white placeholder-white/20 outline-none focus:border-[#c0002a]/60 transition-all text-sm" />
+            <label style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
+              تأكيد كلمة المرور
+            </label>
+            <div style={{ position: 'relative' }}>
+              <input type={showPass ? 'text' : 'password'} placeholder="أعد كتابة كلمة المرور"
+                value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleRegister()}
+                style={inputStyle}
+                onFocus={e => e.target.style.borderColor = 'var(--color-primary)'}
+                onBlur={e => e.target.style.borderColor = 'var(--glass-border)'}
+              />
+              <Lock size={16} style={{ position: 'absolute', left: 'var(--sp-4)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none' }} />
+            </div>
           </div>
 
+          {/* الخطأ */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-2xl px-4 py-3">
-              <p className="text-red-400 text-sm text-center">{error}</p>
+            <div style={{
+              background: 'rgba(179,51,75,0.1)',
+              border: '1px solid rgba(179,51,75,0.3)',
+              borderRadius: 'var(--radius-sm)',
+              padding: 'var(--sp-3) var(--sp-4)',
+            }}>
+              <p style={{ color: 'var(--color-primary)', fontSize: 'var(--text-sm)', margin: 0, textAlign: 'center' }}>
+                {error}
+              </p>
             </div>
           )}
 
-          <button onClick={handleRegister} disabled={loading}
-            className="w-full py-4 rounded-full font-black text-lg text-white transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 mt-2"
-            style={{ background: 'linear-gradient(135deg, #800020, #c0002a)', boxShadow: '0 10px 30px rgba(128,0,32,0.5)' }}>
-            {loading ? '⏳ جاري الإنشاء...' : '✨ إنشاء الحساب'}
+          {/* زر الإنشاء */}
+          <button
+            onClick={handleRegister}
+            disabled={loading}
+            className="btn-premium"
+            style={{
+              width: '100%', height: 'var(--btn-h-lg)',
+              fontSize: 'var(--text-base)', gap: 'var(--sp-3)',
+              marginTop: 'var(--sp-2)', opacity: loading ? 0.7 : 1,
+            }}
+          >
+            <UserPlus size={18} />
+            {loading ? 'جاري الإنشاء...' : 'إنشاء الحساب'}
           </button>
 
-          <button onClick={() => router.push('/login')}
-            className="w-full py-3 rounded-full border border-white/15 text-white/50 text-sm hover:border-white/30 transition-all">
-            🚪 تسجيل الدخول
+          {/* الفاصل */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-4)' }}>
+            <div style={{ height: 1, flex: 1, background: 'var(--glass-border)' }} />
+            <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>لديك حساب بالفعل؟</span>
+            <div style={{ height: 1, flex: 1, background: 'var(--glass-border)' }} />
+          </div>
+
+          {/* زر الدخول */}
+          <button
+            onClick={() => router.push('/login')}
+            style={{
+              width: '100%', height: 'var(--btn-h)',
+              borderRadius: 'var(--radius-full)',
+              background: 'transparent',
+              border: '1px solid var(--border-soft)',
+              color: 'var(--text-secondary)',
+              fontSize: 'var(--text-sm)', fontWeight: 600,
+              cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.2s',
+            }}
+            onMouseEnter={e => {
+              (e.target as HTMLButtonElement).style.borderColor = 'var(--color-primary)';
+              (e.target as HTMLButtonElement).style.color = 'var(--color-primary)';
+            }}
+            onMouseLeave={e => {
+              (e.target as HTMLButtonElement).style.borderColor = 'var(--border-soft)';
+              (e.target as HTMLButtonElement).style.color = 'var(--text-secondary)';
+            }}
+          >
+            تسجيل الدخول
           </button>
 
-          <button onClick={() => router.push('/')}
-            className="w-full py-2 text-white/25 text-xs hover:text-white/45 transition-colors">
-            العودة للصفحة الرئيسية
-          </button>
         </div>
+
+        <p style={{
+          marginTop: 'var(--sp-8)', fontSize: 'var(--text-2xs)',
+          color: 'var(--text-tertiary)', opacity: 0.4, lineHeight: 'var(--lh-relaxed)',
+        }}>
+          بإنشاء حسابك توافق على سياسة الخصوصية وشروط الاستخدام
+        </p>
+        <Footer />
       </section>
-      <Footer />
     </main>
   );
 }
