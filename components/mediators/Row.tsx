@@ -1,0 +1,56 @@
+'use client';
+/**
+ * components/mediators/Row.tsx
+ *
+ * Generic key-value display row used inside cards and sheets.
+ * Supports icon (string emoji or ReactNode), label, value, optional color override.
+ */
+
+import React from 'react';
+
+interface RowProps {
+  /** Emoji string or any ReactNode (e.g. a Lucide icon) */
+  icon:        React.ReactNode;
+  label:       string;
+  value:       string;
+  /** Override text color for the value */
+  valueColor?: string;
+  className?:  string;
+}
+
+export function Row({ icon, label, value, valueColor, className = '' }: RowProps) {
+  return (
+    <div
+      className={`flex items-start justify-between gap-3 ${className}`}
+      role="row"
+    >
+      {/* Label side */}
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          aria-hidden
+          style={{ color: 'var(--text-tertiary)', lineHeight: 1, fontSize: 14 }}
+        >
+          {icon}
+        </span>
+        <span
+          style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}
+        >
+          {label}
+        </span>
+      </div>
+
+      {/* Value side */}
+      <span
+        className="font-black text-right"
+        style={{
+          fontSize:  'var(--text-xs)',
+          color:     valueColor ?? 'var(--text-main)',
+          maxWidth:  '60%',
+          lineHeight: 1.4,
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
