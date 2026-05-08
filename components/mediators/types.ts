@@ -1,8 +1,3 @@
-/**
- * components/mediators/types.ts
- * Shared TypeScript types for the Mediators feature.
- */
-
 export interface MediatorRow {
   id: string;
   full_name: string;
@@ -40,6 +35,6 @@ export interface SuccessData {
 export interface CurrentUser {
   id: string;
   full_name: string | null;
-  gender: 'male' | 'female' | string;
+  gender: string;
   mediator_id: string | null;
 }

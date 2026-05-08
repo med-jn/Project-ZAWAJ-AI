@@ -1,8 +1,3 @@
-/**
- * components/mediators/constants.ts
- * Subscription tier definitions — single source of truth.
- */
-
 export const TIERS = [
   {
     coins:   2000,
@@ -37,6 +32,4 @@ export const TIERS = [
 ] as const;
 
 export type Tier = typeof TIERS[number];
-
-/** Duration of a subscription in days */
 export const SUBSCRIPTION_DAYS = 30;
