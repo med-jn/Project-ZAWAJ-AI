@@ -19,6 +19,7 @@ import { SubscribeSheet } from '@/components/mediators/SubscribeSheet';
 import { SuccessScreen }  from '@/components/mediators/SuccessScreen';
 import { Stars }          from '@/components/mediators/Stars';
 import { Icon }           from '@/components/mediators/Icon';
+import { LevelBadge }     from '@/components/gems';
 import { useMediators }   from '@/hooks/useMediators';
 import type { MediatorRow, SuccessData } from '@/components/mediators/types';
 
@@ -168,7 +169,7 @@ export default function MediatorsPage() {
                   </div>
                   <div>
                     <p className="font-black" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
-                      {selected.full_name}
+                      {selected.full_name} <LevelBadge subscribers={selected.total_subscribers} size="sm" />
                     </p>
                     <Stars value={selected.avg_rating} size={11} />
                   </div>

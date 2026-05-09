@@ -1,14 +1,21 @@
 'use client';
+/**
+ * components/mediators/MediatorCard.tsx
+ * - LevelBadge من @/components/gems (يعتمد على total_subscribers)
+ * - لا إيموجي — كل الأيقونات من Lucide عبر .icon-wrap
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { motion }                       from 'framer-motion';
 import { MapPin, ChevronLeft, MessageCircle, Crown } from 'lucide-react';
-import { Icon }      from './Icon';
-import { Stars }     from './Stars';
-import { LevelBadge } from './LevelBadge';
+import { LevelBadge }   from '@/components/gems';
+import { Icon }         from './Icon';
+import { Stars }        from './Stars';
 import type { MediatorRow } from './types';
 
 const RANK_COLORS = ['#D4AF37', '#C0C0C0', '#CD7F32'] as const;
 
+/* ── Animated counter ─────────────────────────────── */
 function AnimatedStat({ value }: { value: number }) {
   const [n, setN] = useState(0);
   const raf = useRef<number | null>(null);
@@ -26,10 +33,12 @@ function AnimatedStat({ value }: { value: number }) {
 }
 
 interface Props {
-  mediator: MediatorRow; rank: number; isAuthenticated: boolean;
-  onSubscribe: (m: MediatorRow) => void;
-  onOpenDetail: (m: MediatorRow) => void;
-  onMessage?: (m: MediatorRow) => void;
+  mediator:        MediatorRow;
+  rank:            number;
+  isAuthenticated: boolean;
+  onSubscribe:     (m: MediatorRow) => void;
+  onOpenDetail:    (m: MediatorRow) => void;
+  onMessage?:      (m: MediatorRow) => void;
 }
 
 export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onOpenDetail, onMessage }: Props) {
@@ -43,7 +52,7 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
       className="rounded-[28px] p-5"
       style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-soft)' }}
     >
-      {/* Header */}
+      {/* ── Header ─────────────────────────────────── */}
       <div className="flex items-start gap-4">
         <div className="relative flex-shrink-0">
           <motion.div whileHover={{ scale: 1.04 }}
@@ -56,8 +65,11 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
                   <Icon i={Crown} size={26} color="var(--text-tertiary)" />
                 </div>}
           </motion.div>
+
+          {/* Rank badge */}
           {rank <= 3 && (
-            <motion.div initial={{ scale: 0, rotate: -15 }} animate={{ scale: 1, rotate: 0 }}
+            <motion.div
+              initial={{ scale: 0, rotate: -15 }} animate={{ scale: 1, rotate: 0 }}
               transition={{ type: 'spring', stiffness: 400, damping: 18, delay: Math.min(rank * 0.06 + 0.15, 0.5) }}
               className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center font-black"
               style={{ background: RANK_COLORS[rank - 1], color: '#000', fontSize: '10px',
@@ -72,8 +84,10 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
             <h3 className="font-black" style={{ fontSize: 'var(--text-base)', color: 'var(--text-main)' }}>
               {mediator.full_name}
             </h3>
-            <LevelBadge level={mediator.mediator_level} />
+            {/* ── البادج الجديد من نظام الجواهر ── */}
+            <LevelBadge subscribers={mediator.total_subscribers} size="sm" />
           </div>
+
           {mediator.city && (
             <div className="flex items-center gap-1 mt-1 icon-wrap">
               <Icon i={MapPin} size={11} color="var(--text-tertiary)" />
@@ -82,6 +96,7 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
               </span>
             </div>
           )}
+
           <div className="flex items-center gap-2 mt-1.5">
             <Stars value={mediator.avg_rating} size={12} />
             <span className="font-bold" style={{ fontSize: 'var(--text-xs)', color: '#D4AF37' }}>
@@ -94,12 +109,12 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
         </div>
       </div>
 
-      {/* Stats */}
+      {/* ── Stats ──────────────────────────────────── */}
       <div className="flex gap-2 mt-4">
         {([
-          { label: 'ذكور', value: mediator.male_count,    color: '#60A5FA', bg: 'rgba(59,130,246,0.08)'  },
-          { label: 'إناث', value: mediator.female_count,  color: '#F472B6', bg: 'rgba(236,72,153,0.08)'  },
-          { label: 'نجاح', value: mediator.success_count, color: '#4ADE80', bg: 'rgba(34,197,94,0.08)'   },
+          { label: 'ذكور', value: mediator.male_count,       color: '#60A5FA', bg: 'rgba(59,130,246,0.08)'  },
+          { label: 'إناث', value: mediator.female_count,     color: '#F472B6', bg: 'rgba(236,72,153,0.08)'  },
+          { label: 'نجاح', value: mediator.success_count,    color: '#4ADE80', bg: 'rgba(34,197,94,0.08)'   },
         ] as const).map(s => (
           <div key={s.label} className="flex-1 rounded-2xl px-2 py-2 text-center"
             style={{ background: s.bg, border: `1px solid ${s.color}25` }}>
@@ -111,9 +126,10 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
         ))}
       </div>
 
-      {/* Bio expandable */}
+      {/* ── Bio expandable ─────────────────────────── */}
       {mediator.bio && (
-        <motion.div animate={{ height: bioExpanded ? 'auto' : '2.8em' }}
+        <motion.div
+          animate={{ height: bioExpanded ? 'auto' : '2.8em' }}
           transition={{ duration: 0.28, ease: 'easeInOut' }}
           className="mt-3 overflow-hidden relative cursor-pointer"
           onClick={() => setBioExpanded(v => !v)}>
@@ -127,7 +143,7 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
         </motion.div>
       )}
 
-      {/* Actions */}
+      {/* ── Actions ────────────────────────────────── */}
       <div className="mt-4 space-y-2">
         {mediator.isSubscribed ? (
           <motion.div initial={{ scale: 0.96 }} animate={{ scale: 1 }}
@@ -149,13 +165,16 @@ export function MediatorCard({ mediator, rank, isAuthenticated, onSubscribe, onO
         )}
 
         <div className="flex gap-2">
-          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onMessage?.(mediator)}
+          <motion.button whileTap={{ scale: 0.92 }}
+            onClick={() => onMessage?.(mediator)}
             className="flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 font-bold icon-wrap"
             style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
               fontSize: 'var(--text-xs)', color: '#38BDF8' }}>
             <Icon i={MessageCircle} size={15} color="#38BDF8" /> رسالة
           </motion.button>
-          <motion.button whileTap={{ scale: 0.92 }} onClick={() => onOpenDetail(mediator)}
+
+          <motion.button whileTap={{ scale: 0.92 }}
+            onClick={() => onOpenDetail(mediator)}
             className="w-11 h-11 rounded-2xl flex items-center justify-center icon-wrap"
             style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
             <Icon i={ChevronLeft} size={17} color="var(--text-tertiary)" />

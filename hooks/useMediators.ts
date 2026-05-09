@@ -5,13 +5,17 @@ import { supabase }               from '@/lib/supabase/client';
 import type { MediatorRow, Subscriber, CurrentUser } from '@/components/mediators/types';
 
 export interface UseMediatorsReturn {
-  mediators: MediatorRow[]; loading: boolean; currentUser: CurrentUser | null;
-  balance: number; subscribers: Subscriber[]; subLoading: boolean;
-  load: () => Promise<void>;
-  openMediator: (m: MediatorRow) => Promise<void>;
-  submitRating: (id: string, rating: number, comment: string) => Promise<void>;
+  mediators:      MediatorRow[];
+  loading:        boolean;
+  currentUser:    CurrentUser | null;
+  balance:        number;
+  subscribers:    Subscriber[];
+  subLoading:     boolean;
+  load:           () => Promise<void>;
+  openMediator:   (m: MediatorRow) => Promise<void>;
+  submitRating:   (id: string, rating: number, comment: string) => Promise<void>;
   reportMediator: (id: string) => Promise<void>;
-  unsubscribe: (m: MediatorRow) => Promise<boolean>;
+  unsubscribe:    (m: MediatorRow) => Promise<boolean>;
 }
 
 export function useMediators(): UseMediatorsReturn {
@@ -26,6 +30,7 @@ export function useMediators(): UseMediatorsReturn {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     let me: CurrentUser | null = null;
+
     if (user) {
       const [p, w] = await Promise.all([
         supabase.from('profiles').select('id,full_name,gender,mediator_id').eq('id', user.id).single(),
@@ -35,11 +40,17 @@ export function useMediators(): UseMediatorsReturn {
       setBalance(w.data?.balance ?? 0);
     }
     setCurrentUser(me);
+
     const { data, error } = await supabase.rpc('get_mediators');
     if (error) { console.error('[useMediators]', error.message); setLoading(false); return; }
+
     const rows: MediatorRow[] = (data ?? []).map((m: any) => ({
-      ...m, avg_rating: Number(m.avg_rating ?? 0), isSubscribed: me?.mediator_id === m.id,
+      ...m,
+      avg_rating:        Number(m.avg_rating        ?? 0),
+      total_subscribers: Number(m.total_subscribers ?? 0), // ← من الـ RPC مباشرة
+      isSubscribed:      me?.mediator_id === m.id,
     }));
+
     rows.sort((a, b) => b.avg_rating - a.avg_rating);
     setMediators(rows);
     setLoading(false);
