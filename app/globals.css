@@ -171,6 +171,25 @@ html.light {
     stroke-width: 2px !important;
   }
 
+  /* ── استثناء لأيقونات Lucide داخل .icon-wrap ── */
+  .icon-wrap svg {
+    fill: revert-layer !important;
+    stroke: revert-layer !important;
+    stroke-width: revert-layer !important;
+  }
+
+  /* ── استثناء لـ polygon/path داخل .icon-fill ── */
+  .icon-fill polygon,
+  .icon-fill path,
+  .icon-fill circle,
+  .icon-fill rect,
+  .icon-fill line,
+  .icon-fill polyline {
+    fill: inherit !important;
+    stroke: inherit !important;
+    stroke-width: inherit !important;
+  }
+
   html {
     font-size: 100%;
     -webkit-text-size-adjust: 100%;
