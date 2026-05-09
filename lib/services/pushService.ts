@@ -16,11 +16,15 @@ export const PushService = {
 
     // الاستماع للتوكن وحفظه في السيرفر
     PushNotifications.addListener('registration', async (token) => {
+
+      console.log('FCM TOKEN:', token.value);
+
       await supabase.from('fcm_tokens').upsert({ 
         user_id: userId, 
         token: token.value,
         device_type: 'android'
       }, { onConflict: 'user_id, token' });
+
     });
   },
 

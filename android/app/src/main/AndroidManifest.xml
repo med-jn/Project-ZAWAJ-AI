@@ -62,9 +62,8 @@
             android:value="ca-app-pub-3940256099942544~3347511713" />
 
         <!-- FCM Service -->
-        <service
-            android:name="com.google.firebase.messaging.FirebaseMessagingService"
-            android:exported="false">
+        </service>
+
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
