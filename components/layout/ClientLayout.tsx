@@ -4,8 +4,6 @@ import { useEffect }                from 'react';
 import { usePathname, useRouter }   from 'next/navigation';
 import { toast }                    from 'sonner';
 import { PackagePlus }              from 'lucide-react';
-import { checkAndApplyUpdate }      from '@/lib/services/liveUpdate';
-
 import Navbar        from '@/components/layout/Navbar';
 import PageHeader    from '@/components/layout/PageHeader';
 import TopBar        from '@/components/layout/TopBar';
@@ -51,20 +49,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const title  = getTitle(path);
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      const result = await checkAndApplyUpdate();
-      if (result.hasUpdate) {
-        toast.info(`تحديث v${result.version} جاهز`, {
-          description: 'سيُطبَّق التحديث عند إعادة فتح التطبيق',
-          icon: <PackagePlus size={18} />,
-          duration: 8000,
-          action: {
-            label:   'إعادة التشغيل',
-            onClick: () => window.location.reload(),
-          },
-        });
-      }
-    }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
