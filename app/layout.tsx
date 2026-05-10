@@ -1,7 +1,7 @@
 /**
  * 📁 app/layout.tsx — ZAWAJ AI
  * ✅ Server Component — لا 'use client' هنا أبداً
- * ✅ الثيم الداكن افتراضي من CSS مباشرة — لا حاجة لـ script
+ * ✅ Script مضمّن يطبّق الثيم + المقياس قبل أول رسم ← لا وميض
  * ✅ Sonner Toaster مُهيّأ للعربية RTL
  */
 
@@ -41,6 +41,39 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
+/**
+ * Script مضمّن يُشغَّل قبل أي رسم (قبل React) لمنع وميض الثيم
+ * وتطبيق مقياس الخط المحفوظ فوراً.
+ *
+ * لا يمكن استيراده كملف خارجي لأن Next.js يحتاج سلسلة نصية
+ * داخل dangerouslySetInnerHTML لضمان التنفيذ الآني (blocking).
+ */
+const themeScript = `
+(function () {
+  try {
+    // ── الثيم ──────────────────────────────────────────────
+    var saved = localStorage.getItem('zawaj-theme') || 'system';
+    var resolveTheme = function(mode) {
+      if (mode === 'light') return 'light';
+      if (mode === 'dark')  return 'dark';
+      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+    };
+    var resolved = resolveTheme(saved);
+    if (resolved === 'light') {
+      document.documentElement.classList.add('light');
+    } else {
+      document.documentElement.classList.remove('light');
+    }
+
+    // ── مقياس الخط والأيقونات ──────────────────────────────
+    var scale = parseFloat(localStorage.getItem('zawaj-scale') || '1');
+    if (!isNaN(scale) && scale >= 0.7 && scale <= 1.5) {
+      document.documentElement.style.setProperty('--user-scale', String(scale));
+    }
+  } catch (e) {}
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -49,6 +82,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       className={cairo.variable}
       suppressHydrationWarning
     >
+      <head>
+        {/* ✅ يُشغَّل قبل أي CSS أو React — يمنع وميض الثيم تماماً */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body style={{ margin: 0, padding: 0, overflowX: 'hidden' }}>
 
         <Toaster

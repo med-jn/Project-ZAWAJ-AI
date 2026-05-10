@@ -9,6 +9,8 @@ import PageHeader    from '@/components/layout/PageHeader';
 import TopBar        from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
 import { useAuthHandshake }   from '@/hooks/useAuthHandshake';
+import { useNativeAndroid }   from '@/hooks/useNativeAndroid';
+import { useSystemScale }     from '@/hooks/useSystemScale';
 
 
 
@@ -42,6 +44,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const router   = useRouter();
 
   useAuthHandshake();
+  useNativeAndroid();   // ✅ زر الرجوع + StatusBar + NavigationBar
+  useSystemScale();     // ✅ تطبيق مقياس الخط/الأيقونات المحفوظ فور التحميل
 
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
@@ -90,10 +94,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
 
       <main style={{
         paddingTop:    isAuth ? 0 : 'var(--header-h)',
-        // body عنده padding-bottom: safe-bottom بالفعل (من globals.css)
-        // لذا main يحتاج فقط --nav-h (ارتفاع الـ navbar بدون safe area)
-        // لكن الـ Navbar نفسه يأخذ مساحة safe area داخله →
-        // نستخدم --nav-h-safe = nav-h + safe-bottom لضمان عدم التغطية
         paddingBottom: showNavbar ? 'var(--nav-h-safe)' : 'var(--safe-bottom)',
         minHeight:     '100vh',
         background:    'var(--bg-main)',

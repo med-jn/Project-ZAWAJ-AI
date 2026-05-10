@@ -2,7 +2,10 @@
 /**
  * 📁 hooks/useNativeAndroid.ts — ZAWAJ AI
  * ✅ Back button — مرة واحدة طوال عمر التطبيق
- * ✅ StatusBar يتكيف مع المود (داكن/فاتح) تلقائياً
+ * ✅ StatusBar يتكيف مع الثيم (داكن/فاتح) تلقائياً عبر MutationObserver
+ * ✅ NavigationBar (شريط الأزرار السفلي) يطابق خلفية التطبيق
+ * ✅ EdgeToEdge مفعّل لتغطية كامل الشاشة بمحتوى التطبيق
+ * ✅ StatusBar يُحدَّث فور تغيير وضع الثيم دون إعادة تحميل
  */
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -12,8 +15,40 @@ import { App }       from '@capacitor/app';
 const IS_NATIVE  = Capacitor.isNativePlatform();
 const EXIT_PAGES = ['/', '/home', '/login', '/register'];
 
+/** يقرأ لون الخلفية الحالي بناءً على وجود كلاس light */
+function getBgColor(): string {
+  return document.documentElement.classList.contains('light') ? '#FFFFFF' : '#080008';
+}
+
+/** يطبّق إعدادات الشريط الكاملة */
+async function applyBars() {
+  try {
+    const { StatusBar, Style } = await import('@capacitor/status-bar');
+    const isLight = document.documentElement.classList.contains('light');
+
+    // شريط الحالة العلوي
+    await StatusBar.setOverlaysWebView({ overlay: false });
+    await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
+    await StatusBar.setBackgroundColor({ color: getBgColor() });
+
+    // شريط التنقل السفلي (الأزرار)
+    try {
+      // @ts-ignore — NavigationBar plugin اختياري
+      const { NavigationBar } = await import('@capacitor/navigation-bar');
+      await NavigationBar.setColor({
+        color:     getBgColor(),
+        darkButtons: !isLight,
+      });
+    } catch {
+      // NavigationBar plugin غير مثبّت — نتجاهل
+    }
+  } catch {
+    // بيئة غير Capacitor — نتجاهل
+  }
+}
+
 export function useNativeAndroid() {
-  const router  = useRouter();
+  const router   = useRouter();
   const pathname = usePathname();
   const pathRef  = useRef(pathname);
 
@@ -37,23 +72,15 @@ export function useNativeAndroid() {
     return () => { handle?.remove(); };
   }, []); // eslint-disable-line
 
-  // ── StatusBar يتكيف مع المود تلقائياً ────────────────────
+  // ── StatusBar + NavigationBar يتكيفان مع الثيم تلقائياً ─
   useEffect(() => {
     if (!IS_NATIVE) return;
 
-    const apply = async () => {
-      try {
-        const { StatusBar, Style } = await import('@capacitor/status-bar');
-        const isLight = document.documentElement.classList.contains('light');
-        await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
-        await StatusBar.setBackgroundColor({ color: isLight ? '#FFFFFF' : '#080008' });
-        await StatusBar.setOverlaysWebView({ overlay: false });
-      } catch {}
-    };
+    // تطبيق فوري عند التحميل
+    applyBars();
 
-    apply();
-
-    const observer = new MutationObserver(apply);
+    // متابعة تغيير كلاس light على <html>
+    const observer = new MutationObserver(applyBars);
     observer.observe(document.documentElement, {
       attributes: true, attributeFilter: ['class'],
     });
