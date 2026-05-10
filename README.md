@@ -5,6 +5,20 @@ Project ZAWAJ AI
 ├─ .npmrc
 ├─ android
 │  ├─ .gradle
+│  │  ├─ 8.10.2
+│  │  │  ├─ checksums
+│  │  │  │  ├─ checksums.lock
+│  │  │  │  ├─ md5-checksums.bin
+│  │  │  │  └─ sha1-checksums.bin
+│  │  │  ├─ dependencies-accessors
+│  │  │  │  └─ gc.properties
+│  │  │  ├─ expanded
+│  │  │  ├─ fileChanges
+│  │  │  │  └─ last-build.bin
+│  │  │  ├─ fileHashes
+│  │  │  │  └─ fileHashes.lock
+│  │  │  ├─ gc.properties
+│  │  │  └─ vcsMetadata
 │  │  ├─ 8.14.3
 │  │  │  ├─ checksums
 │  │  │  │  ├─ checksums.lock
@@ -67,6 +81,8 @@ Project ZAWAJ AI
 │  │     │  │  ├─ capacitor.config.json
 │  │     │  │  ├─ capacitor.plugins.json
 │  │     │  │  └─ public
+│  │     │  │     ├─ .well-known
+│  │     │  │     │  └─ assetlinks.json
 │  │     │  │     ├─ 404
 │  │     │  │     │  └─ index.html
 │  │     │  │     ├─ 404.html
@@ -82,8 +98,6 @@ Project ZAWAJ AI
 │  │     │  │     │  └─ __next._tree.txt
 │  │     │  │     ├─ app-dist.zip
 │  │     │  │     ├─ assets
-│  │     │  │     │  ├─ ZAWAJ-PNK.png
-│  │     │  │     │  └─ ZAWAJ-WT.png
 │  │     │  │     ├─ auth
 │  │     │  │     │  └─ callback
 │  │     │  │     │     ├─ index.html
@@ -148,6 +162,16 @@ Project ZAWAJ AI
 │  │     │  │     ├─ index.html
 │  │     │  │     ├─ index.txt
 │  │     │  │     ├─ konnect-initiate _ Code _ Edge Functions _ ZAWAJ AI _ mohamed.jouini029@gmail.com's Org _ Supabase.mhtml
+│  │     │  │     ├─ levels
+│  │     │  │     │  ├─ index.html
+│  │     │  │     │  ├─ index.txt
+│  │     │  │     │  ├─ __next.levels
+│  │     │  │     │  │  └─ __PAGE__.txt
+│  │     │  │     │  ├─ __next.levels.txt
+│  │     │  │     │  ├─ __next._full.txt
+│  │     │  │     │  ├─ __next._head.txt
+│  │     │  │     │  ├─ __next._index.txt
+│  │     │  │     │  └─ __next._tree.txt
 │  │     │  │     ├─ likes
 │  │     │  │     │  ├─ index.html
 │  │     │  │     │  ├─ index.txt
@@ -324,60 +348,62 @@ Project ZAWAJ AI
 │  │     │  │     ├─ update-info.json
 │  │     │  │     ├─ vercel.svg
 │  │     │  │     ├─ _next
-│  │     │  │     │  ├─ 9vmW7FMJZSdu0S9SLiWeO
+│  │     │  │     │  ├─ 7vsLCcEJFcSX92EEkqZpd
 │  │     │  │     │  └─ static
-│  │     │  │     │     ├─ 9vmW7FMJZSdu0S9SLiWeO
+│  │     │  │     │     ├─ 7vsLCcEJFcSX92EEkqZpd
 │  │     │  │     │     │  ├─ _buildManifest.js
 │  │     │  │     │     │  ├─ _clientMiddlewareManifest.js
 │  │     │  │     │     │  └─ _ssgManifest.js
 │  │     │  │     │     ├─ chunks
 │  │     │  │     │     │  ├─ 0-c_-3laq3cl5.js
-│  │     │  │     │     │  ├─ 0-ve4t0ht.zpu.js
-│  │     │  │     │     │  ├─ 0.zofpm.-~6qy.js
-│  │     │  │     │     │  ├─ 00grxb.h_mbtu.js
 │  │     │  │     │     │  ├─ 016k~ybb.84~w.js
 │  │     │  │     │     │  ├─ 01i242yl83c~k.js
-│  │     │  │     │     │  ├─ 01lr2i68clsmy.js
+│  │     │  │     │     │  ├─ 01uc6162r6aj6.js
 │  │     │  │     │     │  ├─ 01xlw8hd842-c.js
-│  │     │  │     │     │  ├─ 02552lpjs3uh~.js
 │  │     │  │     │     │  ├─ 03~yq9q893hmn.js
+│  │     │  │     │     │  ├─ 046rvr-oeieif.js
 │  │     │  │     │     │  ├─ 05qd2rvqbnz8d.js
+│  │     │  │     │     │  ├─ 05val3z~rvpj4.js
 │  │     │  │     │     │  ├─ 06ipk54nzi664.js
-│  │     │  │     │     │  ├─ 06kgpli__i7tc.js
 │  │     │  │     │     │  ├─ 06w1wimc1.jfo.js
 │  │     │  │     │     │  ├─ 07sx0scplll_7.js
-│  │     │  │     │     │  ├─ 08qph09p~u1ma.js
 │  │     │  │     │     │  ├─ 08~mdtbzo3wns.js
+│  │     │  │     │     │  ├─ 0902bi9bkje-1.js
 │  │     │  │     │     │  ├─ 09bqac6e2jhiy.js
-│  │     │  │     │     │  ├─ 0aup8u1wz~r.-.js
-│  │     │  │     │     │  ├─ 0c014f80k8gpa.js
+│  │     │  │     │     │  ├─ 0cmw9w587iv~i.js
 │  │     │  │     │     │  ├─ 0f.u8wpww7qab.js
 │  │     │  │     │     │  ├─ 0fp71cjlk~t90.js
-│  │     │  │     │     │  ├─ 0iak57vv4yuol.js
+│  │     │  │     │     │  ├─ 0fz-t~uw0c4q8.js
+│  │     │  │     │     │  ├─ 0gc25m4qtfdxx.js
+│  │     │  │     │     │  ├─ 0ih0v6h1u3ymi.js
 │  │     │  │     │     │  ├─ 0k59br~m50d4g.js
+│  │     │  │     │     │  ├─ 0kn_ont25nuis.js
 │  │     │  │     │     │  ├─ 0l~~cbyo9kdly.js
-│  │     │  │     │     │  ├─ 0nmr~r757x57d.js
+│  │     │  │     │     │  ├─ 0n03fosr2ijrt.js
+│  │     │  │     │     │  ├─ 0nupl1c.~ssj6.js
+│  │     │  │     │     │  ├─ 0ol09p-c0~xsj.css
 │  │     │  │     │     │  ├─ 0psf73p_ku73~.js
 │  │     │  │     │     │  ├─ 0q10hv4xk6q~u.js
 │  │     │  │     │     │  ├─ 0q70ygtwk5eb9.js
+│  │     │  │     │     │  ├─ 0qdo1v~zml6n6.js
 │  │     │  │     │     │  ├─ 0r0cmw1ts-j84.js
-│  │     │  │     │     │  ├─ 0tm2ob4h_qzdo.js
-│  │     │  │     │     │  ├─ 0uopldyjstu1o.js
-│  │     │  │     │     │  ├─ 0wctqlwv9-24_.css
+│  │     │  │     │     │  ├─ 0s.ophy7w80zi.js
 │  │     │  │     │     │  ├─ 0wlzrw.xnrkit.js
-│  │     │  │     │     │  ├─ 0z3j~hwt4tkbb.js
+│  │     │  │     │     │  ├─ 0x7y4mx.j-bv1.js
+│  │     │  │     │     │  ├─ 0xu6s17xenoo6.js
 │  │     │  │     │     │  ├─ 0zfdp28mphqzu.js
 │  │     │  │     │     │  ├─ 0zx6.p148l3~0.js
-│  │     │  │     │     │  ├─ 0_1k049_nj7-v.js
 │  │     │  │     │     │  ├─ 0_bi6qbvxhzcg.js
-│  │     │  │     │     │  ├─ 0~0hd5c3hpv-l.js
+│  │     │  │     │     │  ├─ 0_gsex.87liau.js
+│  │     │  │     │     │  ├─ 0~aao3-txv_7w.js
 │  │     │  │     │     │  ├─ 10615h2r7_kt8.js
-│  │     │  │     │     │  ├─ 117h~qkuo9ybp.js
 │  │     │  │     │     │  ├─ 12im2.l9pd-1x.js
 │  │     │  │     │     │  ├─ 12kb.se6_2y61.js
+│  │     │  │     │     │  ├─ 16j1lqlqh8l-l.js
 │  │     │  │     │     │  ├─ 16m5pw12w83me.js
 │  │     │  │     │     │  ├─ 17nd0a0yu297j.js
 │  │     │  │     │     │  ├─ 181w0~w1md9c2.js
+│  │     │  │     │     │  ├─ 18azu9tm8hajt.js
 │  │     │  │     │     │  └─ turbopack-16150ps30fsvd.js
 │  │     │  │     │     └─ media
 │  │     │  │     │        ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
@@ -462,6 +488,7 @@ Project ZAWAJ AI
 │  │     │     ├─ raw
 │  │     │     │  └─ notification_sound.mp3
 │  │     │     ├─ values
+│  │     │     │  ├─ colors.xml
 │  │     │     │  ├─ ic_launcher_background.xml
 │  │     │     │  ├─ strings.xml
 │  │     │     │  └─ styles.xml
@@ -514,6 +541,8 @@ Project ZAWAJ AI
 │  ├─ home
 │  │  └─ page.tsx
 │  ├─ layout.tsx
+│  ├─ levels
+│  │  └─ page.tsx
 │  ├─ likes
 │  │  └─ page.tsx
 │  ├─ login
@@ -551,6 +580,7 @@ Project ZAWAJ AI
 │     ├─ page.tsx
 │     └─ TermsContent.tsx
 ├─ build-release.bat
+├─ build-release.bat - Shortcut.lnk
 ├─ capacitor.config.json
 ├─ capacitor.config.ts
 ├─ components
@@ -563,8 +593,26 @@ Project ZAWAJ AI
 │  │  ├─ ChatTab.tsx
 │  │  └─ ChatWindow.tsx
 │  ├─ EconomyModal.tsx
+│  ├─ gems
+│  │  ├─ GemDefinitions.tsx
+│  │  ├─ GemMotion.tsx
+│  │  ├─ GemRenderer.tsx
+│  │  ├─ index.tsx
+│  │  └─ LevelBadge.tsx
 │  ├─ MatchCelebration.tsx
 │  ├─ MatchListener.tsx
+│  ├─ mediators
+│  │  ├─ ConfirmRow.tsx
+│  │  ├─ constants.ts
+│  │  ├─ Icon.tsx
+│  │  ├─ index.ts
+│  │  ├─ LevelBadge.tsx
+│  │  ├─ MediatorCard.tsx
+│  │  ├─ Row.tsx
+│  │  ├─ Stars.tsx
+│  │  ├─ SubscribeSheet.tsx
+│  │  ├─ SuccessScreen.tsx
+│  │  └─ types.ts
 │  ├─ OnboardingForm.tsx
 │  ├─ profile
 │  │  └─ ProfileModal.tsx
@@ -588,6 +636,7 @@ Project ZAWAJ AI
 │  ├─ useAuthHandshake.ts
 │  ├─ useChat.ts
 │  ├─ useKonnectPayment.ts
+│  ├─ useMediators.ts
 │  ├─ useNativeAndroid.ts
 │  ├─ useNotifications.ts
 │  ├─ useTheme.ts
@@ -595,6 +644,9 @@ Project ZAWAJ AI
 │  └─ useWallet.ts
 ├─ lib
 │  ├─ gemini.ts
+│  ├─ gems
+│  │  ├─ GemGeometry.ts
+│  │  └─ LevelConfig.ts
 │  ├─ moderate.ts
 │  ├─ services
 │  │  ├─ admob.ts
@@ -612,10 +664,10 @@ Project ZAWAJ AI
 ├─ postcss.config.cjs
 ├─ project_tree.txt
 ├─ public
+│  ├─ .well-known
+│  │  └─ assetlinks.json
 │  ├─ app-dist.zip
 │  ├─ assets
-│  │  ├─ ZAWAJ-PNK.png
-│  │  └─ ZAWAJ-WT.png
 │  ├─ Edge Functions _ ZAWAJ AI _ mohamed.jouini029@gmail.com's Org _ Supabase.mhtml
 │  ├─ favico.ico
 │  ├─ googleb7cdd508ae0d0bd9.html
@@ -630,8 +682,8 @@ Project ZAWAJ AI
 │  ├─ update-info.json
 │  └─ vercel.svg
 ├─ releases
-│  ├─ zawaj-ai-v0.2.1.aab
-│  └─ zawaj-ai-v0.2.1.apk
+│  ├─ zawaj-ai-v0.2.59.aab
+│  └─ zawaj-ai-v0.2.59.apk
 ├─ supabase
 │  ├─ .temp
 │  │  └─ cli-latest
@@ -646,6 +698,8 @@ Project ZAWAJ AI
 │     ├─ send-push
 │     │  ├─ .npmrc
 │     │  ├─ deno.json
+│     │  └─ index.ts
+│     ├─ subscribtion-to-mediator
 │     │  └─ index.ts
 │     └─ verify-handshake
 │        └─ index.ts
