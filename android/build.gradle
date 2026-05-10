@@ -1,21 +1,24 @@
-// 1. تحميل المتغيرات الأساسية من ملف variables.gradle
+// تحميل المتغيرات الأساسية
 apply from: "variables.gradle"
 
 buildscript {
-    // تحديث المحرك الرئيسي لـ Kotlin إلى 2.1.0 لحل مشكلة 'kotlin.Unit' نهائياً
+
     ext.kotlin_version = '2.1.0'
 
     repositories {
         google()
         mavenCentral()
     }
-    dependencies {
-        // الإصدار المتوافق مع متطلبات المكتبات الحديثة في 2026
-        classpath 'com.android.tools.build:gradle:8.9.1'
-        classpath 'com.google.gms:google-services:4.4.0'
-        classpath 'com.google.gms:google-services:4.4.0'
 
-        // ربط محرك Kotlin بالمشروع باستخدام النسخة المعرفة أعلاه
+    dependencies {
+
+        // Android Gradle Plugin
+        classpath 'com.android.tools.build:gradle:8.9.1'
+
+        // Google Services
+        classpath 'com.google.gms:google-services:4.4.2'
+
+        // Kotlin
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -27,28 +30,28 @@ allprojects {
     }
 }
 
-// 2. إعدادات توافق جميع أجزاء المشروع (Subprojects) مع المعايير الجديدة
 subprojects {
+
     afterEvaluate { project ->
+
         if (project.hasProperty('android')) {
+
             project.android {
-                // الالتزام بـ SDK 36 كما طلبت مكتبات Capacitor و AdMob الحديثة
+
+                // لازم 36 بسبب AndroidX الجديدة
                 compileSdkVersion 36
-                buildToolsVersion "36.0.0"
 
                 defaultConfig {
-                    // جعل التطبيق يستهدف أحدث ميزات الأمان والأداء في أندرويد
                     targetSdkVersion 36
                 }
 
-                // ضمان توافق لغة الجافا مع محرك Kotlin 2.1.0 (ضروري جداً لنجاح البناء)
                 compileOptions {
                     sourceCompatibility JavaVersion.VERSION_17
                     targetCompatibility JavaVersion.VERSION_17
                 }
 
-                // إخبار المترجم أن الهدف هو Java 17
                 if (project.plugins.hasPlugin('kotlin-android')) {
+
                     kotlinOptions {
                         jvmTarget = "17"
                     }
@@ -58,7 +61,6 @@ subprojects {
     }
 }
 
-// 3. مهمة تنظيف المشروع
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
