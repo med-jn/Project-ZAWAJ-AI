@@ -1,52 +1,54 @@
 'use client';
 
 import { useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { PushNotifications } from '@capacitor/push-notifications';
+import { Capacitor } from '@capacitor/core';
+import { supabase } from '@/lib/supabase/client';
 
-export function usePushNotifications() {
+export function usePushNotifications(userId?: string) {
   useEffect(() => {
-
-    if (Capacitor.getPlatform() !== 'android') {
-      return;
-    }
+    if (!userId) return;
+    if (Capacitor.getPlatform() !== 'android') return;
 
     const init = async () => {
       try {
-
-        const perm = await PushNotifications.checkPermissions();
-
-        let status = perm;
+        let perm = await PushNotifications.checkPermissions();
 
         if (perm.receive === 'prompt') {
-          status = await PushNotifications.requestPermissions();
+          perm = await PushNotifications.requestPermissions();
         }
 
-        if (status.receive !== 'granted') {
-          console.log('Push permission denied');
+        if (perm.receive !== 'granted') {
+          console.log('❌ Notifications denied');
           return;
         }
 
-        PushNotifications.addListener('registration', token => {
-          console.log('FCM TOKEN:', token.value);
-        });
-
-        PushNotifications.addListener('registrationError', err => {
-          console.error('FCM ERROR:', err);
-        });
-
         await PushNotifications.register();
 
+        PushNotifications.addListener('registration', async (token) => {
+          console.log('✅ FCM TOKEN:', token.value);
+
+          const { error } = await supabase
+            .from('fcm_tokens')
+            .upsert({
+              user_id: userId,
+              token: token.value,
+              device_type: 'android',
+              last_seen: new Date().toISOString(),
+            });
+
+          if (error) {
+            console.error('❌ Supabase error:', error);
+          } else {
+            console.log('✅ Token saved');
+          }
+        });
+
       } catch (err) {
-        console.error('Push init failed:', err);
+        console.error('❌ Push init failed:', err);
       }
     };
 
-    const timer = setTimeout(init, 3000);
-
-    return () => {
-      clearTimeout(timer);
-    };
-
-  }, []);
+    init();
+  }, [userId]);
 }

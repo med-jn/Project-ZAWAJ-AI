@@ -24,7 +24,6 @@ export const metadata: Metadata = {
   description: 'منصة الزواج الجاد المدعومة بالذكاء الاصطناعي',
   manifest:    '/manifest.json',
   icons:       { apple: '/apple-touch-icon.png' },
-
   verification: {
     google: 'NGEXMXzT6SpYRnz76pQauvgXBT4e-sEXWkr8UGvlYyk',
   },
@@ -42,16 +41,13 @@ export const viewport: Viewport = {
 };
 
 /**
- * Script مضمّن يُشغَّل قبل أي رسم (قبل React) لمنع وميض الثيم
- * وتطبيق مقياس الخط المحفوظ فوراً.
- *
- * لا يمكن استيراده كملف خارجي لأن Next.js يحتاج سلسلة نصية
- * داخل dangerouslySetInnerHTML لضمان التنفيذ الآني (blocking).
+ * يُشغَّل قبل أي رسم (قبل React hydration) لمنع وميض الثيم.
+ * suppressHydrationWarning على <html> يمنع تحذير React المتعلق
+ * بـ dangerouslySetInnerHTML داخل Server Components.
  */
 const themeScript = `
 (function () {
   try {
-    // ── الثيم ──────────────────────────────────────────────
     var saved = localStorage.getItem('zawaj-theme') || 'system';
     var resolveTheme = function(mode) {
       if (mode === 'light') return 'light';
@@ -64,8 +60,6 @@ const themeScript = `
     } else {
       document.documentElement.classList.remove('light');
     }
-
-    // ── مقياس الخط والأيقونات ──────────────────────────────
     var scale = parseFloat(localStorage.getItem('zawaj-scale') || '1');
     if (!isNaN(scale) && scale >= 0.7 && scale <= 1.5) {
       document.documentElement.style.setProperty('--user-scale', String(scale));
@@ -83,7 +77,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       suppressHydrationWarning
     >
       <head>
-        {/* ✅ يُشغَّل قبل أي CSS أو React — يمنع وميض الثيم تماماً */}
+        {/*
+          ✅ يُشغَّل قبل أي CSS أو React — يمنع وميض الثيم تماماً.
+          التحذير "Encountered a script tag" هو warning فقط وليس خطأ،
+          ولا يؤثر على الأداء أو الوظيفة في Next.js App Router.
+        */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body style={{ margin: 0, padding: 0, overflowX: 'hidden' }}>

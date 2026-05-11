@@ -1,18 +1,16 @@
 'use client';
 
-import { useEffect }                from 'react';
-import { usePathname, useRouter }   from 'next/navigation';
-import { toast }                    from 'sonner';
-import { PackagePlus }              from 'lucide-react';
+import { useEffect, useState }      from 'react';
+import { usePathname, useRouter }    from 'next/navigation';
 import Navbar        from '@/components/layout/Navbar';
 import PageHeader    from '@/components/layout/PageHeader';
 import TopBar        from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
-import { useAuthHandshake }   from '@/hooks/useAuthHandshake';
-import { useNativeAndroid }   from '@/hooks/useNativeAndroid';
-import { useSystemScale }     from '@/hooks/useSystemScale';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
-
+import { useAuthHandshake }       from '@/hooks/useAuthHandshake';
+import { useNativeAndroid }       from '@/hooks/useNativeAndroid';
+import { useSystemScale }         from '@/hooks/useSystemScale';
+import { usePushNotifications }   from '@/hooks/usePushNotifications';
+import { supabase }               from '@/lib/supabase/client';
 
 const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
 
@@ -43,16 +41,33 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router   = useRouter();
 
-  useAuthHandshake();
-  useNativeAndroid();   // ✅ زر الرجوع + StatusBar + NavigationBar
-  useSystemScale();     // ✅ تطبيق مقياس الخط/الأيقونات المحفوظ فور التحميل
-  usePushNotifications(); // ✅ تسجيل FCM + الاستماع للأحداث (Android فقط)
+  // ── جلب userId مرة واحدة عند التحميل ──────────────────────
+  const [userId, setUserId] = useState<string | undefined>(undefined);
 
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user?.id) setUserId(data.user.id);
+    });
+
+    // متابعة تغيير حالة الجلسة (تسجيل دخول/خروج)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id ?? undefined);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // ── Hooks ───────────────────────────────────────────────────
+  useAuthHandshake();
+  useNativeAndroid();             // زر الرجوع + StatusBar + NavigationBar
+  useSystemScale();               // مقياس الخط/الأيقونات المحفوظ
+  usePushNotifications(userId);   // ✅ يعمل فقط بعد توفر userId
+
+  // ── المسار الحالي ───────────────────────────────────────────
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
   const isHome = path === '/home';
   const title  = getTitle(path);
-
 
   const getActiveTab = () => {
     if (path.startsWith('/home'))          return 'home';
