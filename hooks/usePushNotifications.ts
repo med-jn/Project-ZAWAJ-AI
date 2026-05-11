@@ -7,11 +7,25 @@ import { supabase } from '@/lib/supabase/client';
 
 export function usePushNotifications(userId?: string) {
   useEffect(() => {
-    if (!userId) return;
-    if (Capacitor.getPlatform() !== 'android') return;
+    if (!userId) {
+      console.log('[FCM] no userId');
+      return;
+    }
+
+    if (!Capacitor.isNativePlatform()) {
+      console.log('[FCM] not native platform');
+      return;
+    }
+
+    let registrationListener: any;
+    let registrationErrorListener: any;
+    let receivedListener: any;
 
     const init = async () => {
       try {
+        console.log('[FCM] init start');
+
+        // طلب الصلاحيات
         let perm = await PushNotifications.checkPermissions();
 
         if (perm.receive === 'prompt') {
@@ -19,36 +33,78 @@ export function usePushNotifications(userId?: string) {
         }
 
         if (perm.receive !== 'granted') {
-          console.log('❌ Notifications denied');
+          console.log('[FCM] permission denied');
           return;
         }
 
+        console.log('[FCM] permission granted');
+
+        // تسجيل الجهاز في FCM
         await PushNotifications.register();
 
-        PushNotifications.addListener('registration', async (token) => {
-          console.log('✅ FCM TOKEN:', token.value);
+        // نجاح التسجيل
+        registrationListener =
+          await PushNotifications.addListener(
+            'registration',
+            async ({ value }) => {
+              try {
+                console.log('[FCM] token received:', value);
 
-          const { error } = await supabase
-            .from('fcm_tokens')
-            .upsert({
-              user_id: userId,
-              token: token.value,
-              device_type: 'android',
-              last_seen: new Date().toISOString(),
-            });
+                const { error } = await supabase
+                  .from('fcm_tokens')
+                  .upsert(
+                    {
+                      user_id: userId,
+                      token: value,
+                      device_type: Capacitor.getPlatform(),
+                      last_seen: new Date().toISOString(),
+                    },
+                    {
+                      onConflict: 'token',
+                    }
+                  );
 
-          if (error) {
-            console.error('❌ Supabase error:', error);
-          } else {
-            console.log('✅ Token saved');
-          }
-        });
+                if (error) {
+                  console.error('[FCM] save error:', error);
+                  return;
+                }
+
+                console.log('[FCM] token saved');
+              } catch (err) {
+                console.error('[FCM] insert crash:', err);
+              }
+            }
+          );
+
+        // فشل التسجيل
+        registrationErrorListener =
+          await PushNotifications.addListener(
+            'registrationError',
+            (err) => {
+              console.error('[FCM] registration error:', err);
+            }
+          );
+
+        // استقبال إشعار أثناء فتح التطبيق
+        receivedListener =
+          await PushNotifications.addListener(
+            'pushNotificationReceived',
+            (notification) => {
+              console.log('[FCM] notification received:', notification);
+            }
+          );
 
       } catch (err) {
-        console.error('❌ Push init failed:', err);
+        console.error('[FCM] init failed:', err);
       }
     };
 
     init();
+
+    return () => {
+      registrationListener?.remove();
+      registrationErrorListener?.remove();
+      receivedListener?.remove();
+    };
   }, [userId]);
 }
