@@ -11,7 +11,7 @@ import MatchListener from '@/components/MatchListener';
 import { useAuthHandshake }   from '@/hooks/useAuthHandshake';
 import { useNativeAndroid }   from '@/hooks/useNativeAndroid';
 import { useSystemScale }     from '@/hooks/useSystemScale';
-
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 
 const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
@@ -46,6 +46,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   useAuthHandshake();
   useNativeAndroid();   // ✅ زر الرجوع + StatusBar + NavigationBar
   useSystemScale();     // ✅ تطبيق مقياس الخط/الأيقونات المحفوظ فور التحميل
+  usePushNotifications(); // ✅ تسجيل FCM + الاستماع للأحداث (Android فقط)
 
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
