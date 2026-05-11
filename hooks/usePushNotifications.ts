@@ -65,7 +65,7 @@ export function usePushNotifications(userId?: string) {
                   );
 
                 if (error) {
-                  console.error('[FCM] save error:', error);
+                  console.error('[FCM] save error:', JSON.stringify(error));
                   return;
                 }
 
