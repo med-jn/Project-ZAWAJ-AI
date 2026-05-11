@@ -41,53 +41,54 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router   = useRouter();
 
-  // ── جلب userId مرة واحدة عند التحميل ──────────────────────
+  // ── جلب userId مرة واحدة ──────────────────────────────────
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user?.id) setUserId(data.user.id);
     });
-
-    // متابعة تغيير حالة الجلسة (تسجيل دخول/خروج)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUserId(session?.user?.id ?? undefined);
     });
-
     return () => subscription.unsubscribe();
   }, []);
 
-  // ── Hooks ───────────────────────────────────────────────────
+  // ── Hooks ────────────────────────────────────────────────
   useAuthHandshake();
-  useNativeAndroid();             // زر الرجوع + StatusBar + NavigationBar
-  useSystemScale();               // مقياس الخط/الأيقونات المحفوظ
-  usePushNotifications(userId);   // ✅ يعمل فقط بعد توفر userId
+  useNativeAndroid();
+  useSystemScale();
+  usePushNotifications(userId);
 
-  // ── المسار الحالي ───────────────────────────────────────────
+  // ── المسار الحالي ────────────────────────────────────────
   const path   = pathname.endsWith('/') && pathname !== '/' ? pathname.slice(0, -1) : pathname;
   const isAuth = AUTH_PAGES.includes(path);
   const isHome = path === '/home';
   const title  = getTitle(path);
 
+  // ── التبويب النشط — يشمل مسارات user و mediator ──────────
   const getActiveTab = () => {
     if (path.startsWith('/home'))          return 'home';
     if (path.startsWith('/likes'))         return 'likes';
     if (path.startsWith('/notifications')) return 'notifications';
     if (path.startsWith('/profile'))       return 'profile';
-    if (
-      path.startsWith('/mediators') ||
-      path.startsWith('/dash')      ||
-      path.startsWith('/subscribers')
-    ) return 'mediator';
+    if (path.startsWith('/dash'))          return 'profile';      // mediator: dash = حسابي
+    if (path.startsWith('/subscribers'))   return 'likes';        // mediator: subscribers = إعجابات
+    if (path.startsWith('/mediators'))     return 'mediator';
     return 'home';
   };
 
+  // ── مسارات التنقل — الـ Navbar يمرر tab id فنحوّله لمسار ─
+  // هذا لا يُستخدم للـ mediator لأن Navbar نفسه يحمل المسارات الصحيحة
   const NAV_ROUTES: Record<string, string> = {
     home:          '/home',
     likes:         '/likes',
     notifications: '/notifications',
     profile:       '/profile',
     mediator:      '/mediators',
+    // mediator overrides — يُضاف هنا للتأكد
+    subscribers:   '/subscribers',
+    dash:          '/dash',
   };
 
   const showNavbar =
@@ -117,7 +118,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
       {showNavbar && (
         <Navbar
           activeTab={getActiveTab()}
-          onTabClick={(tab) => router.push(NAV_ROUTES[tab])}
+          onTabClick={(route) => router.push('/' + route)}
         />
       )}
     </>
