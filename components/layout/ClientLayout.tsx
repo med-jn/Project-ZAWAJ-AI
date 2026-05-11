@@ -52,9 +52,6 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const isHome = path === '/home';
   const title  = getTitle(path);
 
-  useEffect(() => {
-    return () => clearTimeout(timer);
-  }, []);
 
   const getActiveTab = () => {
     if (path.startsWith('/home'))          return 'home';

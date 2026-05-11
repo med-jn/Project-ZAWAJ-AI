@@ -6,7 +6,7 @@
  * ✅ ProfileModal بدل sessionStorage + router.push
  */
 
-import { useNotifications } from '@/hooks/useNotifications';
+import { useNotifications } from '@/hooks/usePushNotifications';
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
