@@ -44,6 +44,8 @@ interface NotificationData {
   title?: string;
 
   body?: string;
+
+  route?: string;   // ✅ المسار المباشر من السيرفر (index.ts يرسله)
 }
 
 /* ═══════════════════════════════════════════════
@@ -52,6 +54,12 @@ interface NotificationData {
 
 function navigateTo(data: NotificationData) {
   try {
+    // ✅ إذا أرسل السيرفر route مباشرة — نستخدمه فوراً
+    if (data?.route) {
+      window.location.href = data.route;
+      return;
+    }
+
     switch (data?.type) {
       /* ───────── رسائل ───────── */
 
@@ -77,7 +85,7 @@ function navigateTo(data: NotificationData) {
 
       case 'premium':
         window.location.href =
-          '/packages';
+          '/points';
         break;
 
       /* ───────── وساطة ───────── */

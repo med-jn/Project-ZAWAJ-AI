@@ -65,7 +65,8 @@
         android:theme="@style/AppTheme.NoActionBarLaunch"
         android:launchMode="singleTask"
         android:exported="true"
-        android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density">
+        android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+        android:windowSoftInputMode="adjustResize">
 
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
@@ -132,6 +133,15 @@
         </intent-filter>
 
     </activity>
+
+    <!-- ✅ FCM Service — استقبال الإشعارات في الخلفية -->
+    <service
+        android:name=".MyFirebaseMessagingService"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="com.google.firebase.MESSAGING_EVENT" />
+        </intent-filter>
+    </service>
 
     <provider
         android:name="androidx.core.content.FileProvider"

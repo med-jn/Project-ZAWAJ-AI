@@ -1,217 +1,310 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { JWT } from "https://esm.sh/google-auth-library@8.7.0";
+
+import { createClient }
+from "https://esm.sh/@supabase/supabase-js@2";
+
+import { JWT }
+from "https://esm.sh/google-auth-library@8.7.0";
 
 serve(async (req) => {
   try {
-    // =========================================
-    // 1. Parse request body
-    // =========================================
 
-    const body = await req.json();
-    const record = body.record;
+    const { record } =
+      await req.json();
 
-    if (!record) {
-      return new Response(
-        JSON.stringify({ error: "Missing record" }),
-        { status: 400 }
+    const supabase =
+      createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
       );
-    }
 
-    // =========================================
-    // 2. Init Supabase Admin
-    // =========================================
+    /* ═══════════════════════════════
+       TARGET USER
+    ═══════════════════════════════ */
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    // =========================================
-    // 3. Resolve target user
-    // =========================================
-
-    const targetUserId = record.id;
+    const targetUserId =
+      record.to_user || record.id;
 
     if (!targetUserId) {
       return new Response(
-        JSON.stringify({ error: "Missing target user id" }),
+        JSON.stringify({
+          error: "Missing target user"
+        }),
         { status: 400 }
       );
     }
 
-    // =========================================
-    // 4. Fetch FCM tokens
-    // =========================================
+    /* ═══════════════════════════════
+       TOKENS
+    ═══════════════════════════════ */
 
-    const { data: tokensData, error: tokenError } = await supabase
-      .from("fcm_tokens")
-      .select("id, token")
-      .eq("user_id", targetUserId);
+    const { data: tokens } =
+      await supabase
+        .from("fcm_tokens")
+        .select("token")
+        .eq("user_id", targetUserId);
 
-    if (tokenError) {
-      console.error("Token fetch error:", tokenError);
-
+    if (!tokens?.length) {
       return new Response(
-        JSON.stringify({ error: "Failed to fetch tokens" }),
-        { status: 500 }
-      );
-    }
-
-    if (!tokensData || tokensData.length === 0) {
-      console.log("No tokens found for user:", targetUserId);
-
-      return new Response(
-        JSON.stringify({ success: true, message: "No tokens found" }),
+        JSON.stringify({
+          success: false,
+          message: "No devices found"
+        }),
         { status: 200 }
       );
     }
 
-    // =========================================
-    // 5. Firebase auth
-    // =========================================
+    /* ═══════════════════════════════
+       SENDER PROFILE
+    ═══════════════════════════════ */
 
-    const serviceAccount = JSON.parse(
-      Deno.env.get("FIREBASE_SERVICE_ACCOUNT") ?? "{}"
-    );
+    let sender: any = null;
 
-    const jwtClient = new JWT({
-      email: serviceAccount.client_email,
-      key: serviceAccount.private_key,
-      scopes: ["https://www.googleapis.com/auth/firebase.messaging"],
+    if (record.from_user) {
+      const { data } =
+        await supabase
+          .from("profiles")
+          .select(`
+            id,
+            full_name,
+            avatar_url,
+            gender
+          `)
+          .eq("id", record.from_user)
+          .single();
+
+      sender = data;
+    }
+
+    /* ═══════════════════════════════
+       FIREBASE AUTH
+    ═══════════════════════════════ */
+
+    const serviceAccount =
+      JSON.parse(
+        Deno.env.get(
+          "FIREBASE_SERVICE_ACCOUNT"
+        ) ?? "{}"
+      );
+
+    const client = new JWT({
+      email:
+        serviceAccount.client_email,
+
+      key:
+        serviceAccount.private_key,
+
+      scopes: [
+        "https://www.googleapis.com/auth/cloud-platform",
+      ],
     });
 
-    const auth = await jwtClient.authorize();
+    const token =
+      await client.getAccessToken();
 
-    const accessToken = auth.access_token;
+    const accessToken =
+      token.token;
 
-    const projectId = serviceAccount.project_id;
+    const projectId =
+      serviceAccount.project_id;
 
-    // =========================================
-    // 6. Notification content
-    // =========================================
+    /* ═══════════════════════════════
+       NOTIFICATION TYPE
+    ═══════════════════════════════ */
 
-    const notificationType = record.type ?? "message";
+    const type =
+      record.type || "system";
 
-    const title =
-      notificationType === "like"
-        ? "إعجاب جديد ❤️"
-        : "رسالة جديدة 💬";
+    let title = "ZAWAJ AI";
+    let body  = "";
 
-    const bodyText =
-      record.message?.slice(0, 120) ??
-      "لديك إشعار جديد";
+    switch (type) {
 
-    // =========================================
-    // 7. Send notifications
-    // =========================================
+      case "message":
+        title =
+          sender?.full_name ||
+          "رسالة جديدة";
 
-    const results = await Promise.allSettled(
-      tokensData.map(async (row: any) => {
-        const token = row.token;
+        body =
+          record.message ||
+          "لديك رسالة جديدة";
+        break;
 
-        const payload = {
-          message: {
-            token,
+      case "like":
+        title =
+          "إعجاب جديد";
 
-            notification: {
-              title,
-              body: bodyText,
-            },
+        body =
+          `${sender?.full_name || "أحدهم"} أعجب بملفك الشخصي`;
+        break;
 
-            data: {
-              type: notificationType,
-              chatId: String(record.chat_id ?? ""),
-              senderId: String(record.sender_id ?? ""),
-              targetUserId: String(targetUserId),
-              click_action: "OPEN_CHAT",
-            },
+      case "view":
+        title =
+          "زيارة جديدة";
 
-            android: {
-              priority: "HIGH",
+        body =
+          `${sender?.full_name || "أحدهم"} زار ملفك الشخصي`;
+        break;
 
-              collapse_key: `chat_${record.chat_id ?? "default"}`,
+      case "match":
+        title =
+          "توافق جديد";
 
-              notification: {
-                channel_id: "messages",
-                sound: "default",
-                icon: "ic_notification",
-                priority: "PRIORITY_HIGH",
-                visibility: "PUBLIC",
-                default_vibrate_timings: true,
+        body =
+          `لقد حصل توافق بينكما`;
+        break;
+
+      default:
+        title =
+          record.title ||
+          "إشعار جديد";
+
+        body =
+          record.message || "";
+    }
+
+    /* ═══════════════════════════════
+       PREMIUM PAYLOAD
+    ═══════════════════════════════ */
+
+    const results =
+      await Promise.all(
+
+        tokens.map(async (t: any) => {
+
+          const payload = {
+
+            message: {
+
+              token: t.token,
+
+              /**
+               * ⚠️ لا تستعمل notification
+               * حتى لا يقتل Android
+               * التصميم المخصص
+               */
+
+              data: {
+
+                type:
+                  String(type),
+
+                title:
+                  String(title),
+
+                body:
+                  String(body),
+
+                avatar:
+                  String(
+                    sender?.avatar_url || ""
+                  ),
+
+                from_user:
+                  String(
+                    sender?.id || ""
+                  ),
+
+                conversation_id:
+                  String(
+                    record.conversation_id || ""
+                  ),
+
+                click_action:
+                  "OPEN_NOTIFICATION",
+
+                route:
+                  type === "message"
+                    ? `/chat?id=${record.conversation_id}`
+                    : sender?.id
+                      ? `/profile/${sender.id}`
+                      : "/",
+
+                created_at:
+                  new Date().toISOString(),
+              },
+
+              android: {
+
+                priority: "high",
+
+                ttl: "120s",
+
+                collapse_key:
+                  type,
+
+                notification: {
+
+                  channel_id:
+                    type === "message"
+                      ? "messages"
+                      : "social",
+
+                  sound: "default",
+
+                  visibility: "PUBLIC",
+
+                  notification_priority:
+                    "PRIORITY_MAX",
+
+                  default_vibrate_timings: true,
+
+                  default_sound: true,
+
+                  icon:
+                    "ic_stat_logo",
+
+                  color:
+                    "#B3334B",
+
+                  tag:
+                    type,
+
+                  sticky: false,
+                },
               },
             },
-          },
-        };
+          };
 
-        const response = await fetch(
-          `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-          {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          }
-        );
+          const res =
+            await fetch(
+              `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+              {
+                method: "POST",
 
-        const result = await response.json();
+                headers: {
+                  "Content-Type":
+                    "application/json",
 
-        // =========================================
-        // 8. Remove invalid tokens
-        // =========================================
+                  Authorization:
+                    `Bearer ${accessToken}`,
+                },
 
-        if (!response.ok) {
-          console.error("FCM error:", result);
+                body:
+                  JSON.stringify(payload),
+              }
+            );
 
-          const errorCode =
-            result?.error?.details?.[0]?.errorCode;
-
-          const invalid =
-            errorCode === "UNREGISTERED" ||
-            errorCode === "INVALID_ARGUMENT";
-
-          if (invalid) {
-            console.log("Removing dead token:", token);
-
-            await supabase
-              .from("fcm_tokens")
-              .delete()
-              .eq("id", row.id);
-          }
-        }
-
-        return result;
-      })
-    );
-
-    // =========================================
-    // 9. Final response
-    // =========================================
-
-    console.log("Push notifications processed");
+          return await res.json();
+        })
+      );
 
     return new Response(
       JSON.stringify({
         success: true,
-        sent: results.length,
+        count: results.length,
         results,
       }),
-      {
-        status: 200,
-      }
+      { status: 200 }
     );
-  } catch (error: any) {
-    console.error("Edge Function crash:", error);
+
+  } catch (err: any) {
 
     return new Response(
       JSON.stringify({
-        error: error.message ?? "Unknown error",
+        error: err.message,
       }),
-      {
-        status: 500,
-      }
+      { status: 500 }
     );
   }
 });
