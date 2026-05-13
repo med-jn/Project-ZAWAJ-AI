@@ -16,7 +16,7 @@ const MENU_ITEMS = [
     items: [
       { icon: UserPen,   label: 'تعديل الملف',           href: '/profile/edit' },
       { icon: Settings,   label: 'الإعدادات',           href: '/settings' },
-      { icon: Package,    label: 'الإشتراك',  href: '/packages' },
+      { icon: Package,    label: 'النقاط',  href: '/points' },
     ],
   },
   {

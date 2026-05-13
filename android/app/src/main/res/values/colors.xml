@@ -3,5 +3,7 @@
     <color name="colorPrimary">#B3334B</color>
     <color name="colorPrimaryDark">#080008</color>
     <color name="colorAccent">#B3334B</color>
+    <!-- ✅ لون الخلفية الداكنة — يُستخدم في navigationBarColor و windowBackground -->
+    <!-- في الوضع النهاري يبقى داكناً لأن navigationBarColor يُحدَّث من JS -->
     <color name="background">#080008</color>
 </resources>

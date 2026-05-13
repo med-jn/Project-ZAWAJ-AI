@@ -172,11 +172,14 @@ html.light {
     min-width: 0;
   }
 
+  /* أيقونات Lucide افتراضياً مفرغة — بدون !important حتى يتغلب inline style */
   svg {
-    fill: none !important;
-    stroke: currentColor !important;
-    stroke-width: 2px !important;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2px;
   }
+
+
 
   /* ── استثناء لأيقونات Lucide داخل .icon-wrap ── */
   .icon-wrap svg {
@@ -201,6 +204,9 @@ html.light {
     font-size: 100%;
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    /* ✅ يغطي كامل الشاشة بما فيها منطقة الـ safe area */
+    min-height: 100%;
+    background-color: var(--bg-main);
   }
 
   body {
@@ -212,6 +218,9 @@ html.light {
     margin: 0;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
+    /* ✅ يمتد لكامل ارتفاع الشاشة — يمنع الشريط الأبيض السفلي */
+    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   h1 { font-size: var(--text-3xl); line-height: var(--lh-tight);   font-weight: 900; margin: 0; }

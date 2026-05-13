@@ -21,6 +21,19 @@ export function usePushNotifications(userId?: string) {
       try {
         console.log('[FCM] init start');
 
+        // تأكد من وجود session
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (!session) {
+          console.log('[FCM] no session');
+          return;
+        }
+
+        console.log('[FCM] session ok:', session.user.id);
+        console.log('[FCM] hook userId:', userId);
+
         let perm = await PushNotifications.checkPermissions();
 
         if (perm.receive === 'prompt') {
@@ -34,30 +47,27 @@ export function usePushNotifications(userId?: string) {
 
         console.log('[FCM] permission granted');
 
-        await PushNotifications.register();
-
-        PushNotifications.removeAllListeners();
-
         PushNotifications.addListener('registration', async (token) => {
           try {
             console.log('[FCM] token received:', token.value);
 
-            const { error } = await supabase
+            const { data, error } = await supabase
               .from('fcm_tokens')
-              .upsert(
-                {
-                  user_id: userId,
-                  token: token.value,
-                  device_type: 'android',
-                  last_seen: new Date().toISOString(),
-                },
-                {
-                  onConflict: 'token',
-                }
-              );
+              .insert({
+                user_id: session.user.id,
+                token: token.value,
+                device_type: 'android',
+                last_seen: new Date().toISOString(),
+              })
+              .select();
+
+            console.log('[FCM] insert result:', data);
 
             if (error) {
-              console.error('[FCM] save error:', error);
+              console.error(
+                '[FCM] save error:',
+                JSON.stringify(error, null, 2)
+              );
             } else {
               console.log('[FCM] token saved');
             }
@@ -69,6 +79,8 @@ export function usePushNotifications(userId?: string) {
         PushNotifications.addListener('registrationError', (err) => {
           console.error('[FCM] registration error:', err);
         });
+
+        await PushNotifications.register();
       } catch (err) {
         console.error('[FCM] init failed:', err);
       }

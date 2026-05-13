@@ -25,8 +25,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/mediators':        'الوسطاء',
   '/dash':             'لوحة التحكم',
   '/subscribers':      'المشتركون',
-  '/packages':         'المتجر',
-  '/packages/history': 'سجل المعاملات',
+  '/points':           'نقاطي',
   '/help':             'المساعدة',
   '/terms':            'الشروط والسياسات',
 };
@@ -98,7 +97,8 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     path.startsWith('/subscribers')   ||
     path.startsWith('/likes')         ||
     path.startsWith('/notifications') ||
-    path.startsWith('/profile');
+    path.startsWith('/profile')         ||
+    path.startsWith('/points');
 
   return (
     <>

@@ -1,5 +1,6 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { motion, useAnimation } from 'framer-motion';
 import {
   Home, BookSearch, Heart, Bell, User,
@@ -56,11 +57,10 @@ function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
         style={{
           width:       'var(--icon-md)',
           height:      'var(--icon-md)',
-          color:       'var(--color-secondary)',
-          strokeWidth: 1.5,
-          stroke:      'currentColor',
           fill:        active ? 'var(--color-secondary)' : 'none',
-          // نتجاوز !important بـ inline style — له أولوية أعلى
+          stroke:      active ? 'var(--bg-main)'         : 'var(--color-secondary)',
+          strokeWidth: active ? 1.2                      : 1.5,
+          transition:  'fill 0.15s ease, stroke 0.15s ease',
         }}
       >
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -73,28 +73,30 @@ function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
 // ── أيقونة عامة تتجاوز !important ────────────────────────────
 function NavIcon({
   active,
-  children: _,
+  bgStroke = false,
   paths,
   viewBox = '0 0 24 24',
 }: {
-  active: boolean;
+  active:    boolean;
+  bgStroke?: boolean;   // true = stroke بلون الخلفية عند التفعيل (home, mediator)
   children?: never;
-  paths: string[];
-  viewBox?: string;
+  paths:     string[];
+  viewBox?:  string;
 }) {
   return (
     <svg
       viewBox={viewBox}
       style={{
-        width:       'var(--icon-md)',
-        height:      'var(--icon-md)',
-        color:       'var(--color-secondary)',
-        stroke:      'currentColor',
-        strokeWidth: 1.5,
-        fill:        active ? 'var(--color-secondary)' : 'none',
+        width:          'var(--icon-md)',
+        height:         'var(--icon-md)',
+        fill:           active ? 'var(--color-secondary)' : 'none',
+        stroke:         active && bgStroke
+                          ? 'var(--bg-main)'
+                          : 'var(--color-secondary)',
+        strokeWidth:    active && bgStroke ? 1.2 : 1.5,
         strokeLinecap:  'round' as any,
         strokeLinejoin: 'round' as any,
-        transition:  'fill 0.15s ease',
+        transition:     'fill 0.15s ease, stroke 0.15s ease',
       }}
     >
       {paths.map((d, i) => <path key={i} d={d} />)}
@@ -108,7 +110,7 @@ const ICON_PATHS = {
   heart:    ['M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z'],
   users:    ['M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2', 'M23 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
   bookSearch:['M4 19.5A2.5 2.5 0 0 1 6.5 17H20','M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z','M12 7h4','M12 11h2','M17.5 17.5l1.5 1.5','M14.5 14.5a3 3 0 1 0 0 6 3 3 0 0 0 0-6z'],
-  dashboard:['M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z','M9 22V12h6v10'],
+  clipboard: ['M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2','M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z','M9 12h6','M9 16h4'],
 };
 
 // ── Props ─────────────────────────────────────────────────────
@@ -133,38 +135,63 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   }, []);
 
   // ── إشعارات real-time ────────────────────────────────────
+  const pathname = usePathname();
+
+  const loadUnread = useCallback(async (userId: string) => {
+    const { count } = await supabase
+      .from('notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('id', userId)
+      .eq('is_read', false);
+    setUnread(count ?? 0);
+  }, []);
+
   useEffect(() => {
     let cleanup: (() => void) | undefined;
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const load = async () => {
-        const { count } = await supabase
-          .from('notifications')
-          .select('*', { count: 'exact', head: true })
-          .eq('id', user.id).eq('is_read', false);
-        setUnread(count ?? 0);
-      };
-      load();
+      // جلب أولي
+      loadUnread(user.id);
 
+      // real-time — يُفعَّل فقط إذا كان Realtime مفعلاً على الجدول
       const ch = supabase.channel('navbar_notifs')
         .on('postgres_changes', {
-          event: '*', schema: 'public', table: 'notifications',
+          event: 'INSERT', schema: 'public', table: 'notifications',
+          filter: `id=eq.${user.id}`,
+        }, (payload) => {
+          // إشعار جديد فقط — ليس تحديث is_read
+          if (payload.new && !payload.new.is_read) {
+            loadUnread(user.id);
+            playNotifSound();
+            setRinging(true);
+            setTimeout(() => setRinging(false), 1200);
+            window.navigator?.vibrate?.([40, 20, 60, 20, 40]);
+          }
+        })
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'notifications',
           filter: `id=eq.${user.id}`,
         }, () => {
-          load();
-          playNotifSound();
-          setRinging(true);
-          setTimeout(() => setRinging(false), 1200);
-          window.navigator?.vibrate?.([40, 20, 60, 20, 40]);
-        }).subscribe();
+          // عند تحديث is_read — يعيد الجلب بدون صوت
+          loadUnread(user.id);
+        })
+        .subscribe();
 
       cleanup = () => { supabase.removeChannel(ch); };
     };
     init();
     return () => { cleanup?.(); };
-  }, []);
+  }, [loadUnread]);
+
+  // ── إعادة جلب العداد عند الانتقال لصفحة الإشعارات ──────────
+  useEffect(() => {
+    if (!pathname.startsWith('/notifications')) return;
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) loadUnread(user.id);
+    });
+  }, [pathname, loadUnread]);
 
   const go = (route: string) => {
     if (route === 'notifications' && unread > 0) {
@@ -187,10 +214,11 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   const tabs = [
     // ── يسار: حسابي ──
     {
-      tabKey:  'profile',
-      route:   isMediator ? 'dash' : 'profile',
-      label:   'حسابي',
-      paths:   isMediator ? ICON_PATHS.dashboard : ICON_PATHS.user,
+      tabKey:   'profile',
+      route:    isMediator ? 'dash' : 'profile',
+      label:    'حسابي',
+      paths:    isMediator ? ICON_PATHS.clipboard : ICON_PATHS.user,
+      bgStroke: isMediator,   // stroke خلفية فقط عند الوسيط
     },
     // ── إشعارات ──
     {
@@ -214,10 +242,11 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     },
     // ── الرئيسية ──
     {
-      tabKey:  'home',
-      route:   'home',
-      label:   'الرئيسية',
-      paths:   ICON_PATHS.bookSearch,
+      tabKey:   'home',
+      route:    'home',
+      label:    'الرئيسية',
+      paths:    ICON_PATHS.bookSearch,
+      bgStroke: true,   // stroke خلفية عند التفعيل
     },
   ];
 
@@ -270,17 +299,18 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
               <svg
                 viewBox="0 0 24 24"
                 style={{
-                  width: 'var(--icon-lg)', height: 'var(--icon-lg)',
-                  stroke: '#FFFFFF',       /* ثابت أبيض */
-                  fill:   active ? 'rgba(255,255,255,0.2)' : 'none',
-                  strokeWidth: active ? 2.5 : 2,
+                  width:          'var(--icon-lg)',
+                  height:         'var(--icon-lg)',
+                  fill:           'none',
+                  stroke:         '#FFFFFF',
+                  strokeWidth:    2,
                   strokeLinecap:  'round' as any,
                   strokeLinejoin: 'round' as any,
-                  transition: 'fill 0.2s',
                 }}
               >
-                {/* HouseHeart */}
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                {/* HouseHeart — بيت + قلب داخله */}
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+                <path d="M12 17c0 0-4-2.5-4-5a2 2 0 0 1 4 0 2 2 0 0 1 4 0c0 2.5-4 5-4 5z"/>
               </svg>
             </motion.button>
           </div>
@@ -302,7 +332,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
                 {tab.isBell ? (
                   <BellIcon ringing={ringing} active={active} />
                 ) : (
-                  <NavIcon active={active} paths={tab.paths!} />
+                  <NavIcon active={active} paths={tab.paths!} bgStroke={tab.bgStroke ?? false} />
                 )}
               </motion.div>
 

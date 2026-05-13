@@ -1,87 +1,529 @@
 "use client";
 
 import React from 'react';
-import { LevelBadge, GemDefinitions, LEVEL_MAP } from '@/components/gems';
+
+import {
+  LevelBadge,
+  LEVEL_MAP,
+} from '@/components/gems';
 
 /**
- * LevelsPage - الصفحة التعريفية الشاملة للمستويات.
- * تعرض كافة البادجات من المستوى 1 إلى 50 مع متطلبات كل مستوى.
+ * Levels Showcase Page
+ * AAA Production Version
  */
-const LevelsPage = () => {
-  // تحويل كائن المستويات إلى مصفوفة مرتبة للعرض
-  const allLevels = Object.values(LEVEL_MAP).sort((a, b) => a.levelNumber - b.levelNumber);
 
-  // تقسيم المستويات إلى فئات (Tiers) للعرض المنظم
+const LevelsPage = () => {
+
+  /* ====================================================== */
+  /* SORTED LEVELS */
+  /* ====================================================== */
+
+  const allLevels = Object
+    .values(LEVEL_MAP)
+    .sort((a, b) => a.levelNumber - b.levelNumber);
+
+  /* ====================================================== */
+  /* TIERS */
+  /* ====================================================== */
+
   const tiers = [
-    { title: "الفئة البرونزية (Bronze)", range: [1, 5], color: "text-slate-400" },
-    { title: "الفئة الفضية (Silver)", range: [6, 10], color: "text-sky-400" },
-    { title: "الفئة الذهبية (Gold)", range: [11, 25], color: "text-purple-400" },
-    { title: "الفئة البلاتينية (Platinum)", range: [26, 39], color: "text-yellow-400" },
-    { title: "فئة النخبة (Elite Diamonds)", range: [40, 50], color: "text-amber-500" },
+
+    {
+      title: 'Crystal Initiates',
+      range: [1, 9],
+      color: '#7DD3FC',
+      glow: 'rgba(56,189,248,0.30)',
+    },
+
+    {
+      title: 'Sapphire Division',
+      range: [10, 19],
+      color: '#38BDF8',
+      glow: 'rgba(14,165,233,0.35)',
+    },
+
+    {
+      title: 'Royal Amethyst',
+      range: [20, 39],
+      color: '#E879F9',
+      glow: 'rgba(192,38,211,0.35)',
+    },
+
+    {
+      title: 'Mythic Ascension',
+      range: [40, 50],
+      color: '#FBBF24',
+      glow: 'rgba(245,158,11,0.40)',
+    },
+
   ];
 
-  return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-8 pb-20">
-      {/* 1. تعريفات الجرافيك (ضرورية لعمل الألوان والتوهج) */}
-      <GemDefinitions />
+  /* ====================================================== */
+  /* HELPERS */
+  /* ====================================================== */
 
-      {/* 2. رأس الصفحة (Header) */}
-      <header className="max-w-6xl mx-auto text-center mb-16">
-        <h1 className="text-4xl md:text-6xl font-black mb-4 bg-gradient-to-b from-white to-gray-500 bg-clip-text text-transparent">
+  const getTierBackground = (level: number) => {
+
+    if (level <= 9) {
+      return `
+        radial-gradient(circle at top left,
+          rgba(56,189,248,0.12),
+          transparent 60%
+        )
+      `;
+    }
+
+    if (level <= 19) {
+      return `
+        radial-gradient(circle at top left,
+          rgba(14,165,233,0.14),
+          transparent 60%
+        )
+      `;
+    }
+
+    if (level <= 39) {
+      return `
+        radial-gradient(circle at top left,
+          rgba(192,38,211,0.14),
+          transparent 60%
+        )
+      `;
+    }
+
+    return `
+      radial-gradient(circle at top left,
+        rgba(245,158,11,0.18),
+        transparent 60%
+      )
+    `;
+  };
+
+  /* ====================================================== */
+  /* RENDER */
+  /* ====================================================== */
+
+  return (
+
+    <div
+      className="
+        min-h-screen
+        overflow-hidden
+        text-white
+      "
+      style={{
+        background: `
+          radial-gradient(circle at top,
+            #2a0b35 0%,
+            #130714 25%,
+            #070707 60%,
+            #020202 100%
+          )
+        `,
+      }}
+    >
+
+      {/* ====================================================== */}
+      {/* GLOBAL ENERGY */}
+      {/* ====================================================== */}
+
+      <div
+        className="
+          fixed
+          inset-0
+          pointer-events-none
+          overflow-hidden
+        "
+      >
+
+        <div
+          className="
+            absolute
+            top-[-200px]
+            left-1/2
+            -translate-x-1/2
+            w-[900px]
+            h-[900px]
+            rounded-full
+            blur-3xl
+            opacity-20
+          "
+          style={{
+            background: `
+              radial-gradient(circle,
+                rgba(217,70,239,0.40),
+                transparent 70%
+              )
+            `,
+          }}
+        />
+
+      </div>
+
+      {/* ====================================================== */}
+      {/* HEADER */}
+      {/* ====================================================== */}
+
+      <header
+        className="
+          relative
+          max-w-7xl
+          mx-auto
+          px-6
+          pt-24
+          pb-20
+          text-center
+        "
+      >
+
+        <h1
+          className="
+            text-5xl
+            md:text-7xl
+            font-black
+            tracking-tight
+          "
+          style={{
+            background: `
+              linear-gradient(
+                180deg,
+                #FFFFFF 0%,
+                #E879F9 100%
+              )
+            `,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}
+        >
           نظام رتب الوسطاء
         </h1>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-          ارتقِ بمستواك من خلال جمع المشتركين وافتح جواهر نادرة تعكس نفوذك في المنصة.
+
+        <p
+          className="
+            mt-7
+            text-gray-400
+            max-w-3xl
+            mx-auto
+            text-lg
+            leading-8
+          "
+        >
+          50 مستوى فريد بتصميم بصري AAA
+          يعتمد على تطور هندسي وإضاءة سينمائية مستوحاة
+          من أنظمة الرتب الأسطورية الحديثة.
         </p>
+
       </header>
 
-      {/* 3. عرض المستويات حسب الفئات */}
-      <main className="max-w-6xl mx-auto space-y-20">
+      {/* ====================================================== */}
+      {/* CONTENT */}
+      {/* ====================================================== */}
+
+      <main
+        className="
+          relative
+          max-w-7xl
+          mx-auto
+          px-6
+          pb-32
+          space-y-28
+        "
+      >
+
         {tiers.map((tier) => (
-          <section key={tier.title} className="space-y-8">
-            <div className="flex items-center gap-4">
-              <h2 className={`text-2xl font-bold ${tier.color}`}>{tier.title}</h2>
-              <div className="h-[1px] flex-1 bg-white/10"></div>
+
+          <section
+            key={tier.title}
+            className="space-y-10"
+          >
+
+            {/* ================================================== */}
+            {/* SECTION TITLE */}
+            {/* ================================================== */}
+
+            <div className="flex items-center gap-5">
+
+              <div
+                className="h-[2px] w-10 rounded-full"
+                style={{
+                  background: tier.color,
+                  boxShadow: `0 0 16px ${tier.glow}`,
+                }}
+              />
+
+              <h2
+                className="
+                  text-3xl
+                  md:text-4xl
+                  font-black
+                  tracking-tight
+                "
+                style={{
+                  color: tier.color,
+                  textShadow: `0 0 18px ${tier.glow}`,
+                }}
+              >
+                {tier.title}
+              </h2>
+
+              <div
+                className="
+                  h-px
+                  flex-1
+                "
+                style={{
+                  background: `
+                    linear-gradient(
+                      90deg,
+                      rgba(255,255,255,0.15),
+                      transparent
+                    )
+                  `,
+                }}
+              />
+
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {/* ================================================== */}
+            {/* LEVELS GRID */}
+            {/* ================================================== */}
+
+            <div
+              className="
+                grid
+                grid-cols-2
+                md:grid-cols-3
+                lg:grid-cols-5
+                gap-7
+              "
+            >
+
               {allLevels
-                .filter(l => l.levelNumber >= tier.range[0] && l.levelNumber <= tier.range[1])
+                .filter(level =>
+                  level.levelNumber >= tier.range[0] &&
+                  level.levelNumber <= tier.range[1]
+                )
                 .map((level) => (
-                  <div 
+
+                  <div
                     key={level.key}
-                    className="relative group p-6 rounded-2xl bg-white/[0.03] border border-white/5 hover:border-white/20 transition-all duration-500 hover:bg-white/[0.06]"
+                    className="
+                      relative
+                      overflow-hidden
+                      rounded-[30px]
+                      border
+                      border-white/10
+                      backdrop-blur-xl
+                      transition-all
+                      duration-500
+                      hover:scale-[1.035]
+                      hover:border-white/20
+                      group
+                    "
+                    style={{
+
+                      background: `
+                        linear-gradient(
+                          180deg,
+                          rgba(255,255,255,0.05) 0%,
+                          rgba(255,255,255,0.02) 100%
+                        )
+                      `,
+
+                      boxShadow: `
+                        inset 0 1px 0 rgba(255,255,255,0.05),
+                        0 12px 40px rgba(0,0,0,0.45)
+                      `,
+                    }}
                   >
-                    {/* عرض البادج */}
-                    <div className="flex flex-col items-center gap-4">
-                      <LevelBadge level={level.levelNumber} size="lg" />
-                      
+
+                    {/* ========================================== */}
+                    {/* ENERGY BACKGROUND */}
+                    {/* ========================================== */}
+
+                    <div
+                      className="
+                        absolute
+                        inset-0
+                        opacity-0
+                        group-hover:opacity-100
+                        transition-opacity
+                        duration-700
+                        pointer-events-none
+                      "
+                      style={{
+                        background: getTierBackground(level.levelNumber),
+                      }}
+                    />
+
+                    {/* ========================================== */}
+                    {/* TOP SHINE */}
+                    {/* ========================================== */}
+
+                    <div
+                      className="
+                        absolute
+                        top-0
+                        left-0
+                        right-0
+                        h-[35%]
+                        pointer-events-none
+                      "
+                      style={{
+                        background: `
+                          linear-gradient(
+                            180deg,
+                            rgba(255,255,255,0.08),
+                            transparent
+                          )
+                        `,
+                      }}
+                    />
+
+                    {/* ========================================== */}
+                    {/* CONTENT */}
+                    {/* ========================================== */}
+
+                    <div
+                      className="
+                        relative
+                        p-6
+                        flex
+                        flex-col
+                        items-center
+                        gap-5
+                      "
+                    >
+
+                      {/* ====================================== */}
+                      {/* BADGE */}
+                      {/* ====================================== */}
+
+                      <LevelBadge
+                        subscribers={level.minSubscribers}
+                        size="lg"
+                      />
+
+                      {/* ====================================== */}
+                      {/* LEVEL NUMBER */}
+                      {/* ====================================== */}
+
                       <div className="text-center">
-                        <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">المتطلب</p>
-                        <p className="font-mono text-xl font-bold text-white">
+
+                        <p
+                          className="
+                            text-[10px]
+                            tracking-[0.28em]
+                            uppercase
+                            text-gray-500
+                            mb-2
+                          "
+                        >
+                          LEVEL
+                        </p>
+
+                        <h3
+                          className="
+                            text-4xl
+                            font-black
+                          "
+                        >
+                          {level.levelNumber}
+                        </h3>
+
+                      </div>
+
+                      {/* ====================================== */}
+                      {/* SUB REQUIREMENT */}
+                      {/* ====================================== */}
+
+                      <div className="text-center">
+
+                        <p
+                          className="
+                            text-[10px]
+                            tracking-[0.25em]
+                            uppercase
+                            text-gray-500
+                            mb-2
+                          "
+                        >
+                          Subscribers
+                        </p>
+
+                        <p
+                          className="
+                            text-xl
+                            font-black
+                            text-white
+                          "
+                        >
                           {level.minSubscribers.toLocaleString()}
                         </p>
-                        <p className="text-[10px] text-gray-400">مشترك</p>
+
                       </div>
+
+                      {/* ====================================== */}
+                      {/* TECH DATA */}
+                      {/* ====================================== */}
+
+                      <div
+                        className="
+                          mt-1
+                          flex
+                          items-center
+                          gap-2
+                          flex-wrap
+                          justify-center
+                        "
+                      >
+
+                        <span
+                          className="
+                            text-[10px]
+                            px-2
+                            py-1
+                            rounded-full
+                            border
+                            border-white/10
+                            bg-white/[0.03]
+                            text-gray-300
+                          "
+                        >
+                          Geometry {level.sides}
+                        </span>
+
+                        <span
+                          className="
+                            text-[10px]
+                            px-2
+                            py-1
+                            rounded-full
+                            border
+                            border-white/10
+                            bg-white/[0.03]
+                            text-gray-300
+                          "
+                        >
+                          Complexity {level.complexity}
+                        </span>
+
+                      </div>
+
                     </div>
 
-                    {/* تفاصيل تقنية صغيرة تظهر عند الحوام (Hover) لمسة بريميوم */}
-                    <div className="absolute inset-x-0 -bottom-2 opacity-0 group-hover:opacity-100 transition-opacity text-center">
-                      <span className="text-[9px] bg-white/10 px-2 py-1 rounded-full text-gray-300 backdrop-blur-sm">
-                        أضلاع: {level.sides} | تعقيد: {level.complexity}
-                      </span>
-                    </div>
                   </div>
+
                 ))}
+
             </div>
+
           </section>
+
         ))}
+
       </main>
 
-      {/* 4. تذييل الصفحة (Footer) */}
-      <footer className="mt-32 text-center text-gray-600 border-t border-white/5 pt-10">
-        <p>© 2026 Project Z - نظام الهوية البصرية الموحد</p>
-      </footer>
     </div>
   );
 };

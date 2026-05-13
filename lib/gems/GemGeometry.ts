@@ -1,6 +1,6 @@
 /**
- * GemGeometry - المحرك الرياضي المسؤول عن رسم الهياكل الهندسية للجواهر.
- * تم تصميمه ليعطي دقة متناهية وسيمترية مطلقة لكل مستوى.
+ * AAA Gem Geometry Engine
+ * الجيل السينمائي النهائي للجواهر
  */
 
 export interface Point {
@@ -8,89 +8,414 @@ export interface Point {
   y: number;
 }
 
-export interface GemPathData {
-  outerPath: string;    // المسار الخارجي للمضلع
-  internalPaths: string; // شبكة الخطوط الداخلية المعقدة
+export interface GemGeometryData {
+  outerPath: string;
+  facetPaths: string[];
+  edgePaths: string[];
+  corePath?: string;
 }
 
-export const getGemGeometry = (sides: number, complexity: number, radius: number = 45): GemPathData => {
-  const center = 50; // مركز الـ ViewBox (0 0 100 100)
+/* ====================================================== */
+/* HELPERS */
+/* ====================================================== */
+
+const CENTER = 50;
+
+const polarToCartesian = (
+  radius: number,
+  angle: number
+): Point => {
+
+  return {
+    x: CENTER + radius * Math.cos(angle),
+    y: CENTER + radius * Math.sin(angle),
+  };
+};
+
+const buildPath = (points: Point[]): string => {
+
+  return (
+    points
+      .map((p, i) =>
+        `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(3)} ${p.y.toFixed(3)}`
+      )
+      .join(' ') + ' Z'
+  );
+};
+
+const linePath = (a: Point, b: Point): string => {
+  return `M ${a.x.toFixed(3)} ${a.y.toFixed(3)} L ${b.x.toFixed(3)} ${b.y.toFixed(3)}`;
+};
+
+/* ====================================================== */
+/* OUTER SHAPES */
+/* ====================================================== */
+
+const generateOuterPoints = (level: number): Point[] => {
+
+  /**
+   * 1 → 9
+   * Triangle
+   */
+  if (level <= 9) {
+
+    return [
+      polarToCartesian(44, -Math.PI / 2),
+      polarToCartesian(44, (2 * Math.PI) / 3 - Math.PI / 2),
+      polarToCartesian(44, (4 * Math.PI) / 3 - Math.PI / 2),
+    ];
+  }
+
+  /**
+   * 10 → 19
+   * Diamond
+   */
+  if (level <= 19) {
+
+    return [
+      { x: 50, y: 4 },
+      { x: 92, y: 50 },
+      { x: 50, y: 96 },
+      { x: 8, y: 50 },
+    ];
+  }
+
+  /**
+   * 20 → 39
+   * Superman Crystal
+   */
+  if (level <= 39) {
+
+    return [
+      { x: 20, y: 20 },
+      { x: 50, y: 6 },
+      { x: 80, y: 20 },
+      { x: 92, y: 55 },
+      { x: 50, y: 94 },
+      { x: 8, y: 55 },
+    ];
+  }
+
+  /**
+   * 40 → 50
+   * Perfect Hexagon
+   */
+
   const points: Point[] = [];
 
-  // 1. حساب رؤوس المضلع الخارجي
-  // نعدل زاوية البداية لضمان السيمترية (الرأس الأول دائماً في الأعلى)
-  // بالنسبة للمعين (4 أضلاع)، الزاوية تضمن وقوفه على رأسه
-  const startAngle = sides === 4 ? -Math.PI / 2 : -Math.PI / 2;
+  for (let i = 0; i < 6; i++) {
 
-  for (let i = 0; i < sides; i++) {
-    const angle = startAngle + (i * 2 * Math.PI) / sides;
-    points.push({
-      x: center + radius * Math.cos(angle),
-      y: center + radius * Math.sin(angle),
-    });
+    const angle =
+      -Math.PI / 2 +
+      (i * Math.PI) / 3;
+
+    points.push(
+      polarToCartesian(44, angle)
+    );
   }
 
-  // 2. بناء المسار الخارجي (Outer Path)
-  const outerPath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(3)} ${p.y.toFixed(3)}`).join(' ') + ' Z';
+  return points;
+};
 
-  // 3. بناء شبكة التعقيد الداخلي (Internal Wireframe)
-  // كلما زاد الـ complexity، زادت الروابط بين الرؤوس
-  let internalPaths = "";
+/* ====================================================== */
+/* FACET ENGINE */
+/* ====================================================== */
 
-  points.forEach((p1, i) => {
-    // أ- ربط كل رأس بالمركز (محور السيمترية المركزي)
-    if (complexity >= 1) {
-      internalPaths += ` M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)} L ${center} ${center}`;
-    }
+const generateFacetSystem = (
+  level: number,
+  points: Point[]
+): {
+  facets: string[];
+  edges: string[];
+  core?: string;
+} => {
 
-    // ب- ربط الرؤوس ببعضها لخلق "الوجوه الماسية" (Triangulation)
-    // المسافة (step) تحدد مدى كثافة الشبكة الداخلية
-    for (let step = 2; step <= complexity + 1; step++) {
-      const targetIndex = (i + step) % sides;
-      const p2 = points[targetIndex];
-      
-      // نتحقق من عدم تكرار الخطوط لضمان نظافة الـ SVG
-      internalPaths += ` M ${p1.x.toFixed(3)} ${p1.y.toFixed(3)} L ${p2.x.toFixed(3)} ${p2.y.toFixed(3)}`;
-    }
+  const facets: string[] = [];
+  const edges: string[] = [];
+
+  const complexity = Math.min(
+    10,
+    Math.max(
+      1,
+      level
+    )
+  );
+
+  /**
+   * المركز
+   */
+
+  const center: Point = {
+    x: CENTER,
+    y: CENTER,
+  };
+
+  /* ====================================================== */
+  /* RADIAL CUTS */
+  /* ====================================================== */
+
+  points.forEach((p) => {
+    edges.push(
+      linePath(center, p)
+    );
   });
 
-  // ج- إضافة مضلع داخلي أصغر لزيادة الفخامة في المستويات العليا (40-50)
-  if (sides >= 9 && complexity >= 4) {
-    const innerRadius = radius * 0.4;
-    const innerPoints = points.map((_, i) => {
-      const angle = startAngle + (i * 2 * Math.PI) / sides;
-      return {
-        x: center + innerRadius * Math.cos(angle),
-        y: center + innerRadius * Math.sin(angle),
-      };
+  /* ====================================================== */
+  /* EDGE LINKS */
+  /* ====================================================== */
+
+  for (let i = 0; i < points.length; i++) {
+
+    const a = points[i];
+
+    for (
+      let step = 2;
+      step <= Math.min(complexity, points.length);
+      step++
+    ) {
+
+      const b =
+        points[
+          (i + step) % points.length
+        ];
+
+      edges.push(
+        linePath(a, b)
+      );
+    }
+  }
+
+  /* ====================================================== */
+  /* INTERNAL RINGS */
+  /* ====================================================== */
+
+  const ringCount =
+    Math.floor(level / 5);
+
+  for (
+    let ring = 1;
+    ring <= ringCount;
+    ring++
+  ) {
+
+    const radius =
+      44 - ring * 6.5;
+
+    const innerPoints: Point[] = [];
+
+    for (
+      let i = 0;
+      i < points.length;
+      i++
+    ) {
+
+      const angle =
+        Math.atan2(
+          points[i].y - CENTER,
+          points[i].x - CENTER
+        );
+
+      innerPoints.push(
+        polarToCartesian(
+          radius,
+          angle
+        )
+      );
+    }
+
+    facets.push(
+      buildPath(innerPoints)
+    );
+
+    /**
+     * وصلات بلورية
+     */
+
+    innerPoints.forEach((p, i) => {
+
+      edges.push(
+        linePath(
+          p,
+          points[i]
+        )
+      );
     });
-    const innerShape = innerPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(3)} ${p.y.toFixed(3)}`).join(' ') + ' Z';
-    internalPaths += ` ${innerShape}`;
   }
 
-  return { outerPath, internalPaths };
-};
+  /* ====================================================== */
+  /* LEVEL UNIQUE SIGNATURES */
+  /* ====================================================== */
 
-/**
- * دالة مساعدة لتحديد عدد الأضلاع بناءً على منطق الفئات الذي حددته
- */
-export const getSidesByLevel = (level: number): number => {
-  if (level <= 5) return 3;  // مثلث
-  if (level <= 10) return 4; // معين
-  if (level <= 15) return 5; // خماسي
-  if (level <= 20) return 6; // سداسي
-  if (level <= 25) return 7; // سباعي
-  if (level <= 30) return 8; // ثماني
-  if (level <= 39) return 9; // تساعي
-  return 10;                // عشاري (40-50)
-};
+  /**
+   * كل مستوى يحصل على pattern مختلف
+   */
 
-/**
- * دالة مساعدة لحساب التعقيد الداخلي (1-5) داخل كل فئة
- */
-export const getComplexityByLevel = (level: number): number => {
-  if (level <= 40) {
-    return ((level - 1) % 5) + 1; 
+  const signature = level % 5;
+
+  /**
+   * STAR CUT
+   */
+
+  if (signature === 0) {
+
+    for (
+      let i = 0;
+      i < points.length;
+      i++
+    ) {
+
+      const next =
+        points[
+          (i + 2) % points.length
+        ];
+
+      edges.push(
+        linePath(
+          points[i],
+          next
+        )
+      );
+    }
   }
-  return 5; // أقصى تعقيد للمستويات من 40 إلى 50
+
+  /**
+   * INNER STAR
+   */
+
+  if (signature === 1) {
+
+    const mini: Point[] = [];
+
+    points.forEach((p) => {
+
+      mini.push({
+        x: CENTER + (p.x - CENTER) * 0.45,
+        y: CENTER + (p.y - CENTER) * 0.45,
+      });
+    });
+
+    facets.push(
+      buildPath(mini)
+    );
+  }
+
+  /**
+   * TRI CUTS
+   */
+
+  if (signature === 2) {
+
+    points.forEach((p, i) => {
+
+      const next =
+        points[
+          (i + 1) % points.length
+        ];
+
+      const mid: Point = {
+        x: (p.x + next.x) / 2,
+        y: (p.y + next.y) / 2,
+      };
+
+      edges.push(
+        linePath(center, mid)
+      );
+    });
+  }
+
+  /**
+   * CRYSTAL GRID
+   */
+
+  if (signature === 3) {
+
+    for (
+      let i = 0;
+      i < points.length;
+      i++
+    ) {
+
+      const a = points[i];
+
+      const b =
+        points[
+          (i + 3) % points.length
+        ];
+
+      edges.push(
+        linePath(a, b)
+      );
+    }
+  }
+
+  /**
+   * DIAMOND CORE
+   */
+
+  if (signature === 4) {
+
+    const corePoints: Point[] = [];
+
+    for (
+      let i = 0;
+      i < points.length;
+      i++
+    ) {
+
+      const angle =
+        Math.atan2(
+          points[i].y - CENTER,
+          points[i].x - CENTER
+        );
+
+      corePoints.push(
+        polarToCartesian(
+          14,
+          angle
+        )
+      );
+    }
+
+    return {
+      facets,
+      edges,
+      core: buildPath(corePoints),
+    };
+  }
+
+  return {
+    facets,
+    edges,
+  };
+};
+
+/* ====================================================== */
+/* MAIN ENGINE */
+/* ====================================================== */
+
+export const getGemGeometry = (
+  level: number
+): GemGeometryData => {
+
+  const outerPoints =
+    generateOuterPoints(level);
+
+  const outerPath =
+    buildPath(outerPoints);
+
+  const {
+    facets,
+    edges,
+    core,
+  } = generateFacetSystem(
+    level,
+    outerPoints
+  );
+
+  return {
+    outerPath,
+    facetPaths: facets,
+    edgePaths: edges,
+    corePath: core,
+  };
 };
