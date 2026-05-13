@@ -183,14 +183,14 @@ const LevelBadge: React.FC<LevelBadgeProps> = ({
      */
 
     const gemSize =
-      fontSize * 1.18;
+      fontSize * 1.0;
 
     /**
      * ارتفاع البادج
      */
 
     const height =
-      gemSize + (fontSize * 0.95);
+      gemSize + (fontSize * 0.50);
 
     /**
      * المسافات الذكية

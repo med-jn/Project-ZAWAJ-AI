@@ -15,7 +15,6 @@ const config: CapacitorConfig = {
     },
 
     StatusBar: {
-      // ✅ false — شريط الحالة العلوي يحجز مساحته ولا يغطي المحتوى
       overlaysWebView: false,
       backgroundColor: '#080008',
       style:           'DARK',

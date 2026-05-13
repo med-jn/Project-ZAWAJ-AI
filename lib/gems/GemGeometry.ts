@@ -1,99 +1,191 @@
 /**
- * AAA Gem Geometry Engine
- * الجيل السينمائي النهائي للجواهر
+ * AAA GEM GEOMETRY ENGINE
+ * نظام هندسي متعدد الطبقات
+ * كل مستوى يملك شخصية بصرية مستقلة
  */
 
 export interface Point {
+
   x: number;
   y: number;
+
 }
 
-export interface GemGeometryData {
+export interface GemPathData {
+
   outerPath: string;
+
+  /**
+   * الخطوط البنيوية الأساسية
+   */
+
   facetPaths: string[];
-  edgePaths: string[];
-  corePath?: string;
+
+  /**
+   * الانعكاسات الداخلية
+   */
+
+  reflectionPaths: string[];
+
+  /**
+   * مسارات الطاقة
+   */
+
+  energyPaths: string[];
+
+  /**
+   * خطوط اللمعان
+   */
+
+  highlightPaths: string[];
+
 }
 
 /* ====================================================== */
 /* HELPERS */
 /* ====================================================== */
 
-const CENTER = 50;
-
-const polarToCartesian = (
+const polar = (
+  cx: number,
+  cy: number,
   radius: number,
   angle: number
-): Point => {
+): Point => ({
 
-  return {
-    x: CENTER + radius * Math.cos(angle),
-    y: CENTER + radius * Math.sin(angle),
-  };
-};
+  x: cx + radius * Math.cos(angle),
 
-const buildPath = (points: Point[]): string => {
+  y: cy + radius * Math.sin(angle),
 
-  return (
-    points
-      .map((p, i) =>
-        `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(3)} ${p.y.toFixed(3)}`
-      )
-      .join(' ') + ' Z'
-  );
-};
+});
 
-const linePath = (a: Point, b: Point): string => {
-  return `M ${a.x.toFixed(3)} ${a.y.toFixed(3)} L ${b.x.toFixed(3)} ${b.y.toFixed(3)}`;
+const pathFromPoints = (
+  points: Point[]
+): string => {
+
+  return points
+    .map((p, i) => {
+
+      return `
+        ${i === 0 ? 'M' : 'L'}
+        ${p.x}
+        ${p.y}
+      `;
+
+    })
+    .join(' ') + ' Z';
+
 };
 
 /* ====================================================== */
 /* OUTER SHAPES */
 /* ====================================================== */
 
-const generateOuterPoints = (level: number): Point[] => {
+const buildOuterPoints = (
+  level: number,
+  radius: number,
+): Point[] => {
+
+  const cx = 50;
+  const cy = 50;
 
   /**
    * 1 → 9
    * Triangle
    */
+
   if (level <= 9) {
 
     return [
-      polarToCartesian(44, -Math.PI / 2),
-      polarToCartesian(44, (2 * Math.PI) / 3 - Math.PI / 2),
-      polarToCartesian(44, (4 * Math.PI) / 3 - Math.PI / 2),
+
+      polar(
+        cx,
+        cy,
+        radius,
+        -Math.PI / 2
+      ),
+
+      polar(
+        cx,
+        cy,
+        radius,
+        Math.PI / 6
+      ),
+
+      polar(
+        cx,
+        cy,
+        radius,
+        Math.PI - Math.PI / 6
+      ),
+
     ];
+
   }
 
   /**
    * 10 → 19
    * Diamond
    */
+
   if (level <= 19) {
 
     return [
-      { x: 50, y: 4 },
-      { x: 92, y: 50 },
-      { x: 50, y: 96 },
-      { x: 8, y: 50 },
+
+      polar(
+        cx,
+        cy,
+        radius,
+        -Math.PI / 2
+      ),
+
+      polar(
+        cx,
+        cy,
+        radius * 0.72,
+        0
+      ),
+
+      polar(
+        cx,
+        cy,
+        radius,
+        Math.PI / 2
+      ),
+
+      polar(
+        cx,
+        cy,
+        radius * 0.72,
+        Math.PI
+      ),
+
     ];
+
   }
 
   /**
    * 20 → 39
-   * Superman Crystal
+   * Superman Emerald Crystal
    */
+
   if (level <= 39) {
 
     return [
-      { x: 20, y: 20 },
+
       { x: 50, y: 6 },
-      { x: 80, y: 20 },
-      { x: 92, y: 55 },
-      { x: 50, y: 94 },
-      { x: 8, y: 55 },
+
+      { x: 87, y: 30 },
+
+      { x: 74, y: 82 },
+
+      { x: 50, y: 95 },
+
+      { x: 26, y: 82 },
+
+      { x: 13, y: 30 },
+
     ];
+
   }
 
   /**
@@ -101,321 +193,399 @@ const generateOuterPoints = (level: number): Point[] => {
    * Perfect Hexagon
    */
 
-  const points: Point[] = [];
+  return Array.from(
+    { length: 6 },
+    (_, i) => {
 
-  for (let i = 0; i < 6; i++) {
+      const angle =
+        (-Math.PI / 2) +
+        (i * Math.PI / 3);
 
-    const angle =
-      -Math.PI / 2 +
-      (i * Math.PI) / 3;
+      return polar(
+        cx,
+        cy,
+        radius,
+        angle
+      );
 
-    points.push(
-      polarToCartesian(44, angle)
-    );
-  }
-
-  return points;
-};
-
-/* ====================================================== */
-/* FACET ENGINE */
-/* ====================================================== */
-
-const generateFacetSystem = (
-  level: number,
-  points: Point[]
-): {
-  facets: string[];
-  edges: string[];
-  core?: string;
-} => {
-
-  const facets: string[] = [];
-  const edges: string[] = [];
-
-  const complexity = Math.min(
-    10,
-    Math.max(
-      1,
-      level
-    )
+    }
   );
 
-  /**
-   * المركز
-   */
-
-  const center: Point = {
-    x: CENTER,
-    y: CENTER,
-  };
-
-  /* ====================================================== */
-  /* RADIAL CUTS */
-  /* ====================================================== */
-
-  points.forEach((p) => {
-    edges.push(
-      linePath(center, p)
-    );
-  });
-
-  /* ====================================================== */
-  /* EDGE LINKS */
-  /* ====================================================== */
-
-  for (let i = 0; i < points.length; i++) {
-
-    const a = points[i];
-
-    for (
-      let step = 2;
-      step <= Math.min(complexity, points.length);
-      step++
-    ) {
-
-      const b =
-        points[
-          (i + step) % points.length
-        ];
-
-      edges.push(
-        linePath(a, b)
-      );
-    }
-  }
-
-  /* ====================================================== */
-  /* INTERNAL RINGS */
-  /* ====================================================== */
-
-  const ringCount =
-    Math.floor(level / 5);
-
-  for (
-    let ring = 1;
-    ring <= ringCount;
-    ring++
-  ) {
-
-    const radius =
-      44 - ring * 6.5;
-
-    const innerPoints: Point[] = [];
-
-    for (
-      let i = 0;
-      i < points.length;
-      i++
-    ) {
-
-      const angle =
-        Math.atan2(
-          points[i].y - CENTER,
-          points[i].x - CENTER
-        );
-
-      innerPoints.push(
-        polarToCartesian(
-          radius,
-          angle
-        )
-      );
-    }
-
-    facets.push(
-      buildPath(innerPoints)
-    );
-
-    /**
-     * وصلات بلورية
-     */
-
-    innerPoints.forEach((p, i) => {
-
-      edges.push(
-        linePath(
-          p,
-          points[i]
-        )
-      );
-    });
-  }
-
-  /* ====================================================== */
-  /* LEVEL UNIQUE SIGNATURES */
-  /* ====================================================== */
-
-  /**
-   * كل مستوى يحصل على pattern مختلف
-   */
-
-  const signature = level % 5;
-
-  /**
-   * STAR CUT
-   */
-
-  if (signature === 0) {
-
-    for (
-      let i = 0;
-      i < points.length;
-      i++
-    ) {
-
-      const next =
-        points[
-          (i + 2) % points.length
-        ];
-
-      edges.push(
-        linePath(
-          points[i],
-          next
-        )
-      );
-    }
-  }
-
-  /**
-   * INNER STAR
-   */
-
-  if (signature === 1) {
-
-    const mini: Point[] = [];
-
-    points.forEach((p) => {
-
-      mini.push({
-        x: CENTER + (p.x - CENTER) * 0.45,
-        y: CENTER + (p.y - CENTER) * 0.45,
-      });
-    });
-
-    facets.push(
-      buildPath(mini)
-    );
-  }
-
-  /**
-   * TRI CUTS
-   */
-
-  if (signature === 2) {
-
-    points.forEach((p, i) => {
-
-      const next =
-        points[
-          (i + 1) % points.length
-        ];
-
-      const mid: Point = {
-        x: (p.x + next.x) / 2,
-        y: (p.y + next.y) / 2,
-      };
-
-      edges.push(
-        linePath(center, mid)
-      );
-    });
-  }
-
-  /**
-   * CRYSTAL GRID
-   */
-
-  if (signature === 3) {
-
-    for (
-      let i = 0;
-      i < points.length;
-      i++
-    ) {
-
-      const a = points[i];
-
-      const b =
-        points[
-          (i + 3) % points.length
-        ];
-
-      edges.push(
-        linePath(a, b)
-      );
-    }
-  }
-
-  /**
-   * DIAMOND CORE
-   */
-
-  if (signature === 4) {
-
-    const corePoints: Point[] = [];
-
-    for (
-      let i = 0;
-      i < points.length;
-      i++
-    ) {
-
-      const angle =
-        Math.atan2(
-          points[i].y - CENTER,
-          points[i].x - CENTER
-        );
-
-      corePoints.push(
-        polarToCartesian(
-          14,
-          angle
-        )
-      );
-    }
-
-    return {
-      facets,
-      edges,
-      core: buildPath(corePoints),
-    };
-  }
-
-  return {
-    facets,
-    edges,
-  };
 };
 
 /* ====================================================== */
-/* MAIN ENGINE */
+/* UNIQUE BASE PATTERN */
+/* ====================================================== */
+
+const createPattern = (
+  level: number,
+  points: Point[]
+): string => {
+
+  let p = '';
+
+  /**
+   * كل مستوى يملك seed مختلف
+   */
+
+  const seed =
+    level * 13.37;
+
+  points.forEach((a, i) => {
+
+    const next =
+      points[
+        (i + 1) % points.length
+      ];
+
+    const skip =
+      points[
+        (i + 2) % points.length
+      ];
+
+    /**
+     * Core Facets
+     */
+
+    p += `
+
+      M ${a.x} ${a.y}
+      L ${skip.x} ${skip.y}
+
+    `;
+
+    /**
+     * Inner crystal cuts
+     */
+
+    const mixX =
+      (a.x + next.x) / 2;
+
+    const mixY =
+      (a.y + next.y) / 2;
+
+    const depth =
+      18 + (
+        (Math.sin(seed + i) + 1)
+        * 8
+      );
+
+    p += `
+
+      M ${mixX} ${mixY}
+      Q 50 ${depth}
+        ${50 + (50 - mixX)}
+        ${50 + (50 - mixY)}
+
+    `;
+
+  });
+
+  /**
+   * مستويات أعلى = هندسة أكثر تعقيداً
+   */
+
+  const rings =
+    Math.floor(level / 4);
+
+  for (
+    let i = 1;
+    i <= rings;
+    i++
+  ) {
+
+    const r =
+      38 - (i * 4);
+
+    const ring = Array.from(
+      { length: points.length },
+      (_, idx) => {
+
+        const angle =
+          (-Math.PI / 2) +
+          (
+            idx *
+            (
+              Math.PI * 2 /
+              points.length
+            )
+          );
+
+        return polar(
+          50,
+          50,
+          r,
+          angle
+        );
+
+      }
+    );
+
+    p += pathFromPoints(ring);
+
+  }
+
+  /**
+   * elite core
+   */
+
+  if (level >= 40) {
+
+    p += `
+
+      M 50 22
+      L 74 50
+      L 50 78
+      L 26 50
+      Z
+
+    `;
+
+  }
+
+  return p;
+
+};
+
+/* ====================================================== */
+/* MAIN */
 /* ====================================================== */
 
 export const getGemGeometry = (
-  level: number
-): GemGeometryData => {
+  level: number,
+  radius: number = 42
+): GemPathData => {
 
-  const outerPoints =
-    generateOuterPoints(level);
+  const points =
+    buildOuterPoints(
+      level,
+      radius
+    );
 
-  const outerPath =
-    buildPath(outerPoints);
+  const basePattern =
+    createPattern(
+      level,
+      points
+    );
 
-  const {
-    facets,
-    edges,
-    core,
-  } = generateFacetSystem(
-    level,
-    outerPoints
-  );
+  /* ==================================================== */
+  /* FACETS */
+  /* ==================================================== */
+
+  const facetPaths = [
+
+    basePattern,
+
+  ];
+
+  /**
+   * اختلاف جذري بين المستويات
+   */
+
+  if (level % 2 === 0) {
+
+    facetPaths.push(`
+
+      M 50 12
+      L 72 50
+      L 50 88
+
+    `);
+
+  }
+
+  if (level % 3 === 0) {
+
+    facetPaths.push(`
+
+      M 28 50
+      Q 50 18
+        72 50
+
+    `);
+
+  }
+
+  if (level % 5 === 0) {
+
+    facetPaths.push(`
+
+      M 34 34
+      L 66 66
+
+      M 66 34
+      L 34 66
+
+    `);
+
+  }
+
+  /* ==================================================== */
+  /* REFLECTIONS */
+  /* ==================================================== */
+
+  const reflectionPaths: string[] = [];
+
+  const reflections =
+    1 + Math.floor(level / 6);
+
+  for (
+    let i = 0;
+    i < reflections;
+    i++
+  ) {
+
+    const y =
+      22 + (i * 8);
+
+    reflectionPaths.push(`
+
+      M 30 ${y}
+      Q 50 ${y - 10}
+        70 ${y}
+
+    `);
+
+  }
+
+  /**
+   * elite
+   */
+
+  if (level >= 45) {
+
+    reflectionPaths.push(`
+
+      M 24 60
+      Q 50 34
+        76 60
+
+    `);
+
+  }
+
+  /* ==================================================== */
+  /* ENERGY */
+  /* ==================================================== */
+
+  const energyPaths: string[] = [];
+
+  const energyComplexity =
+    Math.floor(level / 2);
+
+  for (
+    let i = 0;
+    i < energyComplexity;
+    i++
+  ) {
+
+    const offset =
+      18 + (i * 3);
+
+    const arc =
+      20 + (
+        Math.sin(i + level)
+        * 12
+      );
+
+    energyPaths.push(`
+
+      M ${offset} 50
+      Q 50 ${arc}
+        ${100 - offset} 50
+
+    `);
+
+  }
+
+  /**
+   * mythic pulse
+   */
+
+  if (level >= 40) {
+
+    energyPaths.push(`
+
+      M 50 14
+      Q 62 50
+        50 86
+
+      Q 38 50
+        50 14
+
+    `);
+
+  }
+
+  /* ==================================================== */
+  /* HIGHLIGHTS */
+  /* ==================================================== */
+
+  const highlightPaths: string[] = [];
+
+  /**
+   * تختلف حسب المستوى
+   */
+
+  const highlights =
+    1 + Math.floor(level / 8);
+
+  for (
+    let i = 0;
+    i < highlights;
+    i++
+  ) {
+
+    const y =
+      20 + (i * 10);
+
+    highlightPaths.push(`
+
+      M 34 ${y}
+      Q 50 ${y - 8}
+        66 ${y}
+
+    `);
+
+  }
+
+  if (level >= 25) {
+
+    highlightPaths.push(`
+
+      M 26 44
+      Q 50 22
+        74 44
+
+    `);
+
+  }
+
+  if (level >= 40) {
+
+    highlightPaths.push(`
+
+      M 28 70
+      Q 50 88
+        72 70
+
+    `);
+
+  }
 
   return {
-    outerPath,
-    facetPaths: facets,
-    edgePaths: edges,
-    corePath: core,
+
+    outerPath:
+      pathFromPoints(points),
+
+    facetPaths,
+
+    reflectionPaths,
+
+    energyPaths,
+
+    highlightPaths,
+
   };
+
 };

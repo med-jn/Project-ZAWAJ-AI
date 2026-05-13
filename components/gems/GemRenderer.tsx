@@ -1,365 +1,742 @@
-import React, { useMemo } from 'react';
+"use client";
 
-import { getGemGeometry } from '@/lib/gems/GemGeometry';
+import React, {
+  useMemo,
+} from 'react';
+
+import {
+  motion,
+} from 'framer-motion';
+
+import {
+  getGemGeometry,
+} from '@/lib/gems/GemGeometry';
 
 interface GemRendererProps {
+
   level: number;
+
   size?: number;
-  className?: string;
+
   showGlow?: boolean;
+
 }
 
-/**
- * AAA Gem Renderer
- * Cinematic Production Renderer
- */
+/* ====================================================== */
+/* THEMES */
+/* ====================================================== */
 
-const GemRenderer: React.FC<GemRendererProps> = ({
+const THEMES = {
+
+  sky: {
+
+    body:
+      '#38BDF8',
+
+    body2:
+      '#7DD3FC',
+
+    edge:
+      '#E0F2FE',
+
+    facet:
+      '#D9F4FF',
+
+    reflection:
+      'rgba(255,255,255,0.95)',
+
+    energy:
+      'rgba(125,211,252,0.95)',
+
+    glow:
+      'rgba(56,189,248,0.55)',
+
+  },
+
+  diamond: {
+
+    body:
+      '#3B82F6',
+
+    body2:
+      '#60A5FA',
+
+    edge:
+      '#EFF6FF',
+
+    facet:
+      '#BFDBFE',
+
+    reflection:
+      'rgba(255,255,255,0.98)',
+
+    energy:
+      'rgba(147,197,253,0.95)',
+
+    glow:
+      'rgba(59,130,246,0.58)',
+
+  },
+
+  emerald: {
+
+    body:
+      '#10B981',
+
+    body2:
+      '#34D399',
+
+    edge:
+      '#ECFDF5',
+
+    facet:
+      '#A7F3D0',
+
+    reflection:
+      'rgba(255,255,255,0.96)',
+
+    energy:
+      'rgba(110,231,183,0.92)',
+
+    glow:
+      'rgba(16,185,129,0.62)',
+
+  },
+
+  royal: {
+
+    body:
+      '#F59E0B',
+
+    body2:
+      '#FCD34D',
+
+    edge:
+      '#FFF7CC',
+
+    facet:
+      '#FFE082',
+
+    reflection:
+      'rgba(255,255,255,1)',
+
+    energy:
+      'rgba(255,224,130,0.96)',
+
+    glow:
+      'rgba(245,158,11,0.72)',
+
+  },
+
+} as const;
+
+/* ====================================================== */
+/* COMPONENT */
+/* ====================================================== */
+
+const GemRenderer: React.FC<
+  GemRendererProps
+> = ({
+
   level,
-  size = 100,
-  className = '',
+
+  size = 26,
+
   showGlow = true,
+
 }) => {
 
-  /* ====================================================== */
-  /* TIER */
-  /* ====================================================== */
+  /* ==================================================== */
+  /* GEOMETRY */
+  /* ==================================================== */
 
-  const tier = useMemo(() => {
+  const geometry = useMemo(() => {
+
+    return getGemGeometry(level);
+
+  }, [level]);
+
+  /* ==================================================== */
+  /* THEME */
+  /* ==================================================== */
+
+  const theme = useMemo(() => {
 
     if (level <= 9) {
-      return 1;
+      return THEMES.sky;
     }
 
     if (level <= 19) {
-      return 2;
+      return THEMES.diamond;
     }
 
     if (level <= 39) {
-      return 3;
+      return THEMES.emerald;
     }
 
-    return 4;
+    return THEMES.royal;
 
   }, [level]);
 
-  /* ====================================================== */
-  /* GEOMETRY */
-  /* ====================================================== */
+  /* ==================================================== */
+  /* ELITE */
+  /* ==================================================== */
 
-  const geometry = useMemo(() => {
-    return getGemGeometry(level);
-  }, [level]);
+  const elite =
+    level >= 40;
 
-  /* ====================================================== */
-  /* COLORS */
-  /* ====================================================== */
-
-  const colors = useMemo(() => {
-
-    /**
-     * Crystal Cyan
-     */
-
-    if (tier === 1) {
-
-      return {
-
-        edge: '#D8F7FF',
-
-        facet: 'rgba(255,255,255,0.16)',
-
-        wire: 'rgba(220,245,255,0.42)',
-
-        glow: 'rgba(56,189,248,0.45)',
-
-      };
-    }
-
-    /**
-     * Sapphire
-     */
-
-    if (tier === 2) {
-
-      return {
-
-        edge: '#F0FBFF',
-
-        facet: 'rgba(255,255,255,0.18)',
-
-        wire: 'rgba(180,230,255,0.55)',
-
-        glow: 'rgba(0,119,255,0.52)',
-
-      };
-    }
-
-    /**
-     * Emerald
-     */
-
-    if (tier === 3) {
-
-      return {
-
-        edge: '#F0FFF7',
-
-        facet: 'rgba(255,255,255,0.20)',
-
-        wire: 'rgba(220,255,235,0.52)',
-
-        glow: 'rgba(16,185,129,0.52)',
-
-      };
-    }
-
-    /**
-     * Mythic Gold
-     */
-
-    return {
-
-      edge: '#FFF6D7',
-
-      facet: 'rgba(255,255,255,0.24)',
-
-      wire: 'rgba(255,240,190,0.62)',
-
-      glow: 'rgba(251,191,36,0.70)',
-
-    };
-
-  }, [tier]);
-
-  /* ====================================================== */
-  /* FILTER */
-  /* ====================================================== */
-
-  const filter = useMemo(() => {
-
-    if (!showGlow) {
-      return 'none';
-    }
-
-    if (tier === 4) {
-      return 'url(#aaa-gem-bloom)';
-    }
-
-    return 'url(#aaa-gem-soft-glow)';
-
-  }, [showGlow, tier]);
-
-  /* ====================================================== */
-  /* UNIQUE SIGNATURE */
-  /* ====================================================== */
-
-  const uniqueIntensity = (
-    (level % 10) + 1
-  ) / 10;
-
-  /* ====================================================== */
+  /* ==================================================== */
   /* RENDER */
-  /* ====================================================== */
+  /* ==================================================== */
 
   return (
 
     <div
-      className={`
+
+      className="
         relative
-        inline-flex
+        flex
         items-center
         justify-center
-        ${className}
-      `}
+        shrink-0
+      "
+
       style={{
+
         width: size,
+
         height: size,
+
       }}
     >
 
+      {/* ================================================= */}
+      {/* CINEMATIC GLOW */}
+      {/* ================================================= */}
+
+      {showGlow && (
+
+        <motion.div
+
+          animate={{
+
+            scale:
+              elite
+                ? [1, 1.18, 1]
+                : [1, 1.08, 1],
+
+            opacity:
+              elite
+                ? [0.65, 1, 0.65]
+                : [0.45, 0.8, 0.45],
+
+          }}
+
+          transition={{
+
+            duration:
+              elite
+                ? 2.8
+                : 4.2,
+
+            repeat: Infinity,
+
+            ease: 'easeInOut',
+
+          }}
+
+          className="
+            absolute
+            inset-[-24%]
+            rounded-full
+            pointer-events-none
+          "
+
+          style={{
+
+            background: `
+
+              radial-gradient(
+                circle,
+                ${theme.glow},
+                transparent 72%
+              )
+
+            `,
+
+            filter:
+              elite
+                ? 'blur(18px)'
+                : 'blur(10px)',
+
+          }}
+        />
+
+      )}
+
+      {/* ================================================= */}
+      {/* SVG */}
+      {/* ================================================= */}
+
       <svg
+
         viewBox="0 0 100 100"
-        className="w-full h-full overflow-visible"
-        style={{
-          filter,
-        }}
+
+        className="
+          relative
+          z-[2]
+          w-full
+          h-full
+          overflow-visible
+        "
       >
 
-        {/* ================================================== */}
-        {/* BACK GLOW */}
-        {/* ================================================== */}
+        <defs>
+
+          {/* ============================================= */}
+          {/* BODY */}
+          {/* ============================================= */}
+
+          <linearGradient
+            id={`body-${level}`}
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+
+            <stop
+              offset="0%"
+              stopColor={theme.body2}
+            />
+
+            <stop
+              offset="42%"
+              stopColor={theme.body}
+            />
+
+            <stop
+              offset="100%"
+              stopColor="#071018"
+            />
+
+          </linearGradient>
+
+          {/* ============================================= */}
+          {/* SPECULAR */}
+          {/* ============================================= */}
+
+          <linearGradient
+            id={`specular-${level}`}
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+
+            <stop
+              offset="0%"
+              stopColor="rgba(255,255,255,0)"
+            />
+
+            <stop
+              offset="45%"
+              stopColor="rgba(255,255,255,0)"
+            />
+
+            <stop
+              offset="52%"
+              stopColor="rgba(255,255,255,0.95)"
+            />
+
+            <stop
+              offset="58%"
+              stopColor="rgba(255,255,255,0)"
+            />
+
+            <stop
+              offset="100%"
+              stopColor="rgba(255,255,255,0)"
+            />
+
+          </linearGradient>
+
+          {/* ============================================= */}
+          {/* INNER LIGHT */}
+          {/* ============================================= */}
+
+          <radialGradient
+            id={`inner-${level}`}
+            cx="35%"
+            cy="25%"
+            r="80%"
+          >
+
+            <stop
+              offset="0%"
+              stopColor="rgba(255,255,255,0.95)"
+            />
+
+            <stop
+              offset="30%"
+              stopColor="rgba(255,255,255,0.35)"
+            />
+
+            <stop
+              offset="100%"
+              stopColor="rgba(255,255,255,0)"
+            />
+
+          </radialGradient>
+
+        </defs>
+
+        {/* =============================================== */}
+        {/* SHADOW */}
+        {/* =============================================== */}
 
         <path
+
           d={geometry.outerPath}
-          fill={colors.glow}
-          opacity={
-            tier === 4
-              ? 0.34
-              : 0.18
-          }
-          transform="scale(1.05) translate(-2.4 -2.4)"
-          filter="blur(8px)"
+
+          transform="translate(0 4)"
+
+          fill="rgba(0,0,0,0.42)"
         />
 
-        {/* ================================================== */}
-        {/* BASE SHADOW */}
-        {/* ================================================== */}
+        {/* =============================================== */}
+        {/* BODY */}
+        {/* =============================================== */}
 
         <path
+
           d={geometry.outerPath}
-          fill="rgba(0,0,0,0.45)"
-          transform="translate(0 3)"
-          opacity="0.45"
-          filter="blur(4px)"
+
+          fill={`url(#body-${level})`}
+
+          style={{
+
+            filter:
+
+              elite
+
+                ? `
+                  drop-shadow(
+                    0 0 12px
+                    ${theme.glow}
+                  )
+                `
+
+                : `
+                  drop-shadow(
+                    0 0 7px
+                    ${theme.glow}
+                  )
+                `,
+
+          }}
         />
 
-        {/* ================================================== */}
-        {/* MAIN BODY */}
-        {/* ================================================== */}
+        {/* =============================================== */}
+        {/* INNER LIGHT */}
+        {/* =============================================== */}
 
         <path
+
           d={geometry.outerPath}
-          fill={`url(#aaa-gem-tier-${tier})`}
-          filter="
-            url(#aaa-gem-inner-shadow)
-          "
+
+          fill={`url(#inner-${level})`}
+
+          opacity={0.92}
         />
 
-        {/* ================================================== */}
-        {/* DEPTH */}
-        {/* ================================================== */}
-
-        <path
-          d={geometry.outerPath}
-          fill="url(#aaa-gem-depth)"
-          opacity="0.9"
-        />
-
-        {/* ================================================== */}
+        {/* =============================================== */}
         {/* FACETS */}
-        {/* ================================================== */}
+        {/* =============================================== */}
 
-        {geometry.facetPaths.map((facet, index) => (
+        {geometry.facetPaths.map(
+          (
+            facet,
+            index
+          ) => (
 
-          <path
-            key={`facet-${index}`}
-            d={facet}
-            fill="none"
-            stroke={colors.facet}
-            strokeWidth={
-              0.6 +
-              uniqueIntensity * 0.6
-            }
-            opacity={
-              0.55 +
-              uniqueIntensity * 0.25
-            }
-          />
+            <path
 
-        ))}
+              key={`facet-${index}`}
 
-        {/* ================================================== */}
-        {/* INTERNAL WIRES */}
-        {/* ================================================== */}
+              d={facet}
 
-        {geometry.edgePaths.map((line, index) => (
+              fill="none"
 
-          <path
-            key={`edge-${index}`}
-            d={line}
-            fill="none"
-            stroke={colors.wire}
-            strokeWidth={
-              level >= 40
-                ? 0.75
-                : 0.55
-            }
-            strokeLinecap="round"
-            opacity={
-              0.22 +
-              uniqueIntensity * 0.42
-            }
-          />
+              stroke={theme.facet}
 
-        ))}
+              strokeWidth={
+                elite
+                  ? 1.4
+                  : 1.05
+              }
 
-        {/* ================================================== */}
-        {/* CORE */}
-        {/* ================================================== */}
+              strokeOpacity={
+                0.72 +
+                (
+                  (index % 3)
+                  * 0.08
+                )
+              }
 
-        {geometry.corePath && (
+              strokeLinecap="round"
 
-          <path
-            d={geometry.corePath}
-            fill="rgba(255,255,255,0.08)"
-            stroke={colors.edge}
-            strokeWidth="0.9"
-            opacity="0.95"
-          />
+              strokeLinejoin="round"
+            />
 
+          )
         )}
 
-        {/* ================================================== */}
-        {/* TOP SPECULAR */}
-        {/* ================================================== */}
+        {/* =============================================== */}
+        {/* REFLECTIONS */}
+        {/* =============================================== */}
+
+        {geometry.reflectionPaths.map(
+          (
+            reflection,
+            index
+          ) => (
+
+            <motion.path
+
+              key={`reflection-${index}`}
+
+              d={reflection}
+
+              fill="none"
+
+              stroke={theme.reflection}
+
+              strokeWidth={
+                elite
+                  ? 1.2
+                  : 0.8
+              }
+
+              strokeOpacity={
+                elite
+                  ? 0.95
+                  : 0.72
+              }
+
+              strokeLinecap="round"
+
+              animate={{
+
+                opacity:
+                  elite
+
+                    ? [0.2, 1, 0.2]
+
+                    : [0.15, 0.7, 0.15],
+
+              }}
+
+              transition={{
+
+                duration:
+                  2.2 +
+                  index,
+
+                repeat:
+                  Infinity,
+
+                ease:
+                  'easeInOut',
+
+              }}
+            />
+
+          )
+        )}
+
+        {/* =============================================== */}
+        {/* ENERGY */}
+        {/* =============================================== */}
+
+        {geometry.energyPaths.map(
+          (
+            energy,
+            index
+          ) => (
+
+            <motion.path
+
+              key={`energy-${index}`}
+
+              d={energy}
+
+              fill="none"
+
+              stroke={theme.energy}
+
+              strokeWidth={
+                elite
+                  ? 0.9
+                  : 0.65
+              }
+
+              strokeOpacity={
+                elite
+                  ? 0.8
+                  : 0.55
+              }
+
+              strokeLinecap="round"
+
+              animate={{
+
+                opacity:
+                  elite
+
+                    ? [0.15, 1, 0.15]
+
+                    : [0.08, 0.7, 0.08],
+
+              }}
+
+              transition={{
+
+                duration:
+                  1.6 +
+                  (
+                    index * 0.18
+                  ),
+
+                repeat:
+                  Infinity,
+
+                ease:
+                  'linear',
+
+              }}
+            />
+
+          )
+        )}
+
+        {/* =============================================== */}
+        {/* HIGHLIGHTS */}
+        {/* =============================================== */}
+
+        {geometry.highlightPaths.map(
+          (
+            highlight,
+            index
+          ) => (
+
+            <path
+
+              key={`highlight-${index}`}
+
+              d={highlight}
+
+              fill="none"
+
+              stroke="rgba(255,255,255,0.95)"
+
+              strokeWidth={
+                elite
+                  ? 1.1
+                  : 0.85
+              }
+
+              strokeOpacity={
+                elite
+                  ? 0.92
+                  : 0.7
+              }
+
+              strokeLinecap="round"
+            />
+
+          )
+        )}
+
+        {/* =============================================== */}
+        {/* EDGE */}
+        {/* =============================================== */}
 
         <path
+
           d={geometry.outerPath}
-          fill="url(#aaa-gem-specular)"
-          opacity={
-            0.35 +
-            uniqueIntensity * 0.4
-          }
-        />
 
-        {/* ================================================== */}
-        {/* CINEMATIC REFLECTION */}
-        {/* ================================================== */}
-
-        <path
-          d={geometry.outerPath}
-          fill="url(#aaa-gem-reflection)"
-          opacity={
-            tier >= 3
-              ? 0.55
-              : 0.35
-          }
-        />
-
-        {/* ================================================== */}
-        {/* PREMIUM EDGE */}
-        {/* ================================================== */}
-
-        <path
-          d={geometry.outerPath}
           fill="none"
-          stroke={colors.edge}
+
+          stroke={theme.edge}
+
           strokeWidth={
-            level >= 40
-              ? 1.8
-              : 1.15
+            elite
+              ? 2.2
+              : 1.8
           }
-          opacity="0.95"
+
+          strokeOpacity={0.95}
         />
 
-        {/* ================================================== */}
+        {/* =============================================== */}
         {/* INNER EDGE */}
-        {/* ================================================== */}
+        {/* =============================================== */}
 
         <path
+
           d={geometry.outerPath}
+
           fill="none"
-          stroke="rgba(255,255,255,0.22)"
-          strokeWidth="0.5"
-          opacity="0.55"
-          transform="scale(0.96) translate(2 2)"
+
+          stroke="rgba(255,255,255,0.26)"
+
+          strokeWidth={0.8}
+        />
+
+        {/* =============================================== */}
+        {/* MOVING SPECULAR */}
+        {/* =============================================== */}
+
+        <motion.path
+
+          d={geometry.outerPath}
+
+          fill={`url(#specular-${level})`}
+
+          animate={{
+
+            opacity:
+              elite
+
+                ? [0, 1, 0]
+
+                : [0, 0.75, 0],
+
+          }}
+
+          transition={{
+
+            duration:
+              elite
+                ? 2.5
+                : 4.5,
+
+            repeat:
+              Infinity,
+
+            ease:
+              'easeInOut',
+
+          }}
         />
 
       </svg>
 
     </div>
+
   );
+
 };
 
 export default GemRenderer;

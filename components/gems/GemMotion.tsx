@@ -32,8 +32,8 @@ const GemMotion: React.FC<GemMotionProps> = ({
 
   const floatingAnimation = isHigh
     ? {
-        y: [0, -3.5, 0],
-        rotate: [0, 0.8, 0, -0.8, 0],
+        y: [0, -1.2, 0],
+        rotate: [0, 2, 0, -2, 0],
         scale: [1, 1.015, 1],
       }
     : isMid
@@ -52,7 +52,7 @@ const GemMotion: React.FC<GemMotionProps> = ({
   const pulseAnimation = isHigh
     ? {
         scale: [1, 1.18, 1],
-        opacity: [0.22, 0.55, 0.22],
+        opacity: [0.22, 0.65, 0.22],
       }
     : {
         scale: [1, 1.08, 1],
