@@ -21,7 +21,7 @@ export function usePushNotifications(userId?: string) {
       try {
         console.log('[FCM] init start');
 
-        // تأكد من وجود session
+        // التأكد من وجود session
         const {
           data: { session },
         } = await supabase.auth.getSession();
@@ -32,7 +32,6 @@ export function usePushNotifications(userId?: string) {
         }
 
         console.log('[FCM] session ok:', session.user.id);
-        console.log('[FCM] hook userId:', userId);
 
         let perm = await PushNotifications.checkPermissions();
 
@@ -51,17 +50,19 @@ export function usePushNotifications(userId?: string) {
           try {
             console.log('[FCM] token received:', token.value);
 
-            const { data, error } = await supabase
+            const { error } = await supabase
               .from('fcm_tokens')
-              .insert({
-                user_id: session.user.id,
-                token: token.value,
-                device_type: 'android',
-                last_seen: new Date().toISOString(),
-              })
-              .select();
-
-            console.log('[FCM] insert result:', data);
+              .upsert(
+                {
+                  user_id: session.user.id,
+                  token: token.value,
+                  device_type: 'android',
+                  last_seen: new Date().toISOString(),
+                },
+                {
+                  onConflict: 'token',
+                }
+              );
 
             if (error) {
               console.error(

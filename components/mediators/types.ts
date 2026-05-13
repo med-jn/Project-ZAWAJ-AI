@@ -11,8 +11,10 @@ export interface MediatorRow {
   rating_count:      number;
   male_count:        number;
   female_count:      number;
-  total_subscribers: number;        // ← الجديد: يغذي LevelBadge من @/components/gems
+  total_subscribers: number;        // يغذي LevelBadge + العداد التاريخي
   isSubscribed:      boolean;
+  whatsapp:          string | null; // رقم واتساب (مع كود الدولة)
+  tiktok:            string | null; // اسم المستخدم على تيك توك
 }
 
 export interface Subscriber {
