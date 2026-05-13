@@ -1,12 +1,12 @@
 'use client';
 /**
  * 📁 app/points/page.tsx — ZAWAJ AI
- * محفظة النقاط: رصيد + مكافأة إعلانية + سجل العمليات
- * ✅ لا أسعار — لا عملات مالية — لا شراء مباشر
- * ✅ الإعلانات تُحمَّل مسبقاً فور فتح الصفحة
+ * ✅ لا أسعار — لا عملات مالية
+ * ✅ إعلانَان يُحمَّلان فور الدخول
+ * ✅ هيستوري كامل من point_transactions
  */
 import { useState, useEffect, useCallback } from 'react';
-import { PlayCircle, Zap, TrendingUp, TrendingDown, Coins } from 'lucide-react';
+import { PlayCircle, Zap, TrendingUp, TrendingDown, Inbox } from 'lucide-react';
 
 import { supabase }            from '@/lib/supabase/client';
 import { useWallet }           from '@/hooks/useWallet';
@@ -15,11 +15,11 @@ import { CoinBalance }         from '@/components/ui/CoinBalance';
 import { LoveCoin }            from '@/components/ui/LoveCoin';
 
 // ── ثوابت ────────────────────────────────────────────────────
-const AD_REWARD        = 5;
-const HISTORY_PAGE_SIZE = 20;
+const AD_REWARD         = 5;
+const PAGE_SIZE         = 20;
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-// ── خريطة المصادر → نص عربي ──────────────────────────────────
+// ── خرائط النصوص ─────────────────────────────────────────────
 const SOURCE_LABEL: Record<string, string> = {
   konnect:     'شحن رصيد',
   admob:       'مكافأة إعلان',
@@ -28,32 +28,29 @@ const SOURCE_LABEL: Record<string, string> = {
   action:      'عملية',
   admin:       'منحة إدارية',
 };
-
 const ACTION_LABEL: Record<string, string> = {
-  like:                 'إرسال إعجاب',
-  pass:                 'تخطي',
-  back_swipe:           'تراجع عن التخطي',
-  open_chat:            'فتح محادثة',
-  urgent_consultation:  'استشارة عاجلة',
-  gift_to_mediator:     'هدية للوسيط',
+  like:                'إرسال إعجاب',
+  pass:                'تخطي بطاقة',
+  back_swipe:          'تراجع عن التخطي',
+  open_chat:           'فتح محادثة',
+  urgent_consultation: 'استشارة عاجلة',
+  gift_to_mediator:    'هدية للوسيط',
+  purchase:            'شحن رصيد',
 };
 
-function getTxLabel(source: string, action?: string | null): string {
-  if (source === 'action' && action && ACTION_LABEL[action]) {
-    return ACTION_LABEL[action];
-  }
+function getLabel(source: string, action?: string | null) {
+  if (action && ACTION_LABEL[action]) return ACTION_LABEL[action];
   return SOURCE_LABEL[source] ?? source;
 }
 
-// ── تنسيق التاريخ والوقت ─────────────────────────────────────
-function formatDateTime(iso: string): { date: string; time: string } {
+function fmtDate(iso: string) {
   const d = new Date(iso);
-  const date = d.toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const time = d.toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit', hour12: false });
-  return { date, time };
+  return {
+    date: d.toLocaleDateString('ar-TN', { day: '2-digit', month: 'short', year: 'numeric' }),
+    time: d.toLocaleTimeString('ar-TN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+  };
 }
 
-// ── نوع معاملة ───────────────────────────────────────────────
 interface Tx {
   transaction_id: string;
   amount:         number;
@@ -64,285 +61,343 @@ interface Tx {
   created_at:     string;
 }
 
-// ═════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
 export default function PointsPage() {
 
-  // ── رصيد ─────────────────────────────────────────────────
   const { balance, balance_free, totalBalance, loading: walletLoading } = useWallet();
 
-  // ── هوية المستخدم ─────────────────────────────────────────
-  const [userId, setUserId] = useState<string>('');
+  const [userId, setUserId] = useState('');
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.id) setUserId(user.id);
     });
   }, []);
 
-  // ── AdMob — يُحمَّل تلقائياً فور توفر userId ─────────────
-  const { showAd, isAdReady, isLoadingAd } = useSmartAdMobReward(userId, AD_REWARD);
+  // ── AdMob — يبدأ التحميل المزدوج فور توفر userId ──────────
+  const { showAd, isAdReady, isLoadingAd, readyCount } = useSmartAdMobReward(userId, AD_REWARD);
 
-  // ── سجل العمليات ─────────────────────────────────────────
-  const [txList,   setTxList]   = useState<Tx[]>([]);
-  const [txLoad,   setTxLoad]   = useState(false);
-  const [hasMore,  setHasMore]  = useState(true);
-  const [page,     setPage]     = useState(0);
+  // ── سجل المعاملات ─────────────────────────────────────────
+  const [txList,  setTxList]  = useState<Tx[]>([]);
+  const [txLoad,  setTxLoad]  = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [offset,  setOffset]  = useState(0);
 
   const loadTx = useCallback(async (reset = false) => {
     if (!userId) return;
     setTxLoad(true);
-    const from = reset ? 0 : page * HISTORY_PAGE_SIZE;
-    const to   = from + HISTORY_PAGE_SIZE - 1;
+    const from = reset ? 0 : offset;
+    const to   = from + PAGE_SIZE - 1;
 
     const { data, error } = await supabase
       .from('point_transactions')
-      .select('transaction_id, amount, balance_after, source, action, notes, created_at')
+      .select('transaction_id,amount,balance_after,source,action,notes,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .range(from, to);
 
     if (!error && data) {
       setTxList(prev => reset ? data : [...prev, ...data]);
-      setHasMore(data.length === HISTORY_PAGE_SIZE);
-      if (!reset) setPage(p => p + 1);
+      setHasMore(data.length === PAGE_SIZE);
+      setOffset(from + data.length);
     }
     setTxLoad(false);
-  }, [userId, page]);
+  }, [userId, offset]);
 
-  // جلب أول صفحة عند توفر userId
   useEffect(() => {
     if (!userId) return;
-    setPage(0);
+    setOffset(0);
     loadTx(true);
   }, [userId]); // eslint-disable-line
 
+  // ── مؤشر الإعلانات الجاهزة ───────────────────────────────
+  const adDots = [0, 1].map(i => i < readyCount);
+
   return (
-    <div className="min-h-screen px-4 py-6 pb-28" dir="rtl"
+    <div className="min-h-screen pb-28" dir="rtl"
       style={{ background: 'var(--bg-main)' }}>
 
-      {/* ══ بطاقة الرصيد ══════════════════════════════════════ */}
-      <div className="glass-panel p-5 mb-4 relative overflow-hidden">
+      {/* ══ هيدر خلفية متدرجة ═════════════════════════════════ */}
+      <div style={{
+        background: 'radial-gradient(ellipse at 50% 0%, rgba(179,51,75,0.22) 0%, transparent 70%)',
+        padding: 'var(--sp-6) var(--sp-4) 0',
+      }}>
 
-        {/* خلفية زخرفية */}
-        <div style={{
-          position: 'absolute', top: -30, left: -20,
-          width: 140, height: 140, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(179,51,75,0.12), transparent 70%)',
-          pointerEvents: 'none',
-        }} />
+        {/* ── بطاقة الرصيد الرئيسية ── */}
+        <div className="glass-panel p-5 mb-4 relative overflow-hidden">
 
-        {/* الرصيد الإجمالي */}
-        <p className="text-xs font-bold mb-1" style={{ color: 'var(--text-tertiary)' }}>
-          رصيدك الإجمالي
-        </p>
-        {walletLoading
-          ? <div className="h-9 w-36 rounded-xl mb-4 animate-pulse" style={{ background: 'rgba(255,255,255,0.08)' }} />
-          : <CoinBalance amount={totalBalance} iconSize={22} className="text-3xl font-black mb-4" />
-        }
-
-        {/* تفاصيل الرصيد */}
-        <div className="flex gap-3">
-          {/* رصيد الشحن */}
-          <div className="flex-1 rounded-2xl p-3" style={{
-            background: 'rgba(179,51,75,0.08)',
-            border: '1px solid rgba(179,51,75,0.2)',
-          }}>
-            <p className="text-[10px] font-bold mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-              رصيد الشحن
-            </p>
-            <div className="flex items-center gap-1.5">
-              <LoveCoin size={14} />
-              <span className="font-black text-base" style={{ color: 'var(--text-main)' }}>
-                {walletLoading ? '…' : fmt(balance)}
-              </span>
-            </div>
-          </div>
-
-          {/* رصيد الهدايا */}
-          <div className="flex-1 rounded-2xl p-3" style={{
-            background: 'rgba(34,197,94,0.07)',
-            border: '1px solid rgba(34,197,94,0.18)',
-          }}>
-            <p className="text-[10px] font-bold mb-1.5" style={{ color: 'var(--text-tertiary)' }}>
-              رصيد الهدايا
-            </p>
-            <div className="flex items-center gap-1.5">
-              <LoveCoin size={14} />
-              <span className="font-black text-base" style={{ color: '#4ade80' }}>
-                {walletLoading ? '…' : fmt(balance_free)}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ══ زر مشاهدة الإعلان ════════════════════════════════ */}
-      <button
-        onClick={showAd}
-        disabled={!userId || isLoadingAd}
-        style={{
-          width: '100%', marginBottom: 'var(--sp-5)',
-          padding: 'var(--sp-4) var(--sp-5)',
-          borderRadius: 'var(--radius-xl)',
-          border: `1.5px solid ${isAdReady ? 'rgba(34,197,94,0.35)' : 'rgba(255,255,255,0.08)'}`,
-          background: isAdReady
-            ? 'linear-gradient(135deg,rgba(34,197,94,0.1),rgba(22,163,74,0.18))'
-            : 'rgba(255,255,255,0.04)',
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 'var(--sp-4)',
-          cursor: userId && !isLoadingAd ? 'pointer' : 'not-allowed',
-          opacity: !userId ? 0.4 : 1,
-          transition: 'all 0.2s ease',
-          WebkitTapHighlightColor: 'transparent',
-        }}
-        onPointerDown={e  => { if (userId) e.currentTarget.style.transform = 'scale(0.98)'; }}
-        onPointerUp={e    => (e.currentTarget.style.transform = 'scale(1)')}
-        onPointerLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-          {/* أيقونة دائرية */}
+          {/* زخرفة خلفية */}
           <div style={{
-            width: 'var(--btn-h)', height: 'var(--btn-h)',
-            borderRadius: 'var(--radius-full)',
+            position:'absolute', top:-40, left:-40,
+            width:180, height:180, borderRadius:'50%',
+            background:'radial-gradient(circle,rgba(179,51,75,0.15),transparent 65%)',
+            pointerEvents:'none',
+          }}/>
+          <div style={{
+            position:'absolute', bottom:-30, right:-20,
+            width:120, height:120, borderRadius:'50%',
+            background:'radial-gradient(circle,rgba(212,175,55,0.08),transparent 65%)',
+            pointerEvents:'none',
+          }}/>
+
+          {/* الرصيد الإجمالي */}
+          <div className="relative z-10">
+            <p style={{ color:'var(--text-tertiary)', fontSize:'var(--text-xs)', fontWeight:700, marginBottom:4 }}>
+              رصيدك الإجمالي
+            </p>
+            {walletLoading
+              ? <div style={{ height:44, width:160, borderRadius:12, background:'rgba(255,255,255,0.08)', marginBottom:16 }} className="animate-pulse"/>
+              : <CoinBalance amount={totalBalance} iconSize={26} className="text-4xl font-black mb-4" />
+            }
+
+            {/* شريط تفاصيل الرصيد */}
+            <div className="flex gap-3">
+
+              <div className="flex-1 rounded-2xl p-3" style={{
+                background:'rgba(179,51,75,0.09)',
+                border:'1px solid rgba(179,51,75,0.22)',
+              }}>
+                <p style={{ color:'var(--text-tertiary)', fontSize:'calc(var(--text-2xs)*0.9)', fontWeight:700, marginBottom:6 }}>
+                  رصيد الشحن
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <LoveCoin size={13}/>
+                  <span style={{ color:'var(--text-main)', fontWeight:900, fontSize:'var(--text-base)' }}>
+                    {walletLoading ? '…' : fmt(balance)}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex-1 rounded-2xl p-3" style={{
+                background:'rgba(34,197,94,0.07)',
+                border:'1px solid rgba(34,197,94,0.18)',
+              }}>
+                <p style={{ color:'var(--text-tertiary)', fontSize:'calc(var(--text-2xs)*0.9)', fontWeight:700, marginBottom:6 }}>
+                  رصيد الهدايا
+                </p>
+                <div className="flex items-center gap-1.5">
+                  <LoveCoin size={13}/>
+                  <span style={{ color:'#4ade80', fontWeight:900, fontSize:'var(--text-base)' }}>
+                    {walletLoading ? '…' : fmt(balance_free)}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* ── زر الإعلان ── */}
+        <button
+          onClick={showAd}
+          disabled={!userId || isLoadingAd && !isAdReady}
+          className="w-full mb-6"
+          style={{
+            padding:'var(--sp-4) var(--sp-5)',
+            borderRadius:'var(--radius-xl)',
+            border:`1.5px solid ${isAdReady ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.09)'}`,
             background: isAdReady
-              ? 'linear-gradient(135deg,#16a34a,#22c55e)'
-              : 'rgba(255,255,255,0.08)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: isAdReady ? '0 4px 16px rgba(34,197,94,0.35)' : 'none',
-            transition: 'all 0.3s ease',
-          }}>
-            <PlayCircle size={20} color="#fff" />
+              ? 'linear-gradient(135deg,rgba(34,197,94,0.13),rgba(22,163,74,0.20))'
+              : 'rgba(255,255,255,0.04)',
+            display:'flex', alignItems:'center',
+            justifyContent:'space-between', gap:'var(--sp-3)',
+            cursor: userId ? 'pointer' : 'not-allowed',
+            opacity: !userId ? 0.45 : 1,
+            transition:'all 0.25s ease',
+            WebkitTapHighlightColor:'transparent',
+            boxShadow: isAdReady ? '0 4px 20px rgba(34,197,94,0.15)' : 'none',
+          }}
+          onPointerDown={e  => { if(userId) e.currentTarget.style.transform='scale(0.975)'; }}
+          onPointerUp={e    => (e.currentTarget.style.transform='scale(1)')}
+          onPointerLeave={e => (e.currentTarget.style.transform='scale(1)')}
+        >
+          {/* أيقونة + نص */}
+          <div className="flex items-center gap-3">
+            <div style={{
+              width:'var(--btn-h)', height:'var(--btn-h)',
+              borderRadius:'var(--radius-full)',
+              background: isAdReady
+                ? 'linear-gradient(135deg,#16a34a,#22c55e)'
+                : 'rgba(255,255,255,0.09)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+              flexShrink:0,
+              boxShadow: isAdReady ? '0 4px 14px rgba(34,197,94,0.4)' : 'none',
+              transition:'all 0.3s',
+            }}>
+              <PlayCircle size={20} color="#fff"/>
+            </div>
+            <div style={{ textAlign:'right' }}>
+              <p style={{ color:'var(--text-main)', fontWeight:900, fontSize:'var(--text-sm)', margin:0 }}>
+                اكسب عملات هدايا 🎁
+              </p>
+              <p style={{
+                color: isAdReady ? 'rgba(74,222,128,0.9)' : 'var(--text-tertiary)',
+                fontSize:'var(--text-2xs)', margin:0, marginTop:3, transition:'color 0.3s',
+              }}>
+                {isLoadingAd && !isAdReady ? 'جارٍ تحضير الفيديو…' : `شاهد فيديو قصير واربح ${AD_REWARD} عملات`}
+              </p>
+            </div>
           </div>
 
-          {/* نصوص */}
-          <div style={{ textAlign: 'right' }}>
-            <p style={{
-              color: 'var(--text-main)', fontWeight: 900,
-              fontSize: 'var(--text-sm)', margin: 0,
+          {/* مؤشر الـ pool — نقطتان */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {adDots.map((ready, i) => (
+              <div key={i} style={{
+                width:8, height:8, borderRadius:'50%',
+                background: ready ? '#4ade80' : 'rgba(255,255,255,0.18)',
+                boxShadow: ready ? '0 0 6px rgba(74,222,128,0.7)' : 'none',
+                transition:'all 0.4s',
+              }}/>
+            ))}
+            <div style={{
+              padding:'3px 9px', borderRadius:'var(--radius-full)',
+              background: isAdReady ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.06)',
+              border:`1px solid ${isAdReady ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
+              display:'flex', alignItems:'center', gap:4, marginRight:4,
             }}>
-              اكسب عملات هدايا 🎁
-            </p>
-            <p style={{
-              color: isAdReady ? 'rgba(74,222,128,0.85)' : 'var(--text-tertiary)',
-              fontSize: 'var(--text-2xs)', margin: 0, marginTop: '2px',
-              transition: 'color 0.3s',
-            }}>
-              {isLoadingAd
-                ? 'جارٍ تحضير الفيديو…'
-                : `شاهد فيديو قصير واربح ${AD_REWARD} عملات ذهبية`}
-            </p>
+              {isLoadingAd && !isAdReady
+                ? <div style={{
+                    width:9, height:9, borderRadius:'50%',
+                    border:'1.5px solid rgba(255,255,255,0.2)',
+                    borderTopColor:'#4ade80',
+                    animation:'spin 0.8s linear infinite',
+                  }}/>
+                : <Zap size={10} color={isAdReady ? '#4ade80' : 'rgba(255,255,255,0.3)'}/>
+              }
+              <span style={{
+                color: isAdReady ? '#4ade80' : 'rgba(255,255,255,0.3)',
+                fontSize:'calc(var(--text-2xs)*0.85)', fontWeight:800,
+              }}>
+                {isLoadingAd && !isAdReady ? 'تحميل' : isAdReady ? 'جاهز' : 'انتظر'}
+              </span>
+            </div>
           </div>
-        </div>
+        </button>
 
-        {/* مؤشر الحالة */}
-        <div style={{
-          padding: '4px 10px', borderRadius: 'var(--radius-full)',
-          background: isAdReady ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.05)',
-          border: `1px solid ${isAdReady ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
-          display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0,
-          transition: 'all 0.3s ease',
+      </div>{/* end header section */}
+
+      {/* ══ سجل العمليات ════════════════════════════════════════ */}
+      <div className="px-4">
+
+        <p style={{
+          color:'var(--text-main)', fontWeight:900,
+          fontSize:'var(--text-sm)', marginBottom:12,
         }}>
-          {isLoadingAd
-            ? <div style={{
-                width: 10, height: 10, borderRadius: '50%',
-                border: '1.5px solid rgba(255,255,255,0.3)',
-                borderTopColor: '#4ade80',
-                animation: 'spin 0.8s linear infinite',
-              }} />
-            : <Zap size={11} color={isAdReady ? '#4ade80' : 'rgba(255,255,255,0.35)'} />
-          }
-          <span style={{
-            color: isAdReady ? '#4ade80' : 'rgba(255,255,255,0.35)',
-            fontSize: 'var(--text-2xs)', fontWeight: 800,
-          }}>
-            {isLoadingAd ? 'تحميل' : isAdReady ? 'جاهز' : 'انتظر'}
-          </span>
-        </div>
-      </button>
-
-      {/* ══ سجل العمليات ══════════════════════════════════════ */}
-      <div>
-        <p className="font-black text-sm mb-3" style={{ color: 'var(--text-main)' }}>
           سجل العمليات
         </p>
 
-        {/* قائمة المعاملات */}
-        <div className="space-y-2">
-          {txList.length === 0 && !txLoad && (
-            <div className="glass-panel p-8 flex flex-col items-center gap-3">
-              <Coins size={32} style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
-              <p className="text-sm font-bold" style={{ color: 'var(--text-tertiary)' }}>
-                لا توجد عمليات بعد
-              </p>
-            </div>
-          )}
+        {/* فارغ */}
+        {txList.length === 0 && !txLoad && (
+          <div className="glass-panel p-10 flex flex-col items-center gap-3">
+            <Inbox size={36} style={{ color:'var(--text-tertiary)', opacity:0.35 }}/>
+            <p style={{ color:'var(--text-tertiary)', fontSize:'var(--text-sm)', fontWeight:700 }}>
+              لا توجد عمليات بعد
+            </p>
+          </div>
+        )}
 
-          {txList.map(tx => {
-            const isCredit    = tx.amount > 0;
-            const { date, time } = formatDateTime(tx.created_at);
-            const label       = getTxLabel(tx.source, tx.action);
+        {/* القائمة */}
+        <div className="space-y-2">
+          {txList.map((tx, idx) => {
+            const isCredit = tx.amount > 0;
+            const { date, time } = fmtDate(tx.created_at);
+            const label = getLabel(tx.source, tx.action);
+            const isFirst = idx === 0;
+            const prevDate = idx > 0 ? fmtDate(txList[idx - 1].created_at).date : '';
+            const showDate = isFirst || date !== prevDate;
 
             return (
-              <div key={tx.transaction_id}
-                className="glass-panel px-4 py-3 flex items-center gap-3"
-                style={{ borderRadius: 'var(--radius-lg)' }}
-              >
-                {/* أيقونة الاتجاه */}
-                <div style={{
-                  width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                  background: isCredit
-                    ? 'rgba(34,197,94,0.12)'
-                    : 'rgba(179,51,75,0.12)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {isCredit
-                    ? <TrendingUp  size={16} color="#4ade80" />
-                    : <TrendingDown size={16} color="var(--color-primary)" />
-                  }
-                </div>
+              <div key={tx.transaction_id}>
 
-                {/* التفاصيل */}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-sm truncate" style={{ color: 'var(--text-main)' }}>
-                    {label}
-                  </p>
-                  {tx.notes && (
-                    <p className="text-[10px] truncate mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      {tx.notes}
-                    </p>
-                  )}
-                  <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                    {date} · {time}
-                  </p>
-                </div>
-
-                {/* المبلغ + الرصيد بعد */}
-                <div className="text-left flex-shrink-0">
-                  <div className="flex items-center gap-1 justify-end">
-                    <span className="font-black text-base" style={{
-                      color: isCredit ? '#4ade80' : 'var(--color-primary)',
+                {/* فاصل التاريخ */}
+                {showDate && (
+                  <div className="flex items-center gap-3 py-2">
+                    <div className="flex-1 h-px" style={{ background:'rgba(255,255,255,0.07)' }}/>
+                    <span style={{
+                      color:'var(--text-tertiary)',
+                      fontSize:'calc(var(--text-2xs)*0.85)',
+                      fontWeight:700, flexShrink:0,
                     }}>
-                      {isCredit ? '+' : ''}{fmt(tx.amount)}
+                      {date}
                     </span>
-                    <LoveCoin size={12} />
+                    <div className="flex-1 h-px" style={{ background:'rgba(255,255,255,0.07)' }}/>
                   </div>
-                  <p className="text-[9px] text-right mt-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                    الرصيد: {fmt(tx.balance_after)}
-                  </p>
+                )}
+
+                {/* بطاقة المعاملة */}
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{
+                  background:'rgba(255,255,255,0.03)',
+                  border:'1px solid rgba(255,255,255,0.06)',
+                }}>
+
+                  {/* أيقونة الاتجاه */}
+                  <div style={{
+                    width:38, height:38, borderRadius:'50%', flexShrink:0,
+                    background: isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(179,51,75,0.12)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>
+                    {isCredit
+                      ? <TrendingUp  size={17} color="#4ade80"/>
+                      : <TrendingDown size={17} color="var(--color-primary)"/>
+                    }
+                  </div>
+
+                  {/* التفاصيل */}
+                  <div className="flex-1 min-w-0">
+                    <p style={{
+                      color:'var(--text-main)', fontWeight:700,
+                      fontSize:'var(--text-sm)',
+                      overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                    }}>
+                      {label}
+                    </p>
+                    {tx.notes && tx.notes !== label && (
+                      <p style={{
+                        color:'var(--text-tertiary)', fontSize:'calc(var(--text-2xs)*0.9)',
+                        marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap',
+                      }}>
+                        {tx.notes}
+                      </p>
+                    )}
+                    <p style={{ color:'var(--text-tertiary)', fontSize:'calc(var(--text-2xs)*0.85)', marginTop:2 }}>
+                      {time}
+                    </p>
+                  </div>
+
+                  {/* المبلغ + الرصيد بعد */}
+                  <div style={{ textAlign:'left', flexShrink:0 }}>
+                    <div className="flex items-center gap-1 justify-end">
+                      <span style={{
+                        color: isCredit ? '#4ade80' : 'var(--color-primary)',
+                        fontWeight:900, fontSize:'var(--text-base)',
+                      }}>
+                        {isCredit ? '+' : ''}{fmt(tx.amount)}
+                      </span>
+                      <LoveCoin size={11}/>
+                    </div>
+                    <p style={{
+                      color:'var(--text-tertiary)',
+                      fontSize:'calc(var(--text-2xs)*0.8)',
+                      textAlign:'left', marginTop:2,
+                    }}>
+                      رصيد: {fmt(tx.balance_after)}
+                    </p>
+                  </div>
+
                 </div>
               </div>
             );
           })}
 
-          {/* زر تحميل المزيد */}
+          {/* تحميل المزيد */}
           {hasMore && !txLoad && txList.length > 0 && (
             <button
               onClick={() => loadTx()}
-              className="w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-95"
+              className="w-full py-3 rounded-2xl font-bold transition-all active:scale-95"
               style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                color: 'var(--text-tertiary)',
+                background:'rgba(255,255,255,0.04)',
+                border:'1px solid rgba(255,255,255,0.08)',
+                color:'var(--text-tertiary)',
+                fontSize:'var(--text-sm)',
               }}
             >
               تحميل المزيد
@@ -351,15 +406,16 @@ export default function PointsPage() {
 
           {/* مؤشر التحميل */}
           {txLoad && (
-            <div className="flex justify-center py-4">
+            <div className="flex justify-center py-5">
               <div style={{
-                width: 24, height: 24, borderRadius: '50%',
-                border: '2px solid rgba(255,255,255,0.1)',
-                borderTopColor: 'var(--color-primary)',
-                animation: 'spin 0.8s linear infinite',
-              }} />
+                width:26, height:26, borderRadius:'50%',
+                border:'2.5px solid rgba(255,255,255,0.08)',
+                borderTopColor:'var(--color-primary)',
+                animation:'spin 0.8s linear infinite',
+              }}/>
             </div>
           )}
+
         </div>
       </div>
     </div>

@@ -96,7 +96,6 @@ Project ZAWAJ AI
 │  │     │  │     │  ├─ __next._head.txt
 │  │     │  │     │  ├─ __next._index.txt
 │  │     │  │     │  └─ __next._tree.txt
-│  │     │  │     ├─ app-dist.zip
 │  │     │  │     ├─ assets
 │  │     │  │     ├─ auth
 │  │     │  │     │  └─ callback
@@ -134,7 +133,7 @@ Project ZAWAJ AI
 │  │     │  │     │  ├─ __next._index.txt
 │  │     │  │     │  └─ __next._tree.txt
 │  │     │  │     ├─ Edge Functions _ ZAWAJ AI _ mohamed.jouini029@gmail.com's Org _ Supabase.mhtml
-│  │     │  │     ├─ favico.ico
+│  │     │  │     ├─ favicon.ico
 │  │     │  │     ├─ googleb7cdd508ae0d0bd9.html
 │  │     │  │     ├─ help
 │  │     │  │     │  ├─ index.html
@@ -224,53 +223,16 @@ Project ZAWAJ AI
 │  │     │  │     │  ├─ __next._head.txt
 │  │     │  │     │  ├─ __next._index.txt
 │  │     │  │     │  └─ __next._tree.txt
-│  │     │  │     ├─ packages
-│  │     │  │     │  ├─ history
-│  │     │  │     │  │  ├─ index.html
-│  │     │  │     │  │  ├─ index.txt
-│  │     │  │     │  │  ├─ __next.packages
-│  │     │  │     │  │  │  ├─ history
-│  │     │  │     │  │  │  │  └─ __PAGE__.txt
-│  │     │  │     │  │  │  └─ history.txt
-│  │     │  │     │  │  ├─ __next.packages.txt
-│  │     │  │     │  │  ├─ __next._full.txt
-│  │     │  │     │  │  ├─ __next._head.txt
-│  │     │  │     │  │  ├─ __next._index.txt
-│  │     │  │     │  │  └─ __next._tree.txt
+│  │     │  │     ├─ points
 │  │     │  │     │  ├─ index.html
 │  │     │  │     │  ├─ index.txt
-│  │     │  │     │  ├─ __next.packages
+│  │     │  │     │  ├─ __next.points
 │  │     │  │     │  │  └─ __PAGE__.txt
-│  │     │  │     │  ├─ __next.packages.txt
+│  │     │  │     │  ├─ __next.points.txt
 │  │     │  │     │  ├─ __next._full.txt
 │  │     │  │     │  ├─ __next._head.txt
 │  │     │  │     │  ├─ __next._index.txt
 │  │     │  │     │  └─ __next._tree.txt
-│  │     │  │     ├─ payment
-│  │     │  │     │  ├─ fail
-│  │     │  │     │  │  ├─ index.html
-│  │     │  │     │  │  ├─ index.txt
-│  │     │  │     │  │  ├─ __next.payment
-│  │     │  │     │  │  │  ├─ fail
-│  │     │  │     │  │  │  │  └─ __PAGE__.txt
-│  │     │  │     │  │  │  └─ fail.txt
-│  │     │  │     │  │  ├─ __next.payment.txt
-│  │     │  │     │  │  ├─ __next._full.txt
-│  │     │  │     │  │  ├─ __next._head.txt
-│  │     │  │     │  │  ├─ __next._index.txt
-│  │     │  │     │  │  └─ __next._tree.txt
-│  │     │  │     │  └─ success
-│  │     │  │     │     ├─ index.html
-│  │     │  │     │     ├─ index.txt
-│  │     │  │     │     ├─ __next.payment
-│  │     │  │     │     │  ├─ success
-│  │     │  │     │     │  │  └─ __PAGE__.txt
-│  │     │  │     │     │  └─ success.txt
-│  │     │  │     │     ├─ __next.payment.txt
-│  │     │  │     │     ├─ __next._full.txt
-│  │     │  │     │     ├─ __next._head.txt
-│  │     │  │     │     ├─ __next._index.txt
-│  │     │  │     │     └─ __next._tree.txt
 │  │     │  │     ├─ privacy
 │  │     │  │     │  ├─ index.html
 │  │     │  │     │  ├─ index.txt
@@ -348,67 +310,65 @@ Project ZAWAJ AI
 │  │     │  │     ├─ update-info.json
 │  │     │  │     ├─ vercel.svg
 │  │     │  │     ├─ _next
-│  │     │  │     │  ├─ 7vsLCcEJFcSX92EEkqZpd
-│  │     │  │     │  └─ static
-│  │     │  │     │     ├─ 7vsLCcEJFcSX92EEkqZpd
-│  │     │  │     │     │  ├─ _buildManifest.js
-│  │     │  │     │     │  ├─ _clientMiddlewareManifest.js
-│  │     │  │     │     │  └─ _ssgManifest.js
-│  │     │  │     │     ├─ chunks
-│  │     │  │     │     │  ├─ 0-c_-3laq3cl5.js
-│  │     │  │     │     │  ├─ 016k~ybb.84~w.js
-│  │     │  │     │     │  ├─ 01i242yl83c~k.js
-│  │     │  │     │     │  ├─ 01uc6162r6aj6.js
-│  │     │  │     │     │  ├─ 01xlw8hd842-c.js
-│  │     │  │     │     │  ├─ 03~yq9q893hmn.js
-│  │     │  │     │     │  ├─ 046rvr-oeieif.js
-│  │     │  │     │     │  ├─ 05qd2rvqbnz8d.js
-│  │     │  │     │     │  ├─ 05val3z~rvpj4.js
-│  │     │  │     │     │  ├─ 06ipk54nzi664.js
-│  │     │  │     │     │  ├─ 06w1wimc1.jfo.js
-│  │     │  │     │     │  ├─ 07sx0scplll_7.js
-│  │     │  │     │     │  ├─ 08~mdtbzo3wns.js
-│  │     │  │     │     │  ├─ 0902bi9bkje-1.js
-│  │     │  │     │     │  ├─ 09bqac6e2jhiy.js
-│  │     │  │     │     │  ├─ 0cmw9w587iv~i.js
-│  │     │  │     │     │  ├─ 0f.u8wpww7qab.js
-│  │     │  │     │     │  ├─ 0fp71cjlk~t90.js
-│  │     │  │     │     │  ├─ 0fz-t~uw0c4q8.js
-│  │     │  │     │     │  ├─ 0gc25m4qtfdxx.js
-│  │     │  │     │     │  ├─ 0ih0v6h1u3ymi.js
-│  │     │  │     │     │  ├─ 0k59br~m50d4g.js
-│  │     │  │     │     │  ├─ 0kn_ont25nuis.js
-│  │     │  │     │     │  ├─ 0l~~cbyo9kdly.js
-│  │     │  │     │     │  ├─ 0n03fosr2ijrt.js
-│  │     │  │     │     │  ├─ 0nupl1c.~ssj6.js
-│  │     │  │     │     │  ├─ 0ol09p-c0~xsj.css
-│  │     │  │     │     │  ├─ 0psf73p_ku73~.js
-│  │     │  │     │     │  ├─ 0q10hv4xk6q~u.js
-│  │     │  │     │     │  ├─ 0q70ygtwk5eb9.js
-│  │     │  │     │     │  ├─ 0qdo1v~zml6n6.js
-│  │     │  │     │     │  ├─ 0r0cmw1ts-j84.js
-│  │     │  │     │     │  ├─ 0s.ophy7w80zi.js
-│  │     │  │     │     │  ├─ 0wlzrw.xnrkit.js
-│  │     │  │     │     │  ├─ 0x7y4mx.j-bv1.js
-│  │     │  │     │     │  ├─ 0xu6s17xenoo6.js
-│  │     │  │     │     │  ├─ 0zfdp28mphqzu.js
-│  │     │  │     │     │  ├─ 0zx6.p148l3~0.js
-│  │     │  │     │     │  ├─ 0_bi6qbvxhzcg.js
-│  │     │  │     │     │  ├─ 0_gsex.87liau.js
-│  │     │  │     │     │  ├─ 0~aao3-txv_7w.js
-│  │     │  │     │     │  ├─ 10615h2r7_kt8.js
-│  │     │  │     │     │  ├─ 12im2.l9pd-1x.js
-│  │     │  │     │     │  ├─ 12kb.se6_2y61.js
-│  │     │  │     │     │  ├─ 16j1lqlqh8l-l.js
-│  │     │  │     │     │  ├─ 16m5pw12w83me.js
-│  │     │  │     │     │  ├─ 17nd0a0yu297j.js
-│  │     │  │     │     │  ├─ 181w0~w1md9c2.js
-│  │     │  │     │     │  ├─ 18azu9tm8hajt.js
-│  │     │  │     │     │  └─ turbopack-16150ps30fsvd.js
-│  │     │  │     │     └─ media
-│  │     │  │     │        ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
-│  │     │  │     │        ├─ a5b03b231ce290a0-s.079wdgm0e~ep~.woff2
-│  │     │  │     │        └─ d41831e24743a3c1-s.p.02r-fjhi~6g_a.woff2
+│  │     │  │     │  ├─ static
+│  │     │  │     │  │  ├─ chunks
+│  │     │  │     │  │  │  ├─ 0.zj6n206_qfu.css
+│  │     │  │     │  │  │  ├─ 00m-r6u57~izd.js
+│  │     │  │     │  │  │  ├─ 016k~ybb.84~w.js
+│  │     │  │     │  │  │  ├─ 01i242yl83c~k.js
+│  │     │  │     │  │  │  ├─ 01k~vy8fdd7lg.js
+│  │     │  │     │  │  │  ├─ 01xlw8hd842-c.js
+│  │     │  │     │  │  │  ├─ 03~yq9q893hmn.js
+│  │     │  │     │  │  │  ├─ 05j-746ymgxvm.js
+│  │     │  │     │  │  │  ├─ 05qd2rvqbnz8d.js
+│  │     │  │     │  │  │  ├─ 07sx0scplll_7.js
+│  │     │  │     │  │  │  ├─ 08~mdtbzo3wns.js
+│  │     │  │     │  │  │  ├─ 09bqac6e2jhiy.js
+│  │     │  │     │  │  │  ├─ 0dg63.c-4bv3s.js
+│  │     │  │     │  │  │  ├─ 0esoo90ldlcmk.js
+│  │     │  │     │  │  │  ├─ 0evxtkfh-rwmg.js
+│  │     │  │     │  │  │  ├─ 0fp71cjlk~t90.js
+│  │     │  │     │  │  │  ├─ 0fz-t~uw0c4q8.js
+│  │     │  │     │  │  │  ├─ 0gc25m4qtfdxx.js
+│  │     │  │     │  │  │  ├─ 0ih0v6h1u3ymi.js
+│  │     │  │     │  │  │  ├─ 0mepirhc24m~1.js
+│  │     │  │     │  │  │  ├─ 0mu.pjnfomrxa.js
+│  │     │  │     │  │  │  ├─ 0o9u.qrg1vd_g.js
+│  │     │  │     │  │  │  ├─ 0p372837q_qeh.js
+│  │     │  │     │  │  │  ├─ 0psf73p_ku73~.js
+│  │     │  │     │  │  │  ├─ 0q10hv4xk6q~u.js
+│  │     │  │     │  │  │  ├─ 0q70ygtwk5eb9.js
+│  │     │  │     │  │  │  ├─ 0s.ophy7w80zi.js
+│  │     │  │     │  │  │  ├─ 0w43p8rd4584g.js
+│  │     │  │     │  │  │  ├─ 0wlzrw.xnrkit.js
+│  │     │  │     │  │  │  ├─ 0x7y4mx.j-bv1.js
+│  │     │  │     │  │  │  ├─ 0xtdy28zf5xvk.js
+│  │     │  │     │  │  │  ├─ 0ywu79_vuy44n.js
+│  │     │  │     │  │  │  ├─ 0zfdp28mphqzu.js
+│  │     │  │     │  │  │  ├─ 0zx6.p148l3~0.js
+│  │     │  │     │  │  │  ├─ 0_bi6qbvxhzcg.js
+│  │     │  │     │  │  │  ├─ 0_gsex.87liau.js
+│  │     │  │     │  │  │  ├─ 0~dz6c_imi0a4.js
+│  │     │  │     │  │  │  ├─ 10615h2r7_kt8.js
+│  │     │  │     │  │  │  ├─ 11m0s8r.x4dwl.js
+│  │     │  │     │  │  │  ├─ 12f.2s~7qcbdp.js
+│  │     │  │     │  │  │  ├─ 12im2.l9pd-1x.js
+│  │     │  │     │  │  │  ├─ 12kb.se6_2y61.js
+│  │     │  │     │  │  │  ├─ 15wrmk62urrp_.js
+│  │     │  │     │  │  │  ├─ 16j1lqlqh8l-l.js
+│  │     │  │     │  │  │  ├─ 16m5pw12w83me.js
+│  │     │  │     │  │  │  ├─ 17nd0a0yu297j.js
+│  │     │  │     │  │  │  ├─ 18azu9tm8hajt.js
+│  │     │  │     │  │  │  └─ turbopack-16150ps30fsvd.js
+│  │     │  │     │  │  ├─ media
+│  │     │  │     │  │  │  ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
+│  │     │  │     │  │  │  ├─ a5b03b231ce290a0-s.079wdgm0e~ep~.woff2
+│  │     │  │     │  │  │  └─ d41831e24743a3c1-s.p.02r-fjhi~6g_a.woff2
+│  │     │  │     │  │  └─ Tk2YZ-T5MiVpPcaWw6zJ4
+│  │     │  │     │  │     ├─ _buildManifest.js
+│  │     │  │     │  │     ├─ _clientMiddlewareManifest.js
+│  │     │  │     │  │     └─ _ssgManifest.js
+│  │     │  │     │  └─ Tk2YZ-T5MiVpPcaWw6zJ4
 │  │     │  │     ├─ _not-found
 │  │     │  │     │  ├─ index.html
 │  │     │  │     │  ├─ index.txt
@@ -553,16 +513,9 @@ Project ZAWAJ AI
 │  │  └─ page.tsx
 │  ├─ onboarding
 │  │  └─ page.tsx
-│  ├─ packages
-│  │  ├─ history
-│  │  │  └─ page.tsx
-│  │  └─ page.tsx
 │  ├─ page.tsx
-│  ├─ payment
-│  │  ├─ fail
-│  │  │  └─ page.tsx
-│  │  └─ success
-│  │     └─ page.tsx
+│  ├─ points
+│  │  └─ page.tsx
 │  ├─ privacy
 │  │  ├─ page.tsx
 │  │  └─ PrivacyContent.tsx
@@ -635,10 +588,10 @@ Project ZAWAJ AI
 │  ├─ useAdMobReward.ts
 │  ├─ useAuthHandshake.ts
 │  ├─ useChat.ts
-│  ├─ useKonnectPayment.ts
 │  ├─ useMediators.ts
 │  ├─ useNativeAndroid.ts
-│  ├─ useNotifications.ts
+│  ├─ usePushNotifications.ts
+│  ├─ useSystemScale.ts
 │  ├─ useTheme.ts
 │  ├─ usetracker.ts
 │  └─ useWallet.ts
@@ -651,7 +604,6 @@ Project ZAWAJ AI
 │  ├─ services
 │  │  ├─ admob.ts
 │  │  ├─ EconomyService.ts
-│  │  ├─ liveUpdate.ts
 │  │  ├─ locationService.ts
 │  │  ├─ MatchingEngine.ts
 │  │  └─ pushService.ts
@@ -666,10 +618,9 @@ Project ZAWAJ AI
 ├─ public
 │  ├─ .well-known
 │  │  └─ assetlinks.json
-│  ├─ app-dist.zip
 │  ├─ assets
 │  ├─ Edge Functions _ ZAWAJ AI _ mohamed.jouini029@gmail.com's Org _ Supabase.mhtml
-│  ├─ favico.ico
+│  ├─ favicon.ico
 │  ├─ googleb7cdd508ae0d0bd9.html
 │  ├─ icons
 │  │  ├─ icon-192x192.png
@@ -682,17 +633,13 @@ Project ZAWAJ AI
 │  ├─ update-info.json
 │  └─ vercel.svg
 ├─ releases
-│  ├─ zawaj-ai-v0.2.59.aab
-│  └─ zawaj-ai-v0.2.59.apk
+│  ├─ zawaj-ai-v0.2.79.aab
+│  └─ zawaj-ai-v0.2.79.apk
 ├─ supabase
 │  ├─ .temp
 │  │  └─ cli-latest
 │  ├─ config.toml
 │  └─ functions
-│     ├─ konnect-initiate
-│     │  └─ index.ts
-│     ├─ konnect-webhook
-│     │  └─ index.ts
 │     ├─ moderate
 │     │  └─ index.ts
 │     ├─ send-push
@@ -706,7 +653,6 @@ Project ZAWAJ AI
 ├─ sync-version.js
 ├─ tailwind.config.ts
 ├─ tsconfig.json
-├─ vercel.json
-└─ zip-build.js
+└─ vercel.json
 
 ```

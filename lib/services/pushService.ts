@@ -1,41 +1,104 @@
 import { PushNotifications } from '@capacitor/push-notifications';
-import { supabase } from '@/lib/supabase/client';
 
 export const PushService = {
-  // طلب الإذن وتسجيل الجهاز
-  async registerDevice(userId: string) {
-    let permStatus = await PushNotifications.checkPermissions();
+  // ========================================
+  // إنشاء Notification Channels
+  // ========================================
 
-    if (permStatus.receive === 'prompt') {
-      permStatus = await PushNotifications.requestPermissions();
+  async createChannels() {
+    try {
+      await PushNotifications.createChannel({
+        id: 'messages',
+        name: 'Messages',
+        description: 'رسائل المحادثات',
+        importance: 5,
+        visibility: 1,
+        sound: 'default',
+      });
+
+      await PushNotifications.createChannel({
+        id: 'likes',
+        name: 'Likes',
+        description: 'الإعجابات والتطابقات',
+        importance: 4,
+        visibility: 1,
+        sound: 'default',
+      });
+
+      console.log('[PushService] channels created');
+    } catch (e) {
+      console.error('[PushService] createChannels error:', e);
     }
-
-    if (permStatus.receive !== 'granted') return;
-
-    await PushNotifications.register();
-
-    // الاستماع للتوكن وحفظه في السيرفر
-    PushNotifications.addListener('registration', async (token) => {
-
-      console.log('FCM TOKEN:', token.value);
-
-      await supabase.from('fcm_tokens').upsert({ 
-        user_id: userId, 
-        token: token.value,
-        device_type: 'android'
-      }, { onConflict: 'user_id, token' });
-
-    });
   },
 
-  // الاستماع للفعل عند الضغط على الإشعار
-  async listenToActions(router: any) {
-    PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-      const data = notification.notification.data;
-      // إذا كان النوع إعجاب أو رسالة، نوجهه لتبويب الإشعارات (Index 2) كما في ملف page.tsx الخاص بك
-      if (data.type === 'LIKE' || data.type === 'MESSAGE') {
-        // هنا سنمرر رقم التبويب لاحقاً
+  // ========================================
+  // استقبال الإشعارات أثناء فتح التطبيق
+  // ========================================
+
+  async listenForegroundNotifications() {
+    PushNotifications.addListener(
+      'pushNotificationReceived',
+      (notification) => {
+        console.log(
+          '[PushService] foreground notification:',
+          notification
+        );
       }
-    });
-  }
+    );
+  },
+
+  // ========================================
+  // التعامل مع الضغط على الإشعار
+  // ========================================
+
+  async listenNotificationActions(router: any) {
+    PushNotifications.addListener(
+      'pushNotificationActionPerformed',
+      (action) => {
+        try {
+          const data = action.notification.data;
+
+          console.log(
+            '[PushService] notification action:',
+            data
+          );
+
+          const type = data?.type;
+
+          // ====================================
+          // فتح المحادثة مباشرة
+          // ====================================
+
+          if (type === 'message') {
+            const chatId = data?.chatId;
+
+            if (chatId) {
+              router.push(`/messages/${chatId}`);
+              return;
+            }
+          }
+
+          // ====================================
+          // الإعجابات / التطابقات
+          // ====================================
+
+          if (type === 'like') {
+            router.push('/notifications');
+            return;
+          }
+
+          // ====================================
+          // fallback
+          // ====================================
+
+          router.push('/');
+        } catch (e) {
+          console.error(
+            '[PushService] action handler error:',
+            e
+          );
+        }
+      }
+    );
+  },
 };
