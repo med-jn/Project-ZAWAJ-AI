@@ -506,10 +506,16 @@ html, body {
   --nav-h-safe:    calc(var(--nav-h)    + var(--safe-bottom));
 }
 
-/* ✅ الـ body لا يختبئ تحت أي شريط نظام */
+/* ✅ html يغطي كامل الشاشة بلون التطبيق — يمنع الشريط الأبيض في أي وضع */
+html {
+  background-color: var(--bg-main) !important;
+}
+
+/* ✅ body يحترم safe area لكن خلفيته تطابق html دائماً */
 body {
-  padding-top:    var(--safe-top);
-  padding-bottom: var(--safe-bottom);
-  padding-left:   var(--safe-left);
-  padding-right:  var(--safe-right);
+  padding-top:      var(--safe-top);
+  padding-bottom:   var(--safe-bottom);
+  padding-left:     var(--safe-left);
+  padding-right:    var(--safe-right);
+  background-color: var(--bg-main) !important;
 }

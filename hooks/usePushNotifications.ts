@@ -7,32 +7,14 @@ import { supabase } from '@/lib/supabase/client';
 
 export function usePushNotifications(userId?: string) {
   useEffect(() => {
-    if (!userId) {
-      console.log('[FCM] no userId');
-      return;
-    }
+    if (!userId) return;
 
     if (Capacitor.getPlatform() !== 'android') {
-      console.log('[FCM] not android');
       return;
     }
 
     const init = async () => {
       try {
-        console.log('[FCM] init start');
-
-        // التأكد من وجود session
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (!session) {
-          console.log('[FCM] no session');
-          return;
-        }
-
-        console.log('[FCM] session ok:', session.user.id);
-
         let perm = await PushNotifications.checkPermissions();
 
         if (perm.receive === 'prompt') {
@@ -40,50 +22,55 @@ export function usePushNotifications(userId?: string) {
         }
 
         if (perm.receive !== 'granted') {
-          console.log('[FCM] permission denied');
           return;
         }
 
-        console.log('[FCM] permission granted');
+        await PushNotifications.register();
 
-        PushNotifications.addListener('registration', async (token) => {
-          try {
-            console.log('[FCM] token received:', token.value);
+        PushNotifications.removeAllListeners();
 
-            const { error } = await supabase
+        // حفظ التوكن
+        PushNotifications.addListener(
+          'registration',
+          async (token) => {
+            await supabase
               .from('fcm_tokens')
               .upsert(
                 {
-                  user_id: session.user.id,
+                  user_id: userId,
                   token: token.value,
                   device_type: 'android',
                   last_seen: new Date().toISOString(),
                 },
                 {
-                  onConflict: 'token',
+                  onConflict: 'user_id,token',
                 }
               );
-
-            if (error) {
-              console.error(
-                '[FCM] save error:',
-                JSON.stringify(error, null, 2)
-              );
-            } else {
-              console.log('[FCM] token saved');
-            }
-          } catch (e) {
-            console.error('[FCM] insert crash:', e);
           }
-        });
+        );
 
-        PushNotifications.addListener('registrationError', (err) => {
-          console.error('[FCM] registration error:', err);
-        });
+        // الضغط على الإشعار
+        PushNotifications.addListener(
+          'pushNotificationActionPerformed',
+          (notification) => {
+            try {
+              const data =
+                notification.notification.data;
 
-        await PushNotifications.register();
+              const conversationId =
+                data?.conversation_id;
+
+              if (conversationId) {
+                window.location.href =
+                  `/chat?id=${conversationId}`;
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          }
+        );
       } catch (err) {
-        console.error('[FCM] init failed:', err);
+        console.error(err);
       }
     };
 
