@@ -1,44 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- الثيم الأساسي -->
     <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="colorPrimary">#B3334B</item>
         <item name="colorPrimaryDark">#080008</item>
         <item name="colorAccent">#B3334B</item>
         <item name="android:windowBackground">@color/background</item>
 
-        <!-- ✅ شريط الحالة: شفاف — نتحكم به من JS عبر Capacitor -->
+        <!-- شريط الحالة العلوي — شفاف والمحتوى يمتد تحته -->
         <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentStatus">true</item>
 
-        <!-- ✅ شريط التنقل السفلي: لون التطبيق الداكن بدل transparent -->
-        <!-- transparent كان يسبب الشريط الأبيض لأن النظام يختار اللون -->
-        <item name="android:navigationBarColor">@color/background</item>
+        <!-- ✅ شريط التنقل السفلي — شفاف والمحتوى يمتد تحته تماماً -->
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentNavigation">true</item>
 
-        <item name="android:windowTranslucentStatus">false</item>
-        <item name="android:windowTranslucentNavigation">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-
-        <!-- ✅ يمنع التطبيق من تغيير حجمه عند ظهور الكيبورد -->
-        <item name="android:windowSoftInputMode">adjustResize</item>
     </style>
 
-    <!-- بدون ActionBar للصفحات العادية -->
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentNavigation">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowSoftInputMode">adjustResize</item>
     </style>
 
-    <!-- Splash Screen — يبقى داكناً دائماً -->
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 
 </resources>

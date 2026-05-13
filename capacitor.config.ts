@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appName: 'ZAWAJ AI',
   webDir:  'out',
 
-  // ✅ يمنع الشريط الأبيض السفلي — WebView يغطي كامل الشاشة
   android: {
     backgroundColor: '#080008',
   },
@@ -15,14 +14,14 @@ const config: CapacitorConfig = {
       presentationStyle: 'popover',
     },
 
-    // ✅ StatusBar: لا يتداخل مع المحتوى — نتحكم به برمجياً من useNativeAndroid
     StatusBar: {
-      overlaysWebView: false,
-      backgroundColor: '#080008',
+      // ✅ overlaysWebView: true — WebView يمتد خلف كلا الشريطَين
+      // المحتوى يتحكم في المساحة عبر safe-area-inset-* في CSS
+      overlaysWebView: true,
+      backgroundColor: '#00000000', // شفاف تماماً
       style:           'DARK',
     },
 
-    // ✅ PushNotifications: تشغيل الإشعارات تلقائياً عند الموافقة
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },

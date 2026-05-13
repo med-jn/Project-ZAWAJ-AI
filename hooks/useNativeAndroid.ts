@@ -27,7 +27,7 @@ async function applyBars() {
     const isLight = document.documentElement.classList.contains('light');
 
     // شريط الحالة العلوي
-    await StatusBar.setOverlaysWebView({ overlay: false });
+    await StatusBar.setOverlaysWebView({ overlay: true });
     await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
     await StatusBar.setBackgroundColor({ color: getBgColor() });
 
