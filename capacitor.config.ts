@@ -15,10 +15,9 @@ const config: CapacitorConfig = {
     },
 
     StatusBar: {
-      // ✅ overlaysWebView: true — WebView يمتد خلف كلا الشريطَين
-      // المحتوى يتحكم في المساحة عبر safe-area-inset-* في CSS
-      overlaysWebView: true,
-      backgroundColor: '#00000000', // شفاف تماماً
+      // ✅ false — شريط الحالة العلوي يحجز مساحته ولا يغطي المحتوى
+      overlaysWebView: false,
+      backgroundColor: '#080008',
       style:           'DARK',
     },
 

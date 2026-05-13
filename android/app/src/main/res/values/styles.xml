@@ -7,11 +7,11 @@
         <item name="colorAccent">#B3334B</item>
         <item name="android:windowBackground">@color/background</item>
 
-        <!-- شريط الحالة العلوي — شفاف والمحتوى يمتد تحته -->
+        <!-- شريط الحالة العلوي — يحجز مساحته ولا يتداخل مع المحتوى -->
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
 
-        <!-- ✅ شريط التنقل السفلي — شفاف والمحتوى يمتد تحته تماماً -->
+        <!-- ✅ شريط التنقل السفلي فقط — المحتوى يمتد تحته -->
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentNavigation">true</item>
 
@@ -23,7 +23,7 @@
         <item name="windowNoTitle">true</item>
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentStatus">false</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentNavigation">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
