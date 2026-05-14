@@ -153,7 +153,9 @@ export function MediatorCard({
                   style={{ background: 'rgba(37,211,102,0.12)', border: '1px solid rgba(37,211,102,0.25)',
                     color: '#25D166' }}
                   title="WhatsApp">
-                  <WhatsAppIcon size={14} />
+                  <span className="social-icon">
+                    <WhatsAppIcon size={14} />
+                  </span>
                 </motion.button>
               )}
               {mediator.tiktok && (
@@ -162,7 +164,9 @@ export function MediatorCard({
                   style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)',
                     color: 'var(--text-secondary)' }}
                   title="TikTok">
-                  <TikTokIcon size={14} />
+                  <span className="social-icon">
+                    <TikTokIcon size={14} />
+                  </span>
                 </motion.button>
               )}
             </div>

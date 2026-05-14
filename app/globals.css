@@ -519,3 +519,9 @@ body {
   padding-right:    var(--safe-right);
   background-color: var(--bg-main) !important;
 }
+
+.social-icon svg {
+  fill: currentColor !important;
+  stroke: none !important;
+  stroke-width: 0 !important;
+}
