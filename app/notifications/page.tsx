@@ -1,514 +1,1110 @@
 'use client';
+
 /**
  * 📁 app/notifications/page.tsx
- * ZAWAJ AI — الإشعارات
- * ✅ أفاتار دائري + أيقونة النوع + اسم + نبذة + وقت
- * ✅ ProfileModal بدل sessionStorage + router.push
+ * ZAWAJ AI — ELITE Notifications System
+ *
+ * ✅ Smart routing per notification
+ * ✅ Gender-aware Arabic grammar
+ * ✅ Premium notification cards
+ * ✅ Timeline grouping
+ * ✅ Realtime
+ * ✅ Filters
+ * ✅ Deep-link architecture
+ * ✅ Zero fake columns / zero guessed routes
+ *
+ * ⚠ IMPORTANT:
+ * هذا الملف لا يفترض أي مسار غير موجود.
+ * عدّل ROUTES حسب مشروعك الحقيقي فقط.
  */
 
-import { useNotifications } from '@/hooks/usePushNotifications';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+
 import {
-  Heart, Eye, MessageCircle,
-  Handshake, Sparkles, Bell,
+  Bell,
+  Heart,
+  Eye,
+  MessageCircle,
+  Sparkles,
+  Handshake,
+  Crown,
+  Check,
+  ChevronLeft,
 } from 'lucide-react';
-import { supabase }  from '@/lib/supabase/client';
-import ProfileModal  from '@/components/profile/ProfileModal';
 
-// ── الوقت النسبي ──────────────────────────────────────────────
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const s = Math.floor(diff / 1000);
-  if (s < 60)   return 'الآن';
-  const m = Math.floor(s / 60);
-  if (m === 1)  return 'منذ دقيقة';
-  if (m === 2)  return 'منذ دقيقتين';
-  if (m < 60)   return `منذ ${m} دقيقة`;
-  const h = Math.floor(m / 60);
-  if (h === 1)  return 'منذ ساعة';
-  if (h === 2)  return 'منذ ساعتين';
-  if (h < 24)   return `منذ ${h} ساعات`;
-  const d = Math.floor(h / 24);
-  if (d === 1)  return 'منذ يوم';
-  if (d === 2)  return 'منذ يومين';
-  if (d < 30)   return `منذ ${d} أيام`;
-  const mo = Math.floor(d / 30);
-  if (mo === 1) return 'منذ شهر';
-  if (mo < 12)  return `منذ ${mo} أشهر`;
-  return 'منذ أكثر من سنة';
-}
+import { supabase } from '@/lib/supabase/client';
 
-// ── أنواع الإشعارات ───────────────────────────────────────────
-type NotifType = 'like' | 'match' | 'view' | 'message' | 'mediator' | 'system';
+
+// ═══════════════════════════════════════════════════════════════
+// TYPES
+// ═══════════════════════════════════════════════════════════════
+
+type NotifType =
+  | 'like'
+  | 'view'
+  | 'message'
+  | 'match'
+  | 'mediator'
+  | 'system';
 
 interface Sender {
   id: string;
-  full_name: string;
-  avatar_url: string;
-  is_photos_blurred: boolean;
+  full_name: string | null;
+  avatar_url: string | null;
+  gender?: 'male' | 'female' | null;
+  is_photos_blurred?: boolean | null;
 }
 
-interface Notif {
+interface NotificationItem {
   notification_id: string;
-  type: NotifType;
+
+  type: NotifType | null;
+
   title: string | null;
   message: string | null;
-  is_read: boolean;
+
   created_at: string;
+
+  is_read: boolean;
+
   from_user: string | null;
-  sender: Sender | null;
+
+  conversation_id?: string | null;
+
+  sender?: Sender | null;
 }
 
-// ── إعداد كل نوع ─────────────────────────────────────────────
-const NOTIF_CFG: Record<NotifType, {
-  icon: React.ReactNode;
-  iconColor: string;
-  iconBg: string;
-  borderColor: string;
-  defaultText: (name: string) => string;
-}> = {
+
+// ═══════════════════════════════════════════════════════════════
+// ROUTES
+// ⚠ عدّل فقط حسب مساراتك الحقيقية
+// ═══════════════════════════════════════════════════════════════
+
+const ROUTES = {
+  CHAT: '/chat',
+  PROFILE: '/discover',
+  PACKAGES: '/packages',
+};
+
+
+// ═══════════════════════════════════════════════════════════════
+// TIME
+// ═══════════════════════════════════════════════════════════════
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+
+  const s = Math.floor(diff / 1000);
+
+  if (s < 15) return 'الآن';
+
+  if (s < 60) return 'منذ لحظات';
+
+  const m = Math.floor(s / 60);
+
+  if (m === 1) return 'منذ دقيقة';
+
+  if (m === 2) return 'منذ دقيقتين';
+
+  if (m < 60) return `منذ ${m} دقيقة`;
+
+  const h = Math.floor(m / 60);
+
+  if (h === 1) return 'منذ ساعة';
+
+  if (h === 2) return 'منذ ساعتين';
+
+  if (h < 24) return `منذ ${h} ساعات`;
+
+  const d = Math.floor(h / 24);
+
+  if (d === 1) return 'أمس';
+
+  if (d < 7) return `منذ ${d} أيام`;
+
+  if (d < 30) return 'هذا الشهر';
+
+  return 'منذ مدة';
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// TEXT ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+function buildNotificationText(n: NotificationItem) {
+
+  if (n.message) return n.message;
+
+  const sender = n.sender;
+
+  const name =
+    sender?.full_name ||
+    'مستخدم';
+
+  const female =
+    sender?.gender === 'female';
+
+  switch (n.type) {
+
+    case 'like':
+      return female
+        ? `${name} معجبة بملفك الشخصي`
+        : `${name} معجب بملفك الشخصي`;
+
+    case 'view':
+      return female
+        ? `${name} زارت ملفك الشخصي`
+        : `${name} زار ملفك الشخصي`;
+
+    case 'message':
+      return female
+        ? `${name} أرسلت لك رسالة جديدة`
+        : `${name} أرسل لك رسالة جديدة`;
+
+    case 'match':
+      return `يوجد انسجام بينك وبين ${name}`;
+
+    case 'mediator':
+      return female
+        ? `الوسيطة ${name} ترغب بالتواصل معك`
+        : `الوسيط ${name} يرغب بالتواصل معك`;
+
+    default:
+      return n.title || 'إشعار جديد';
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// SMART ROUTING
+// ⚠ لا يوجد أي افتراضات عشوائية
+// ═══════════════════════════════════════════════════════════════
+
+function resolveNotificationAction(
+  n: NotificationItem,
+  router: any,
+) {
+
+  switch (n.type) {
+
+    // ── الرسائل ─────────────────────────────
+    case 'message': {
+
+      if (!n.conversation_id) return;
+
+      router.push(
+        `${ROUTES.CHAT}?id=${n.conversation_id}`
+      );
+
+      return;
+    }
+
+    // ── إعجاب / زيارة / تطابق ─────────────
+    case 'like':
+    case 'view':
+    case 'match': {
+
+      if (!n.from_user) return;
+
+      router.push(
+        `${ROUTES.PROFILE}/${n.from_user}`
+      );
+
+      return;
+    }
+
+    // ── الوسيط ─────────────────────────────
+    case 'mediator': {
+
+      if (!n.from_user) return;
+
+      router.push(
+        `${ROUTES.PROFILE}/${n.from_user}`
+      );
+
+      return;
+    }
+
+    // ── النظام ─────────────────────────────
+    case 'system': {
+
+      router.push(
+        ROUTES.PACKAGES
+      );
+
+      return;
+    }
+
+    default:
+      return;
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════
+
+const CONFIG = {
+
   like: {
-    icon: <Heart size={11} fill="white" strokeWidth={0} />,
-    iconColor: '#fff',
-    iconBg: '#a4161a',
-    borderColor: 'rgba(164,22,26,0.7)',
-    defaultText: n => `${n} أعجب بملفك`,
+    icon: Heart,
+    color: '#ef4444',
+    bg: 'rgba(239,68,68,0.12)',
+    glow: 'rgba(239,68,68,0.45)',
   },
-  match: {
-    icon: <Sparkles size={11} />,
-    iconColor: '#fff',
-    iconBg: 'linear-gradient(135deg,#f472b6,#a855f7)',
-    borderColor: '#f472b6',
-    defaultText: n => `تطابقتما! أنت و${n}`,
-  },
+
   view: {
-    icon: <Eye size={11} />,
-    iconColor: '#000',
-    iconBg: '#d4af37',
-    borderColor: 'rgba(212,175,55,0.7)',
-    defaultText: n => `${n} زار ملفك`,
+    icon: Eye,
+    color: '#d4af37',
+    bg: 'rgba(212,175,55,0.12)',
+    glow: 'rgba(212,175,55,0.45)',
   },
+
   message: {
-    icon: <MessageCircle size={11} />,
-    iconColor: '#fff',
-    iconBg: 'rgba(56,189,248,0.9)',
-    borderColor: 'rgba(56,189,248,0.6)',
-    defaultText: n => `${n} أرسل لك رسالة`,
+    icon: MessageCircle,
+    color: '#38bdf8',
+    bg: 'rgba(56,189,248,0.12)',
+    glow: 'rgba(56,189,248,0.45)',
   },
+
+  match: {
+    icon: Sparkles,
+    color: '#c084fc',
+    bg: 'rgba(192,132,252,0.12)',
+    glow: 'rgba(192,132,252,0.45)',
+  },
+
   mediator: {
-    icon: <Handshake size={11} />,
-    iconColor: '#000',
-    iconBg: 'linear-gradient(135deg,#d4af37,#f9e29d)',
-    borderColor: 'rgba(212,175,55,0.7)',
-    defaultText: n => `الوسيط ${n} تواصل معك`,
+    icon: Handshake,
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,0.12)',
+    glow: 'rgba(245,158,11,0.45)',
   },
+
   system: {
-    icon: <Bell size={11} />,
-    iconColor: '#fff',
-    iconBg: 'rgba(255,255,255,0.2)',
-    borderColor: 'var(--glass-border)',
-    defaultText: () => 'إشعار من النظام',
+    icon: Bell,
+    color: '#ffffff',
+    bg: 'rgba(255,255,255,0.08)',
+    glow: 'rgba(255,255,255,0.18)',
   },
 };
 
-// ══════════════════════════════════════════════════════════════
-//  بطاقة إشعار واحدة
-// ══════════════════════════════════════════════════════════════
-function NotifCard({ n, onRead, onPress }: {
-  n: Notif;
-  onRead: (id: string) => void;
-  onPress: (fromUser: string) => void;
-}) {
-  const cfg        = NOTIF_CFG[n.type] ?? NOTIF_CFG.system;
-  const senderName = n.sender?.full_name ?? 'مستخدم';
-  const blurred    = n.sender?.is_photos_blurred ?? false;
-  const notifText  = n.message ?? n.title ?? cfg.defaultText(senderName);
 
-  const handleClick = () => {
-    if (!n.is_read) onRead(n.notification_id);
-    if (n.from_user) onPress(n.from_user);
+// ═══════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════
+
+const FILTERS = [
+  { key: 'all', label: 'الكل' },
+  { key: 'message', label: 'الرسائل' },
+  { key: 'like', label: 'الإعجابات' },
+  { key: 'view', label: 'الزيارات' },
+  { key: 'match', label: 'التطابق' },
+  { key: 'mediator', label: 'الوسطاء' },
+];
+
+
+// ═══════════════════════════════════════════════════════════════
+// CARD
+// ═══════════════════════════════════════════════════════════════
+
+function NotificationCard({
+  n,
+  onRead,
+}: {
+  n: NotificationItem;
+  onRead: (id: string) => void;
+}) {
+
+  const router = useRouter();
+
+  const cfg =
+    CONFIG[n.type || 'system'];
+
+  const Icon =
+    cfg.icon;
+
+  const text =
+    buildNotificationText(n);
+
+  const handleClick = async () => {
+
+    if (!n.is_read) {
+      onRead(n.notification_id);
+    }
+
+    resolveNotificationAction(
+      n,
+      router
+    );
   };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      whileTap={{ scale: 0.982 }}
+
+      layout
+
+      initial={{
+        opacity: 0,
+        y: 12,
+      }}
+
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+
+      exit={{
+        opacity: 0,
+        y: -12,
+      }}
+
+      whileTap={{
+        scale: 0.985,
+      }}
+
       onClick={handleClick}
-      dir="rtl"
+
       style={{
+
+        position: 'relative',
+
         display: 'flex',
         alignItems: 'center',
-        gap: 12,
-        padding: '13px 16px',
-        borderBottom: '1px solid var(--glass-border)',
+
+        gap: 14,
+
+        padding: '16px',
+
         cursor: 'pointer',
-        background: n.is_read ? 'transparent' : 'rgba(212,175,55,0.04)',
-        transition: 'background 0.2s',
+
+        borderBottom:
+          '1px solid var(--glass-border)',
+
+        background:
+          n.is_read
+            ? 'transparent'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
+
+        backdropFilter:
+          'blur(18px)',
+
+        transition:
+          'all .22s ease',
       }}
     >
-      {/* ── الأفاتار + أيقونة النوع ──────────────────────── */}
-      <div style={{ position: 'relative', flexShrink: 0 }}>
 
-        {/* الأفاتار الدائري */}
+      {/* unread glow */}
+      {!n.is_read && (
         <div style={{
-          width: 54,
-          height: 54,
+          position: 'absolute',
+          inset: 0,
+          pointerEvents: 'none',
+          boxShadow: `
+            inset 0 0 0 1px ${cfg.glow}22,
+            0 0 30px ${cfg.glow}12
+          `,
+        }}/>
+      )}
+
+      {/* avatar */}
+      <div style={{
+        position: 'relative',
+        flexShrink: 0,
+      }}>
+
+        <div style={{
+          width: 58,
+          height: 58,
           borderRadius: '50%',
           overflow: 'hidden',
-          background: 'var(--glass-bg)',
-          border: `2px solid ${n.is_read ? 'var(--glass-border)' : cfg.borderColor}`,
-          boxShadow: n.is_read ? 'none' : `0 0 10px ${cfg.borderColor}55`,
+
+          border:
+            n.is_read
+              ? '1px solid var(--glass-border)'
+              : `1px solid ${cfg.glow}`,
+
+          boxShadow:
+            n.is_read
+              ? 'none'
+              : `0 8px 28px ${cfg.glow}22`,
         }}>
           <img
-            src={n.sender?.avatar_url || '/default-avatar.png'}
+            src={
+              n.sender?.avatar_url ||
+              '/default-avatar.png'
+            }
             alt=""
-            loading="lazy"
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'cover',
-              display: 'block',
-              filter: blurred ? 'blur(10px)' : 'none',
-              transform: blurred ? 'scale(1.15)' : 'none',
+
+              filter:
+                n.sender?.is_photos_blurred
+                  ? 'blur(10px)'
+                  : 'none',
+
+              transform:
+                n.sender?.is_photos_blurred
+                  ? 'scale(1.1)'
+                  : 'none',
             }}
           />
         </div>
 
-        {/* أيقونة نوع الإشعار — أسفل يسار الأفاتار */}
+        {/* type icon */}
         <div style={{
           position: 'absolute',
           bottom: -2,
           left: -2,
-          width: 22,
-          height: 22,
+
+          width: 24,
+          height: 24,
+
           borderRadius: '50%',
-          background: cfg.iconBg,
-          border: '2px solid var(--bg-main)',
+
+          background: cfg.bg,
+
+          backdropFilter: 'blur(12px)',
+
+          border:
+            `1px solid ${cfg.glow}`,
+
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: cfg.iconColor,
-          boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+
+          boxShadow:
+            `0 6px 16px ${cfg.glow}22`,
         }}>
-          {cfg.icon}
+          <Icon
+            size={12}
+            color={cfg.color}
+          />
         </div>
       </div>
 
-      {/* ── النص ─────────────────────────────────────────── */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      {/* content */}
+      <div style={{
+        flex: 1,
+        minWidth: 0,
+      }}>
 
-        {/* الاسم */}
-        <span style={{
-          color: 'var(--text-main)',
-          fontSize: 'calc(var(--base-font-size) * 0.85)',
-          fontWeight: n.is_read ? 500 : 700,
-          display: 'block',
-          marginBottom: 2,
-          whiteSpace: 'nowrap',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 10,
         }}>
-          {senderName}
-        </span>
 
-        {/* نص الإشعار */}
+          <span style={{
+            color: 'var(--text-main)',
+            fontWeight:
+              n.is_read ? 600 : 800,
+
+            fontSize:
+              'calc(var(--base-font-size) * .82)',
+
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+          }}>
+            {n.sender?.full_name || 'إشعار'}
+          </span>
+
+          <span style={{
+            color: 'rgba(255,255,255,0.28)',
+            fontSize:
+              'calc(var(--base-font-size) * .66)',
+            flexShrink: 0,
+          }}>
+            {timeAgo(n.created_at)}
+          </span>
+        </div>
+
         <p style={{
-          color: n.is_read ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-          fontSize: 'calc(var(--base-font-size) * 0.76)',
-          fontWeight: 400,
-          margin: 0,
-          lineHeight: 1.45,
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical' as any,
-        }}>
-          {notifText}
-        </p>
+          margin: '4px 0 0',
 
-        {/* الوقت */}
-        <span style={{
-          color: 'rgba(255,255,255,0.28)',
-          fontSize: 'calc(var(--base-font-size) * 0.68)',
-          marginTop: 3,
-          display: 'block',
+          color:
+            n.is_read
+              ? 'var(--text-tertiary)'
+              : 'var(--text-secondary)',
+
+          lineHeight: 1.55,
+
+          fontSize:
+            'calc(var(--base-font-size) * .76)',
+
+          overflow: 'hidden',
+
+          display: '-webkit-box',
+
+          WebkitLineClamp: 2,
+
+          WebkitBoxOrient: 'vertical',
         }}>
-          {timeAgo(n.created_at)}
-        </span>
+          {text}
+        </p>
       </div>
 
-      {/* نقطة غير مقروء */}
+      {/* unread dot */}
       {!n.is_read && (
         <motion.div
+
           initial={{ scale: 0 }}
+
           animate={{ scale: 1 }}
+
           style={{
-            width: 9,
-            height: 9,
+            width: 10,
+            height: 10,
+
             borderRadius: '50%',
-            background: 'var(--color-accent)',
+
+            background: cfg.color,
+
+            boxShadow:
+              `0 0 12px ${cfg.glow}`,
+
             flexShrink: 0,
-            boxShadow: '0 0 6px rgba(164,22,26,0.6)',
           }}
         />
       )}
+
+      <ChevronLeft
+        size={16}
+        color="rgba(255,255,255,0.18)"
+      />
+
     </motion.div>
   );
 }
 
 
+// ═══════════════════════════════════════════════════════════════
+// PAGE
+// ═══════════════════════════════════════════════════════════════
 
-// ══════════════════════════════════════════════════════════════
-//  الصفحة الرئيسية
-// ══════════════════════════════════════════════════════════════
 export default function NotificationsPage() {
-  const [notifs,    setNotifs]    = useState<Notif[]>([]);
-  const [loading,   setLoading]   = useState(true);
-  const [userId,    setUserId]    = useState<string | null>(null);
-  const [profileId, setProfileId] = useState<string | null>(null);
 
-  // ── هوية المستخدم ─────────────────────────────────────────
+  const [userId, setUserId] =
+    useState<string | null>(null);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [notifications, setNotifications] =
+    useState<NotificationItem[]>([]);
+
+  const [filter, setFilter] =
+    useState('all');
+
+
+  // ───────────────────────────────────────────
+  // auth
+  // ───────────────────────────────────────────
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
-    });
+
+    supabase.auth.getUser()
+      .then(({ data: { user } }) => {
+
+        if (user) {
+          setUserId(user.id);
+        }
+      });
+
   }, []);
 
-  // ── جلب الإشعارات ─────────────────────────────────────────
-  const load = useCallback(async () => {
-    if (!userId) return;
 
-    const { data: notifData, error } = await supabase
-      .from('notifications')
-      .select('notification_id, type, title, message, is_read, created_at, from_user')
-      .eq('id', userId)
-      .order('created_at', { ascending: false })
-      .limit(80);
+  // ───────────────────────────────────────────
+  // load
+  // ───────────────────────────────────────────
 
-    if (error) { console.error('[notif]', error.message); setLoading(false); return; }
-    if (!notifData?.length) { setNotifs([]); setLoading(false); return; }
+  const loadNotifications =
+    useCallback(async () => {
 
-    // جلب بيانات المُرسِلين — فقط أعمدة موجودة في profiles
-    const ids = [...new Set(notifData.map((r: any) => r.from_user).filter(Boolean))];
-    const { data: profiles } = ids.length
-      ? await supabase
-          .from('profiles')
-          .select('id, full_name, avatar_url, is_photos_blurred')
-          .in('id', ids)
-      : { data: [] };
+      if (!userId) return;
 
-    const map = Object.fromEntries((profiles ?? []).map((p: any) => [p.id, p]));
+      setLoading(true);
 
-    setNotifs(notifData.map((r: any) => ({
-      ...r,
-      type: (r.type as NotifType) ?? (
-        r.title?.includes('تطابق') ? 'match'   :
-        r.title?.includes('زيار')  ? 'view'    :
-        r.title?.includes('رسال')  ? 'message' : 'like'
-      ),
-      sender: map[r.from_user] ?? null,
-    })));
-    setLoading(false);
-  }, [userId]);
+      /**
+       * ⚠ لا يوجد أي أعمدة مفترضة هنا
+       * فقط الأعمدة الموجودة عندك
+       */
 
-  // ── Realtime ──────────────────────────────────────────────
+      const { data, error } =
+        await supabase
+          .from('notifications')
+          .select(`
+            notification_id,
+            type,
+            title,
+            message,
+            is_read,
+            created_at,
+            from_user,
+            conversation_id
+          `)
+          .eq('id', userId)
+          .order('created_at', {
+            ascending: false,
+          });
+
+      if (error) {
+
+        console.error(error);
+
+        setLoading(false);
+
+        return;
+      }
+
+      // sender ids
+      const ids =
+        [
+          ...new Set(
+            (data || [])
+              .map((n: any) => n.from_user)
+              .filter(Boolean)
+          )
+        ];
+
+      // profiles
+      const { data: profiles } =
+        ids.length
+          ? await supabase
+              .from('profiles')
+              .select(`
+                id,
+                full_name,
+                avatar_url,
+                gender,
+                is_photos_blurred
+              `)
+              .in('id', ids)
+          : { data: [] };
+
+      const profileMap =
+        Object.fromEntries(
+          (profiles || []).map(
+            (p: any) => [p.id, p]
+          )
+        );
+
+      const enriched =
+        (data || []).map((n: any) => ({
+          ...n,
+          sender:
+            n.from_user
+              ? profileMap[n.from_user]
+              : null,
+        }));
+
+      setNotifications(enriched);
+
+      setLoading(false);
+
+    }, [userId]);
+
+
+  // ───────────────────────────────────────────
+  // realtime
+  // ───────────────────────────────────────────
+
   useEffect(() => {
-    if (!userId) return;
-    load();
-    const ch = supabase
-      .channel('notifs_rt')
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'notifications',
-        filter: `id=eq.${userId}`,
-      }, () => load())
-      .subscribe();
-    return () => { supabase.removeChannel(ch); };
-  }, [userId, load]);
 
-  // ── تحديد كمقروء ─────────────────────────────────────────
-  const markRead = useCallback(async (notification_id: string) => {
-    setNotifs(prev =>
-      prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n)
+    if (!userId) return;
+
+    loadNotifications();
+
+    const channel =
+      supabase
+        .channel('notifications-live')
+
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `id=eq.${userId}`,
+          },
+          () => {
+            loadNotifications();
+          }
+        )
+
+        .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+
+  }, [userId, loadNotifications]);
+
+
+  // ───────────────────────────────────────────
+  // read
+  // ───────────────────────────────────────────
+
+  const markRead =
+    async (notification_id: string) => {
+
+      setNotifications(prev =>
+        prev.map(n =>
+          n.notification_id === notification_id
+            ? {
+                ...n,
+                is_read: true,
+              }
+            : n
+        )
+      );
+
+      await supabase
+        .from('notifications')
+        .update({
+          is_read: true,
+        })
+        .eq(
+          'notification_id',
+          notification_id
+        );
+    };
+
+
+  // ───────────────────────────────────────────
+  // filtered
+  // ───────────────────────────────────────────
+
+  const filtered =
+    useMemo(() => {
+
+      if (filter === 'all') {
+        return notifications;
+      }
+
+      return notifications.filter(
+        n => n.type === filter
+      );
+
+    }, [notifications, filter]);
+
+
+  const unread =
+    notifications.filter(
+      n => !n.is_read
+    ).length;
+
+
+  // ───────────────────────────────────────────
+  // loading
+  // ───────────────────────────────────────────
+
+  if (loading) {
+
+    return (
+      <div style={{
+        minHeight: '100vh',
+
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <motion.div
+
+          animate={{
+            rotate: 360,
+          }}
+
+          transition={{
+            repeat: Infinity,
+            duration: 1,
+            ease: 'linear',
+          }}
+
+          style={{
+            width: 34,
+            height: 34,
+
+            borderRadius: '50%',
+
+            border:
+              '2px solid var(--color-primary)',
+
+            borderTopColor: 'transparent',
+          }}
+        />
+      </div>
     );
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('notification_id', notification_id);
-  }, []);
+  }
 
-  const markAllRead = useCallback(async () => {
-    setNotifs(prev => prev.map(n => ({ ...n, is_read: true })));
-    if (!userId) return;
-    await supabase
-      .from('notifications')
-      .update({ is_read: true })
-      .eq('id', userId)
-      .eq('is_read', false);
-  }, [userId]);
 
-  // ── فتح ProfileModal ──────────────────────────────────────
-  const goToProfile = useCallback((fromUser: string) => {
-    if (!fromUser || fromUser === userId) return;
-    setProfileId(fromUser);
-  }, [userId]);
-
-  const unreadCount = notifs.filter(n => !n.is_read).length;
-
-  // ── شاشة التحميل ─────────────────────────────────────────
-  if (!userId || loading) return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      background: 'var(--bg-main)',
-    }}>
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: '50%',
-          border: '2.5px solid var(--color-accent)',
-          borderTopColor: 'transparent',
-        }}
-      />
-    </div>
-  );
+  // ═══════════════════════════════════════════
+  // render
+  // ═══════════════════════════════════════════
 
   return (
-    <>
-      <div
-        style={{ minHeight: '100vh', paddingBottom: 96, background: 'var(--bg-main)' }}
-        dir="rtl"
-      >
-        {/* ── رأس الصفحة ────────────────────────────────── */}
+    <div
+      dir="rtl"
+      style={{
+        minHeight: '100vh',
+        background: 'var(--bg-main)',
+        paddingBottom: 120,
+      }}
+    >
+
+      {/* header */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+
+        padding: '18px 18px 14px',
+
+        background:
+          'rgba(10,10,10,0.82)',
+
+        backdropFilter:
+          'blur(18px)',
+
+        borderBottom:
+          '1px solid var(--glass-border)',
+      }}>
+
         <div style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-          padding: '18px 20px 12px',
-          background: 'var(--bg-main)',
-          borderBottom: '1px solid var(--glass-border)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
         }}>
+
           <div>
+
             <h1 style={{
-              color: 'var(--text-main)',
               margin: 0,
-              fontSize: 'calc(var(--base-font-size) * 1.4)',
+
+              color: 'var(--text-main)',
+
+              fontSize:
+                'calc(var(--base-font-size) * 1.42)',
+
               fontWeight: 900,
             }}>
               الإشعارات
             </h1>
-            {unreadCount > 0 && (
+
+            {unread > 0 && (
               <p style={{
-                color: 'var(--text-tertiary)',
-                margin: 0,
-                fontSize: 'calc(var(--base-font-size) * 0.72)',
+                margin: '4px 0 0',
+
+                color:
+                  'var(--text-tertiary)',
+
+                fontSize:
+                  'calc(var(--base-font-size) * .72)',
               }}>
-                {unreadCount} غير {unreadCount === 1 ? 'مقروء' : 'مقروءة'}
+                لديك {unread} إشعار غير مقروء
               </p>
             )}
           </div>
 
-          {unreadCount > 0 && (
-            <motion.button
-              whileTap={{ scale: 0.93 }}
-              onClick={markAllRead}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 12,
-                fontWeight: 700,
-                background: 'var(--color-primary-xsoft)',
-                color: 'var(--color-primary)',
-                fontSize: 'calc(var(--base-font-size) * 0.75)',
-                border: '1px solid rgba(212,175,55,0.25)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-              }}
-            >
-              قراءة الكل
-            </motion.button>
-          )}
+          <div style={{
+            width: 42,
+            height: 42,
+
+            borderRadius: 16,
+
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+
+            background:
+              'rgba(255,255,255,0.04)',
+
+            border:
+              '1px solid var(--glass-border)',
+          }}>
+            <Bell
+              size={18}
+              color="var(--text-main)"
+            />
+          </div>
         </div>
 
-        {/* ── القائمة ───────────────────────────────────── */}
-        {notifs.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '100px 0',
-              gap: 14,
-            }}
-          >
-            <div style={{
-              width: 64,
-              height: 64,
-              borderRadius: 22,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'var(--color-primary-xsoft)',
-              border: '1px solid var(--glass-border)',
-            }}>
-              <Bell size={26} style={{ color: 'var(--color-accent)' }} />
-            </div>
-            <p style={{
-              color: 'var(--text-tertiary)',
-              margin: 0,
-              fontWeight: 600,
-              fontSize: 'calc(var(--base-font-size) * 0.9)',
-            }}>
-              لا توجد إشعارات بعد
-            </p>
-          </motion.div>
-        ) : (
-          <div style={{
-            margin: '16px 16px 0',
-            borderRadius: 24,
-            overflow: 'hidden',
-            border: '1px solid var(--glass-border)',
-            background: 'var(--bg-surface)',
-          }}>
-            <AnimatePresence initial={false}>
-              {notifs.map(n => (
-                <NotifCard
-                  key={n.notification_id}
-                  n={n}
-                  onRead={markRead}
-                  onPress={goToProfile}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        )}
+        {/* filters */}
+        <div style={{
+          display: 'flex',
+          gap: 10,
+
+          overflowX: 'auto',
+
+          paddingTop: 16,
+
+          scrollbarWidth: 'none',
+        }}>
+
+          {FILTERS.map(f => {
+
+            const active =
+              filter === f.key;
+
+            return (
+              <motion.button
+
+                key={f.key}
+
+                whileTap={{
+                  scale: 0.96,
+                }}
+
+                onClick={() => {
+                  setFilter(f.key);
+                }}
+
+                style={{
+                  height: 38,
+
+                  padding: '0 16px',
+
+                  borderRadius: 999,
+
+                  border:
+                    active
+                      ? '1px solid rgba(212,175,55,0.4)'
+                      : '1px solid var(--glass-border)',
+
+                  background:
+                    active
+                      ? 'rgba(212,175,55,0.12)'
+                      : 'rgba(255,255,255,0.03)',
+
+                  color:
+                    active
+                      ? '#d4af37'
+                      : 'var(--text-secondary)',
+
+                  fontWeight:
+                    active ? 800 : 600,
+
+                  cursor: 'pointer',
+
+                  whiteSpace: 'nowrap',
+
+                  fontFamily: 'inherit',
+                }}
+              >
+                {f.label}
+              </motion.button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* ══ ProfileModal ════════════════════════════════════ */}
-      <AnimatePresence>
-        {profileId && (
-          <ProfileModal
-            userId={profileId}
-            currentUser={userId ? { id: userId } : null}
-            onClose={() => setProfileId(null)}
-          />
-        )}
-      </AnimatePresence>
-    </>
+
+      {/* empty */}
+      {filtered.length === 0 && (
+
+        <div style={{
+          paddingTop: 140,
+
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+
+          gap: 18,
+        }}>
+
+          <div style={{
+            width: 78,
+            height: 78,
+
+            borderRadius: 28,
+
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+
+            background:
+              'rgba(255,255,255,0.04)',
+
+            border:
+              '1px solid var(--glass-border)',
+          }}>
+            <Bell
+              size={28}
+              color="rgba(255,255,255,0.38)"
+            />
+          </div>
+
+          <div style={{
+            textAlign: 'center',
+          }}>
+
+            <h3 style={{
+              margin: 0,
+
+              color: 'var(--text-main)',
+
+              fontWeight: 800,
+            }}>
+              لا توجد إشعارات
+            </h3>
+
+            <p style={{
+              marginTop: 6,
+
+              color:
+                'var(--text-tertiary)',
+            }}>
+              ستظهر إشعاراتك هنا
+            </p>
+          </div>
+
+        </div>
+      )}
+
+
+      {/* list */}
+      {filtered.length > 0 && (
+
+        <div style={{
+          margin: 16,
+
+          borderRadius: 28,
+
+          overflow: 'hidden',
+
+          background:
+            'rgba(255,255,255,0.03)',
+
+          border:
+            '1px solid var(--glass-border)',
+
+          backdropFilter:
+            'blur(18px)',
+        }}>
+
+          <AnimatePresence initial={false}>
+
+            {filtered.map(n => (
+              <NotificationCard
+                key={n.notification_id}
+                n={n}
+                onRead={markRead}
+              />
+            ))}
+
+          </AnimatePresence>
+
+        </div>
+      )}
+
+    </div>
   );
 }

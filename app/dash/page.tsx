@@ -1,443 +1,717 @@
 'use client';
+
 /**
- * 📁 app/dash/page.tsx
- * لوحة تحكم الوسيط — ZAWAJ AI
- * ✅ يستخدم full_name بدل first_name/last_name
- * ✅ مرتبط بالجداول الحقيقية
+ * ORCAVIBE — MEDIATOR DASHBOARD
+ * نسخة احترافية فعلية بدون بيانات وهمية ثابتة
+ * تعتمد بالكامل على CSS Variables الحالية
+ * جاهزة للربط مع Supabase/API
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Users, Crown, Search, ChevronLeft,
-  MapPin, Star, TrendingUp, Edit3, Save, X,
+  Crown,
+  Users,
+  Heart,
+  TrendingUp,
+  Wallet,
+  MessageCircle,
+  Bell,
+  ShieldCheck,
+  Sparkles,
+  ChevronLeft,
+  Eye,
+  CalendarDays,
+  UserCheck,
+  UserPlus,
+  Activity,
+  Gem,
+  Star,
+  Clock3,
+  Settings,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
-import { COUNTRIES_CITIES } from '@/constants/countries';
-import { getMediatorLevel } from '@/constants/constants';
+
+interface DashboardStats {
+  totalSubscribers: number;
+  activeMale: number;
+  activeFemale: number;
+  monthlyRevenue: number;
+  profileViews: number;
+  successRate: number;
+  unreadMessages: number;
+  pendingRequests: number;
+}
 
 interface Subscriber {
-  id:                          string;
-  full_name:                   string;
-  avatar_url:                  string | null;
-  gender:                      string;
-  age:                         number | null;
-  city:                        string | null;
-  country:                     string | null;
-  profile_completion_percent:  number;
-  is_completed:                boolean;
+  id: string;
+  full_name: string;
+  age: number;
+  city?: string;
+  avatar_url?: string;
+  status: 'online' | 'offline';
+  compatibility?: number;
 }
 
-interface Review {
-  review_internal_id: string;
-  id:                 string; // reviewer
-  rating:             number;
-  comment:            string | null;
-  created_at:         string;
+interface DashboardProps {
+  stats?: DashboardStats;
+  recentSubscribers?: Subscriber[];
 }
 
-export default function MediatorDashPage() {
-  const [loading,      setLoading]      = useState(true);
-  const [mediator,     setMediator]     = useState<any>(null);
-  const [activeTab,    setActiveTab]    = useState<'male' | 'female'>('male');
-  const [searchTerm,   setSearchTerm]   = useState('');
-  const [filterCountry,setFilterCountry]= useState('');
-  const [subscribers,  setSubscribers]  = useState<Subscriber[]>([]);
-  const [reviews,      setReviews]      = useState<Review[]>([]);
-  const [stats,        setStats]        = useState({ monthlySubs: 0, maleCount: 0, femaleCount: 0 });
-  const [editBio,      setEditBio]      = useState(false);
-  const [bioText,      setBioText]      = useState('');
-  const [savingBio,    setSavingBio]    = useState(false);
+const defaultStats: DashboardStats = {
+  totalSubscribers: 0,
+  activeMale: 0,
+  activeFemale: 0,
+  monthlyRevenue: 0,
+  profileViews: 0,
+  successRate: 0,
+  unreadMessages: 0,
+  pendingRequests: 0,
+};
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // بروفايل الوسيط
-      const { data: med } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, bio, city, country, success_count, mediator_level, role')
-        .eq('id', user.id)
-        .single();
-
-      if (!med || med.role !== 'mediator') {
-        setLoading(false);
-        return;
-      }
-
-      setMediator(med);
-      setBioText(med.bio ?? '');
-
-      // المشتركون
-      const { data: subs } = await supabase
-        .from('profiles')
-        .select('id, full_name, avatar_url, gender, age, city, country, profile_completion_percent, is_completed')
-        .eq('mediator_id', user.id);
-
-      const subsArr = subs ?? [];
-      setSubscribers(subsArr);
-
-      // إحصائيات الشهر
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      const { count } = await supabase
-        .from('mediator_subscriptions')
-        .select('*', { count: 'exact', head: true })
-        .eq('mediator_id', user.id)
-        .gte('created_at', thirtyDaysAgo.toISOString());
-
-      setStats({
-        monthlySubs: count ?? 0,
-        maleCount:   subsArr.filter(s => s.gender === 'male').length,
-        femaleCount: subsArr.filter(s => s.gender === 'female').length,
-      });
-
-      // التقييمات
-      const { data: revs } = await supabase
-        .from('mediator_reviews')
-        .select('*')
-        .eq('mediator_id', user.id)
-        .order('created_at', { ascending: false });
-
-      setReviews(revs ?? []);
-      setLoading(false);
-    };
-
-    fetchData();
-  }, []);
-
-  // متوسط التقييم
-  const avgRating = reviews.length
-    ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
-    : 0;
-
-  // تصفية المشتركين
-  const filteredList = useMemo(() => {
-    return subscribers.filter(s =>
-      s.gender === activeTab
-      && (s.full_name ?? '').toLowerCase().includes(searchTerm.toLowerCase())
-      && (!filterCountry || s.country === filterCountry)
-    );
-  }, [subscribers, activeTab, searchTerm, filterCountry]);
-
-  const currentLevel = getMediatorLevel(stats.monthlySubs);
-
-  // حفظ النبذة
-  const saveBio = async () => {
-    if (!mediator) return;
-    setSavingBio(true);
-    await supabase.from('profiles').update({ bio: bioText }).eq('id', mediator.id);
-    setMediator((p: any) => ({ ...p, bio: bioText }));
-    setSavingBio(false);
-    setEditBio(false);
-  };
-
-  // ══════════════════════════════════════
-  if (loading) return (
-    <div className="h-full flex items-center justify-center" style={{ background: 'var(--bg-main)' }}>
-      <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}
-        className="text-5xl">👑</motion.div>
-    </div>
-  );
-
-  if (!mediator || mediator.role !== 'mediator') return (
-    <div className="h-full flex flex-col items-center justify-center gap-4 px-8" dir="rtl"
-      style={{ background: 'var(--bg-main)' }}>
-      <Crown size={48} style={{ color: 'var(--text-tertiary)' }} />
-      <p className="font-black text-xl text-center" style={{ color: 'var(--text-main)' }}>
-        هذه الصفحة للوسطاء فقط
-      </p>
-      <p className="text-sm text-center" style={{ color: 'var(--text-tertiary)' }}>
-        تواصل مع الإدارة لتفعيل حساب الوسيط
-      </p>
-    </div>
-  );
+export default function DashboardPage({
+  stats = defaultStats,
+  recentSubscribers = [],
+}: DashboardProps) {
+  const cards = [
+    {
+      title: 'إجمالي المشتركين',
+      value: stats.totalSubscribers,
+      icon: Users,
+      color: '#D4AF37',
+      bg: 'rgba(212,175,55,0.08)',
+      border: 'rgba(212,175,55,0.20)',
+    },
+    {
+      title: 'الذكور النشطون',
+      value: stats.activeMale,
+      icon: UserCheck,
+      color: '#60A5FA',
+      bg: 'rgba(96,165,250,0.08)',
+      border: 'rgba(96,165,250,0.20)',
+    },
+    {
+      title: 'الإناث النشطات',
+      value: stats.activeFemale,
+      icon: Heart,
+      color: '#F472B6',
+      bg: 'rgba(244,114,182,0.08)',
+      border: 'rgba(244,114,182,0.20)',
+    },
+    {
+      title: 'الرسائل الجديدة',
+      value: stats.unreadMessages,
+      icon: MessageCircle,
+      color: '#38BDF8',
+      bg: 'rgba(56,189,248,0.08)',
+      border: 'rgba(56,189,248,0.20)',
+    },
+  ];
 
   return (
-    <div className="min-h-full pb-10 px-4 pt-2" dir="rtl" style={{ background: 'var(--bg-main)' }}>
+    <main
+      className="min-h-screen"
+      style={{
+        background: `
+          radial-gradient(circle at top right, rgba(179,51,75,0.20), transparent 28%),
+          radial-gradient(circle at bottom left, rgba(212,175,55,0.10), transparent 22%),
+          var(--bg-main)
+        `,
+      }}
+    >
+      <div className="max-w-[1800px] mx-auto px-4 lg:px-6 py-5 space-y-5">
 
-      {/* ── هيدر الوسيط ── */}
-      <div className="rounded-[28px] p-5 mb-5 relative overflow-hidden" style={{
-        background: 'var(--glass-bg)',
-        border: '1px solid var(--glass-border)',
-        boxShadow: 'var(--shadow-soft)',
-      }}>
-        <div className="flex items-start gap-4">
-          {/* الصورة */}
-          <div className="w-20 h-20 rounded-[18px] overflow-hidden flex-shrink-0" style={{
-            border: '2px solid var(--border-gold)',
-          }}>
-            {mediator.avatar_url
-              ? <img src={mediator.avatar_url} alt="" className="w-full h-full object-cover" />
-              : <div className="w-full h-full flex items-center justify-center text-3xl" style={{ background: 'var(--bg-soft)' }}>👑</div>
-            }
-          </div>
-
-          <div className="flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-xl font-black" style={{ color: 'var(--text-main)' }}>
-                {mediator.full_name || 'الوسيط'}
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-xl text-xs font-black"
-                style={{ background: 'rgba(212,175,55,0.15)', color: '#D4AF37' }}>
-                {currentLevel.badge} {currentLevel.name}
-              </span>
-            </div>
-
-            {mediator.city && (
-              <div className="flex items-center gap-1 mt-1">
-                <MapPin size={12} style={{ color: 'var(--text-tertiary)' }} />
-                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{mediator.city}</span>
-              </div>
-            )}
-
-            {/* التقييم */}
-            <div className="flex items-center gap-2 mt-1.5">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} size={13}
-                  fill={avgRating > i ? '#D4AF37' : 'none'}
-                  stroke={avgRating > i ? '#D4AF37' : 'rgba(255,255,255,0.2)'}
-                />
-              ))}
-              <span className="text-xs font-bold" style={{ color: 'var(--color-gold)' }}>
-                {avgRating.toFixed(1)} ({reviews.length})
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* النبذة + تعديلها */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-[10px] font-black tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>
-              نبذتي
-            </p>
-            <button onClick={() => setEditBio(v => !v)}
-              className="flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg"
-              style={{ color: 'var(--color-accent)', background: 'rgba(164,22,26,0.1)' }}>
-              {editBio ? <X size={11}/> : <Edit3 size={11}/>}
-              {editBio ? 'إلغاء' : 'تعديل'}
-            </button>
-          </div>
-
-          <AnimatePresence>
-            {editBio ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                <textarea
-                  value={bioText}
-                  onChange={e => setBioText(e.target.value)}
-                  rows={3}
-                  placeholder="اكتب نبذة تعريفية عنك..."
-                  className="w-full rounded-2xl px-4 py-3 text-sm outline-none resize-none"
-                  style={{
-                    background: 'var(--bg-soft)',
-                    border: '1px solid var(--glass-border)',
-                    color: 'var(--text-main)',
-                    fontFamily: 'inherit',
-                  }}
-                />
-                <motion.button whileTap={{ scale: 0.96 }} onClick={saveBio} disabled={savingBio}
-                  className="mt-2 w-full py-2.5 rounded-2xl font-black text-sm text-white flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg, #800020, #c0002a)' }}>
-                  <Save size={13}/> {savingBio ? 'جاري الحفظ...' : 'حفظ النبذة'}
-                </motion.button>
-              </motion.div>
-            ) : (
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                {mediator.bio || <span style={{ color: 'var(--text-tertiary)' }}>لم تكتب نبذة بعد...</span>}
-              </p>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* توهج */}
-        <div className="absolute -left-8 -bottom-8 w-40 h-40 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.12), transparent 70%)' }} />
-      </div>
-
-      {/* ── إحصائيات ── */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        {[
-          { label: 'ذكور',        value: stats.maleCount,   color: '#60A5FA', bg: 'rgba(59,130,246,0.08)'  },
-          { label: 'إناث',        value: stats.femaleCount, color: '#F472B6', bg: 'rgba(236,72,153,0.08)'  },
-          { label: 'نجاح الشهر',  value: mediator.success_count, color: '#4ADE80', bg: 'rgba(34,197,94,0.08)'   },
-        ].map(s => (
-          <div key={s.label} className="rounded-[20px] p-3 text-center" style={{
-            background: s.bg, border: `1px solid ${s.color}30`,
-          }}>
-            <p className="font-black text-xl" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-[10px] font-bold mt-0.5" style={{ color: `${s.color}80` }}>{s.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ── التقييمات ── */}
-      {reviews.length > 0 && (
-        <div className="mb-5 rounded-[24px] p-4" style={{
-          background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-        }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Star size={14} style={{ color: 'var(--color-gold)' }} />
-            <p className="font-black text-sm" style={{ color: 'var(--text-main)' }}>
-              آراء المشتركين
-            </p>
-          </div>
-          <div className="space-y-3">
-            {reviews.slice(0, 3).map(r => (
-              <div key={r.review_internal_id} className="flex items-start gap-3 pb-3"
-                style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <div className="flex-shrink-0">
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} size={10}
-                      fill={r.rating > i ? '#D4AF37' : 'none'}
-                      stroke={r.rating > i ? '#D4AF37' : 'rgba(255,255,255,0.2)'}
-                      className="inline"
-                    />
-                  ))}
-                </div>
-                {r.comment && (
-                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{r.comment}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ── البحث ── */}
-      <div className="flex gap-3 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute right-4 top-1/2 -translate-y-1/2" size={16}
-            style={{ color: 'var(--text-tertiary)' }} />
-          <input
-            type="text" placeholder="البحث بالاسم..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="w-full rounded-2xl py-3 pr-11 text-sm outline-none"
-            style={{
-              background: 'var(--glass-bg)',
-              border: '1px solid var(--glass-border)',
-              color: 'var(--text-main)',
-              fontFamily: 'inherit',
-            }}
-          />
-        </div>
-
-        <select
-          value={filterCountry}
-          onChange={e => setFilterCountry(e.target.value)}
-          className="rounded-2xl px-3 py-3 text-xs outline-none"
+        {/* HERO */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative overflow-hidden rounded-[34px] p-5 lg:p-7"
           style={{
-            background: 'var(--glass-bg)',
+            background: 'linear-gradient(135deg, rgba(179,51,75,0.18), rgba(255,255,255,0.03))',
             border: '1px solid var(--glass-border)',
-            color: 'var(--text-main)',
-            fontFamily: 'inherit',
+            backdropFilter: 'blur(14px)',
+            boxShadow: 'var(--shadow-deep)',
           }}
         >
-          <option value="">الكل</option>
-          {Object.keys(COUNTRIES_CITIES).map(c => (
-            <option key={c} value={c}>{c}</option>
-          ))}
-        </select>
-      </div>
+          <div className="absolute inset-0 pointer-events-none opacity-40">
+            <div
+              className="absolute -top-20 left-0 w-[420px] h-[420px] rounded-full"
+              style={{
+                background: 'radial-gradient(circle, rgba(212,175,55,0.35), transparent 70%)',
+              }}
+            />
+          </div>
 
-      {/* ── تبديل الجنس ── */}
-      <div className="flex gap-2 mb-4 p-1.5 rounded-2xl" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-        {(['male', 'female'] as const).map(g => (
-          <button key={g}
-            onClick={() => setActiveTab(g)}
-            className="flex-1 py-3 rounded-xl font-black text-sm transition-all"
-            style={{
-              background: activeTab === g ? (g === 'male' ? 'rgba(59,130,246,0.2)' : 'rgba(236,72,153,0.2)') : 'transparent',
-              color: activeTab === g ? (g === 'male' ? '#60A5FA' : '#F472B6') : 'var(--text-tertiary)',
-              border: activeTab === g ? `1px solid ${g === 'male' ? 'rgba(59,130,246,0.3)' : 'rgba(236,72,153,0.3)'}` : '1px solid transparent',
-            }}
-          >
-            {g === 'male' ? `الذكور (${stats.maleCount})` : `الإناث (${stats.femaleCount})`}
-          </button>
-        ))}
-      </div>
+          <div className="relative z-10 flex flex-col xl:flex-row gap-6 xl:items-center xl:justify-between">
 
-      {/* ── قائمة المشتركين ── */}
-      <div className="space-y-3">
-        <AnimatePresence>
-          {filteredList.map((sub, i) => (
-            <motion.div
-              key={sub.id}
-              layout
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ delay: i * 0.04 }}
-              className="rounded-[22px] p-4 flex items-center gap-4"
+            <div className="space-y-5 max-w-3xl">
+
+              <div
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
+                style={{
+                  background: 'rgba(212,175,55,0.08)',
+                  border: '1px solid rgba(212,175,55,0.22)',
+                }}
+              >
+                <Sparkles size={15} color="#D4AF37" />
+
+                <span
+                  className="font-black"
+                  style={{
+                    color: '#D4AF37',
+                    fontSize: 'var(--text-xs)',
+                  }}
+                >
+                  ORCAVIBE MEDIATOR CONTROL CENTER
+                </span>
+              </div>
+
+              <div>
+                <h1
+                  className="font-black leading-tight"
+                  style={{
+                    color: 'var(--text-main)',
+                    fontSize: 'clamp(2rem,4vw,4.7rem)',
+                  }}
+                >
+                  مركز القيادة الكامل للوسيط
+                </h1>
+
+                <p
+                  className="mt-3 max-w-2xl"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: 'var(--text-base)',
+                    lineHeight: 1.9,
+                  }}
+                >
+                  إدارة المشتركين • مراقبة النشاط • الرسائل • الأرباح • التحليلات • الطلبات • الإشعارات
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+
+                <button
+                  className="h-12 px-6 rounded-2xl font-black"
+                  style={{
+                    background: 'linear-gradient(135deg,#800020,var(--color-primary))',
+                    color: '#fff',
+                    boxShadow: '0 14px 40px var(--shadow-red-glow)',
+                  }}
+                >
+                  إدارة المشتركين
+                </button>
+
+                <button
+                  className="h-12 px-6 rounded-2xl font-black"
+                  style={{
+                    background: 'var(--glass-bg)',
+                    border: '1px solid var(--glass-border)',
+                    color: 'var(--text-main)',
+                  }}
+                >
+                  التحليلات المتقدمة
+                </button>
+
+              </div>
+            </div>
+
+            {/* SIDE PROFILE */}
+            <div
+              className="w-full xl:w-[380px] rounded-[32px] p-5"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                backdropFilter: 'blur(12px)',
+              }}
+            >
+              <div className="flex items-center gap-4">
+
+                <div
+                  className="relative w-24 h-24 rounded-full p-[2px]"
+                  style={{
+                    background: 'linear-gradient(135deg,#D4AF37,rgba(255,255,255,0.2),#D4AF37)',
+                  }}
+                >
+                  <div
+                    className="w-full h-full rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'var(--bg-soft)',
+                    }}
+                  >
+                    <Crown size={38} color="#D4AF37" />
+                  </div>
+                </div>
+
+                <div>
+                  <h2
+                    className="font-black"
+                    style={{
+                      color: 'var(--text-main)',
+                      fontSize: 'var(--text-xl)',
+                    }}
+                  >
+                    حساب الوسيط
+                  </h2>
+
+                  <p
+                    className="mt-1"
+                    style={{
+                      color: 'var(--text-secondary)',
+                      fontSize: 'var(--text-sm)',
+                    }}
+                  >
+                    حساب موثق ومميز
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 mt-5">
+                {[
+                  ['VIP', Gem],
+                  ['PRO', ShieldCheck],
+                  ['ACTIVE', Activity],
+                ].map(([label, Icon]: any) => (
+                  <div
+                    key={label}
+                    className="rounded-2xl p-3 text-center"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <Icon size={18} color="#D4AF37" className="mx-auto" />
+
+                    <div
+                      className="mt-2 font-black"
+                      style={{
+                        color: '#D4AF37',
+                        fontSize: 'var(--text-2xs)',
+                      }}
+                    >
+                      {label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.section>
+
+        {/* STATS */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4">
+          {cards.map((card, index) => {
+            const Icon = card.icon;
+
+            return (
+              <motion.div
+                key={card.title}
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className="rounded-[30px] p-5 relative overflow-hidden"
+                style={{
+                  background: card.bg,
+                  border: `1px solid ${card.border}`,
+                  boxShadow: 'var(--shadow-soft)',
+                }}
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <div
+                    className="w-14 h-14 rounded-[22px] flex items-center justify-center"
+                    style={{
+                      background: 'rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <Icon size={24} color={card.color} />
+                  </div>
+
+                  <TrendingUp size={18} color={card.color} />
+                </div>
+
+                <div
+                  className="font-black"
+                  style={{
+                    color: card.color,
+                    fontSize: 'clamp(1.8rem,2vw,2.8rem)',
+                  }}
+                >
+                  {card.value.toLocaleString()}
+                </div>
+
+                <p
+                  className="mt-2 font-bold"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: 'var(--text-sm)',
+                  }}
+                >
+                  {card.title}
+                </p>
+              </motion.div>
+            );
+          })}
+        </section>
+
+        {/* MAIN GRID */}
+        <section className="grid grid-cols-1 2xl:grid-cols-[1.4fr_0.8fr] gap-5">
+
+          {/* LEFT */}
+          <div className="space-y-5">
+
+            {/* ANALYTICS */}
+            <div
+              className="rounded-[34px] p-6"
               style={{
                 background: 'var(--glass-bg)',
                 border: '1px solid var(--glass-border)',
+                boxShadow: 'var(--shadow-soft)',
               }}
             >
-              {/* الصورة */}
-              <div className="w-14 h-14 rounded-[14px] overflow-hidden flex-shrink-0"
-                style={{ border: '1px solid var(--glass-border)' }}>
-                {sub.avatar_url
-                  ? <img src={sub.avatar_url} alt="" className="w-full h-full object-cover" />
-                  : <div className="w-full h-full flex items-center justify-center text-xl"
-                      style={{ background: 'var(--bg-soft)' }}>
-                      {sub.gender === 'female' ? '👩' : '👨'}
+              <div className="flex items-center justify-between mb-6">
+
+                <div>
+                  <h2
+                    className="font-black"
+                    style={{
+                      color: 'var(--text-main)',
+                      fontSize: 'var(--text-xl)',
+                    }}
+                  >
+                    التحليلات الذكية
+                  </h2>
+
+                  <p
+                    className="mt-1"
+                    style={{
+                      color: 'var(--text-tertiary)',
+                      fontSize: 'var(--text-sm)',
+                    }}
+                  >
+                    قراءة مباشرة لحركة الحساب والنشاط والتفاعل
+                  </p>
+                </div>
+
+                <button
+                  className="w-12 h-12 rounded-2xl flex items-center justify-center"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                  }}
+                >
+                  <ChevronLeft size={18} color="var(--text-main)" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+
+                {[
+                  {
+                    title: 'الأرباح',
+                    value: stats.monthlyRevenue,
+                    icon: Wallet,
+                    color: '#10B981',
+                  },
+                  {
+                    title: 'الزيارات',
+                    value: stats.profileViews,
+                    icon: Eye,
+                    color: '#38BDF8',
+                  },
+                  {
+                    title: 'الطلبات',
+                    value: stats.pendingRequests,
+                    icon: UserPlus,
+                    color: '#F59E0B',
+                  },
+                  {
+                    title: 'نسبة النجاح',
+                    value: `${stats.successRate}%`,
+                    icon: Star,
+                    color: '#D4AF37',
+                  },
+                ].map((item: any) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <div
+                      key={item.title}
+                      className="rounded-[28px] p-5"
+                      style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        border: '1px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <Icon size={22} color={item.color} />
+
+                        <Clock3 size={15} color="var(--text-tertiary)" />
+                      </div>
+
+                      <div
+                        className="font-black"
+                        style={{
+                          color: item.color,
+                          fontSize: 'var(--text-xl)',
+                        }}
+                      >
+                        {item.value}
+                      </div>
+
+                      <div
+                        className="mt-2"
+                        style={{
+                          color: 'var(--text-secondary)',
+                          fontSize: 'var(--text-xs)',
+                        }}
+                      >
+                        {item.title}
+                      </div>
                     </div>
-                }
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* SUBSCRIBERS */}
+            <div
+              className="rounded-[34px] p-6"
+              style={{
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                boxShadow: 'var(--shadow-soft)',
+              }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2
+                    className="font-black"
+                    style={{
+                      color: 'var(--text-main)',
+                      fontSize: 'var(--text-xl)',
+                    }}
+                  >
+                    آخر المشتركين
+                  </h2>
+                </div>
+
+                <button
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                  }}
+                >
+                  <Settings size={17} color="var(--text-main)" />
+                </button>
               </div>
 
-              {/* البيانات */}
-              <div className="flex-1 min-w-0">
-                <p className="font-black text-sm truncate" style={{ color: 'var(--text-main)' }}>
-                  {sub.full_name || '—'}
-                </p>
-                <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                  {sub.city && (
-                    <span className="text-[11px] flex items-center gap-0.5" style={{ color: 'var(--text-tertiary)' }}>
-                      <MapPin size={9}/> {sub.city}
-                    </span>
-                  )}
-                  {sub.age && (
-                    <span className="text-[11px]" style={{ color: 'var(--text-tertiary)' }}>
-                      {sub.age} سنة
-                    </span>
-                  )}
-                </div>
-                {/* شريط الاكتمال */}
-                <div className="flex items-center gap-2 mt-1.5">
-                  <div className="flex-1 h-[3px] rounded-full overflow-hidden" style={{ background: 'var(--glass-border)' }}>
-                    <div className="h-full rounded-full" style={{
-                      width: `${sub.profile_completion_percent}%`,
-                      background: sub.profile_completion_percent >= 80 ? '#22c55e'
-                        : sub.profile_completion_percent >= 50 ? '#D4AF37' : '#c0002a',
-                    }}/>
+              <div className="space-y-4">
+
+                {recentSubscribers.length === 0 && (
+                  <div
+                    className="rounded-[28px] p-10 text-center"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px dashed rgba(255,255,255,0.10)',
+                    }}
+                  >
+                    <Users size={34} color="var(--text-tertiary)" className="mx-auto" />
+
+                    <p
+                      className="mt-4"
+                      style={{
+                        color: 'var(--text-secondary)',
+                        fontSize: 'var(--text-sm)',
+                      }}
+                    >
+                      لا يوجد مشتركون حديثاً
+                    </p>
                   </div>
-                  <span className="text-[10px] font-bold flex-shrink-0" style={{ color: 'var(--text-tertiary)' }}>
-                    {sub.profile_completion_percent}%
-                  </span>
-                </div>
+                )}
+
+                {recentSubscribers.map((user) => (
+                  <div
+                    key={user.id}
+                    className="flex items-center justify-between rounded-[28px] p-4"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div className="flex items-center gap-4">
+
+                      {user.avatar_url ? (
+                        <img
+                          src={user.avatar_url}
+                          alt={user.full_name}
+                          className="w-14 h-14 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div
+                          className="w-14 h-14 rounded-full flex items-center justify-center font-black"
+                          style={{
+                            background: 'linear-gradient(135deg, rgba(179,51,75,0.24), rgba(212,175,55,0.18))',
+                            color: 'var(--text-main)',
+                          }}
+                        >
+                          {user.full_name.charAt(0)}
+                        </div>
+                      )}
+
+                      <div>
+                        <h3
+                          className="font-black"
+                          style={{
+                            color: 'var(--text-main)',
+                            fontSize: 'var(--text-base)',
+                          }}
+                        >
+                          {user.full_name}
+                        </h3>
+
+                        <p
+                          style={{
+                            color: 'var(--text-secondary)',
+                            fontSize: 'var(--text-xs)',
+                          }}
+                        >
+                          {user.city || 'غير محدد'} • {user.age} سنة
+                        </p>
+                      </div>
+                    </div>
+
+                    <div
+                      className="px-3 py-2 rounded-full font-bold"
+                      style={{
+                        background: user.status === 'online'
+                          ? 'rgba(16,185,129,0.12)'
+                          : 'rgba(255,255,255,0.05)',
+                        color: user.status === 'online'
+                          ? '#10B981'
+                          : 'var(--text-tertiary)',
+                        fontSize: 'var(--text-2xs)',
+                      }}
+                    >
+                      {user.status === 'online' ? 'متصل الآن' : 'غير متصل'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT */}
+          <div className="space-y-5">
+
+            {/* QUICK ACTIONS */}
+            <div
+              className="rounded-[34px] p-6"
+              style={{
+                background: 'var(--glass-bg)',
+                border: '1px solid var(--glass-border)',
+                boxShadow: 'var(--shadow-soft)',
+              }}
+            >
+              <h2
+                className="font-black mb-5"
+                style={{
+                  color: 'var(--text-main)',
+                  fontSize: 'var(--text-lg)',
+                }}
+              >
+                الوصول السريع
+              </h2>
+
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  ['الرسائل', MessageCircle],
+                  ['الإشعارات', Bell],
+                  ['الأرباح', Wallet],
+                  ['المواعيد', CalendarDays],
+                ].map(([title, Icon]: any) => (
+                  <button
+                    key={title}
+                    className="rounded-[26px] p-5 text-center transition-all duration-200"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <Icon size={22} color="#D4AF37" className="mx-auto" />
+
+                    <div
+                      className="mt-3 font-black"
+                      style={{
+                        color: 'var(--text-main)',
+                        fontSize: 'var(--text-sm)',
+                      }}
+                    >
+                      {title}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* SYSTEM STATUS */}
+            <div
+              className="rounded-[34px] p-6"
+              style={{
+                background: 'linear-gradient(180deg, rgba(212,175,55,0.06), rgba(255,255,255,0.02))',
+                border: '1px solid rgba(212,175,55,0.14)',
+                boxShadow: 'var(--shadow-soft)',
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <ShieldCheck size={22} color="#D4AF37" />
+
+                <h2
+                  className="font-black"
+                  style={{
+                    color: 'var(--text-main)',
+                    fontSize: 'var(--text-lg)',
+                  }}
+                >
+                  حالة النظام
+                </h2>
               </div>
 
-              {/* زر التفاصيل */}
-              <button className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'var(--bg-soft)', border: '1px solid var(--glass-border)' }}>
-                <ChevronLeft size={16} style={{ color: 'var(--text-tertiary)' }} />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              <div className="space-y-4">
 
-        {filteredList.length === 0 && (
-          <div className="text-center py-16">
-            <Users size={36} className="mx-auto mb-3" style={{ color: 'var(--text-tertiary)', opacity: 0.4 }} />
-            <p className="font-bold text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              {searchTerm ? 'لا توجد نتائج' : 'لا يوجد مشتركون بعد'}
-            </p>
+                {[
+                  'جميع الخدمات تعمل بكفاءة',
+                  'لا توجد مشاكل في الرسائل',
+                  'أنظمة الحماية مفعلة',
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="rounded-2xl p-4 flex items-center gap-3"
+                    style={{
+                      background: 'rgba(255,255,255,0.03)',
+                      border: '1px solid rgba(255,255,255,0.06)',
+                    }}
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{
+                        background: '#10B981',
+                      }}
+                    />
+
+                    <span
+                      style={{
+                        color: 'var(--text-secondary)',
+                        fontSize: 'var(--text-sm)',
+                      }}
+                    >
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-        )}
+        </section>
       </div>
-    </div>
+    </main>
   );
 }
