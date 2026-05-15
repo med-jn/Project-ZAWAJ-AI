@@ -31,17 +31,7 @@ async function applyBars() {
     await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
     await StatusBar.setBackgroundColor({ color: getBgColor() });
 
-    // شريط التنقل السفلي — أسود دائماً مطابقاً للـ styles.xml
-    try {
-      // @ts-ignore — NavigationBar plugin اختياري
-      const { NavigationBar } = await import('@capacitor/navigation-bar');
-      await NavigationBar.setColor({
-        color:       '#080008',
-        darkButtons: false,
-      });
-    } catch {
-      // NavigationBar plugin غير مثبّت — نتجاهل
-    }
+    // NavigationBar — يُتحكم به من styles.xml مباشرة
   } catch {
     // بيئة غير Capacitor — نتجاهل
   }

@@ -13,7 +13,6 @@ import { useNativeAndroid } from '@/hooks/useNativeAndroid';
 import { useSystemScale } from '@/hooks/useSystemScale';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 
-import { PushService } from '@/lib/services/pushService';
 
 import { supabase } from '@/lib/supabase/client';
 
@@ -77,17 +76,6 @@ export default function ClientLayout({
     return () => subscription.unsubscribe();
   }, []);
 
-  // =========================================
-  // Push Notifications Setup
-  // =========================================
-
-  useEffect(() => {
-    PushService.createChannels();
-
-    PushService.listenForegroundNotifications();
-
-    PushService.listenNotificationActions(router);
-  }, [router]);
 
   // =========================================
   // Hooks
