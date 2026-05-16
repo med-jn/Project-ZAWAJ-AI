@@ -316,7 +316,7 @@ html.light {
   }
   html.light .bg-luxury-gradient {
     background: radial-gradient(ellipse at 50% 0%,
-      rgba(179, 51, 75, 1.0) 0%, var(--bg-main) 100%);
+      rgba(179,51,75,0.7) 50%, var(--bg-main) 100%);
   }
 
   .snap-container {
@@ -503,12 +503,12 @@ html, body {
 
   /* header و nav يأخذان الـ safe area بالحسبان */
   --header-h-safe: calc(var(--header-h) + var(--safe-top));
+  --nav-h-safe:    calc(var(--nav-h)    + var(--safe-bottom));
 }
 
 /* ✅ body يحترم safe area لكن خلفيته تطابق html دائماً */
 body {
   padding-top:      var(--safe-top);
-  padding-bottom:   var(--safe-bottom);
   padding-left:     var(--safe-left);
   padding-right:    var(--safe-right);
   background-color: var(--bg-main) !important;
