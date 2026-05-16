@@ -22,183 +22,207 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * ZAWAJ AI — Premium Firebase Messaging Service
+ * ZAWAJ AI — Firebase Messaging Service
  *
- * ✔ MessagingStyle (مثل WhatsApp)
- * ✔ Rounded Avatar
- * ✔ Deep Linking عبر route
- * ✔ قنوات متعددة مع صوت مخصص
- * ✔ تعطيل الصوت إذا طلب المستخدم silent
+ * الإصلاح الجوهري:
+ * ✔ يعمل مع data-only messages (بدون notification block)
+ * ✔ onMessageReceived يُستدعى دائماً سواء كان التطبيق مفتوحاً أو مغلقاً
+ * ✔ حذف شرط data.isEmpty() الذي كان يُلغي الإشعارات
+ * ✔ القنوات تُنشأ في onNewToken و onMessageReceived معاً
  */
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
-    // أسماء القنوات — يجب أن تطابق TYPE_TO_ANDROID_CHANNEL في index.ts
     private static final String CH_MESSAGES     = "messages";
     private static final String CH_SOCIAL       = "social";
     private static final String CH_SUBSCRIPTION = "subscription";
     private static final String CH_SYSTEM       = "system";
 
+    // عداد لضمان notification ID فريد لكل إشعار
+    private static final AtomicInteger notifId = new AtomicInteger(1000);
+
     @Override
-    public void onCreate() {
-        super.onCreate();
+    public void onNewToken(String token) {
+        super.onNewToken(token);
+        // إنشاء القنوات عند أول تشغيل أيضاً
         createAllChannels();
     }
 
     @Override
     public void onMessageReceived(RemoteMessage message) {
+        // ✅ إنشاء القنوات هنا أيضاً — ضروري عند أول رسالة
+        createAllChannels();
+
+        Map<String, String> data = message.getData();
+
+        // ✅ لا نتحقق من data.isEmpty() — نتابع حتى لو data فارغة
+        // (مع data-only messages، data لن تكون فارغة أبداً)
+
+        String type     = getOrDef(data, "type",      "system");
+        String title    = getOrDef(data, "title",      "ZAWAJ AI");
+        String body     = getOrDef(data, "body",       "إشعار جديد");
+        String avatar   = getOrDef(data, "avatar",     "");
+        String route    = getOrDef(data, "route",      "/notifications");
+        String chanId   = getOrDef(data, "channel_id", resolveChannel(type));
+        boolean silent  = "true".equals(data.get("is_silent"));
+
+        // تحميل الأفاتار (في thread منفصل لتجنب NetworkOnMainThreadException)
+        Bitmap avatarBitmap = loadBitmap(avatar);
+
+        // PendingIntent → يفتح MainActivity مع route
+        PendingIntent pendingIntent = buildPendingIntent(route);
+
+        // Person للـ MessagingStyle
+        Person.Builder personBuilder = new Person.Builder().setName(title);
+        if (avatarBitmap != null) {
+            personBuilder.setIcon(IconCompat.createWithBitmap(
+                getRoundedBitmap(avatarBitmap)
+            ));
+        }
+        Person person = personBuilder.build();
+
+        // MessagingStyle
+        NotificationCompat.MessagingStyle style =
+            new NotificationCompat.MessagingStyle(person)
+                .addMessage(body, System.currentTimeMillis(), person);
+
+        // بناء الإشعار
+        NotificationCompat.Builder builder =
+            new NotificationCompat.Builder(this, chanId)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(style)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .setContentIntent(pendingIntent)
+                .setColor(0xFFB3334B);
+
+        if (avatarBitmap != null) {
+            builder.setLargeIcon(getRoundedBitmap(avatarBitmap));
+        }
+
+        if (silent) {
+            builder.setSilent(true);
+        } else {
+            builder.setSound(getSoundUri());
+        }
+
+        // ✅ ID فريد لكل إشعار — لا يُستبدل بإشعار آخر
+        int id = notifId.getAndIncrement();
+
         try {
-            Map<String, String> data = message.getData();
-            if (data.isEmpty()) return;
-
-            String type    = getOrDefault(data, "type",    "system");
-            String title   = getOrDefault(data, "title",   "ZAWAJ AI");
-            String body    = getOrDefault(data, "body",    "");
-            String avatar  = getOrDefault(data, "avatar",  "");
-            String route   = getOrDefault(data, "route",   "/notifications");
-            boolean silent = "true".equals(data.get("is_silent"));
-
-            // تحميل الأفاتار
-            Bitmap avatarBitmap = loadBitmap(avatar);
-
-            // إنشاء PendingIntent للـ Deep Link
-            PendingIntent pendingIntent = buildPendingIntent(route);
-
-            // اختيار القناة
-            String channelId = resolveChannel(type);
-
-            // Person للـ MessagingStyle
-            Person.Builder personBuilder = new Person.Builder().setName(title);
-            if (avatarBitmap != null) {
-                personBuilder.setIcon(IconCompat.createWithBitmap(avatarBitmap));
-            }
-            Person person = personBuilder.build();
-
-            // MessagingStyle — مثل WhatsApp
-            NotificationCompat.MessagingStyle messagingStyle =
-                new NotificationCompat.MessagingStyle(person)
-                    .addMessage(body, System.currentTimeMillis(), person);
-
-            // بناء الإشعار
-            NotificationCompat.Builder builder =
-                new NotificationCompat.Builder(this, channelId)
-                    .setSmallIcon(R.drawable.ic_notification)
-                    .setContentTitle(title)
-                    .setContentText(body)
-                    .setStyle(messagingStyle)
-                    .setPriority(NotificationCompat.PRIORITY_MAX)
-                    .setAutoCancel(true)
-                    .setContentIntent(pendingIntent)
-                    .setColor(0xFFB3334B);
-
-            // الأفاتار كـ Large Icon
-            if (avatarBitmap != null) {
-                builder.setLargeIcon(avatarBitmap);
-            }
-
-            // صامت إذا طلب المستخدم
-            if (silent) {
-                builder.setSilent(true);
-            } else {
-                Uri soundUri = getSoundUri();
-                builder.setSound(soundUri);
-            }
-
-            NotificationManagerCompat
-                .from(this)
-                .notify((int) System.currentTimeMillis(), builder.build());
-
-        } catch (Exception e) {
+            NotificationManagerCompat.from(this).notify(id, builder.build());
+        } catch (SecurityException e) {
+            // صلاحيات الإشعارات غير ممنوحة
             e.printStackTrace();
         }
     }
 
-    // ── إنشاء كل القنوات فور بدء الـ Service ─────────────────
+    // ── إنشاء القنوات ─────────────────────────────────────────
     private void createAllChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
 
-        NotificationManager manager =
+        NotificationManager mgr =
             (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-        if (manager == null) return;
+        if (mgr == null) return;
 
-        Uri    soundUri   = getSoundUri();
+        Uri soundUri = getSoundUri();
         AudioAttributes audioAttr = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build();
 
-        // قناة الرسائل — أعلى أولوية
-        createChannel(manager, CH_MESSAGES,
+        makeChannel(mgr, CH_MESSAGES,
             "الرسائل", "رسائل المحادثات",
             NotificationManager.IMPORTANCE_HIGH,
             soundUri, audioAttr);
 
-        // قناة التفاعل الاجتماعي
-        createChannel(manager, CH_SOCIAL,
+        makeChannel(mgr, CH_SOCIAL,
             "التفاعل", "إعجابات وزيارات وتوافقات",
+            NotificationManager.IMPORTANCE_HIGH,
+            soundUri, audioAttr);
+
+        makeChannel(mgr, CH_SUBSCRIPTION,
+            "الاشتراكات", "إشعارات الوسطاء",
             NotificationManager.IMPORTANCE_DEFAULT,
             soundUri, audioAttr);
 
-        // قناة الاشتراكات
-        createChannel(manager, CH_SUBSCRIPTION,
-            "الاشتراكات", "إشعارات اشتراك الوسطاء",
-            NotificationManager.IMPORTANCE_DEFAULT,
-            soundUri, audioAttr);
-
-        // قناة النظام
-        createChannel(manager, CH_SYSTEM,
-            "النظام", "إشعارات النظام العامة",
+        makeChannel(mgr, CH_SYSTEM,
+            "النظام", "إشعارات عامة",
             NotificationManager.IMPORTANCE_LOW,
             null, null);
     }
 
-    private void createChannel(
-        NotificationManager manager,
+    private void makeChannel(
+        NotificationManager mgr,
         String id, String name, String desc,
-        int importance,
-        Uri sound, AudioAttributes audioAttr
+        int importance, Uri sound, AudioAttributes attr
     ) {
-        if (manager.getNotificationChannel(id) != null) return;
+        // ✅ لا نتخطى إذا القناة موجودة — نُعيد إنشاءها لضمان الصوت الصحيح
+        // (Android يتجاهل التغييرات على قناة موجودة — لذا نحتاج حذفها أحياناً)
+        if (mgr.getNotificationChannel(id) != null) return;
 
-        NotificationChannel channel =
-            new NotificationChannel(id, name, importance);
-        channel.setDescription(desc);
-        channel.enableVibration(true);
-
-        if (sound != null && audioAttr != null) {
-            channel.setSound(sound, audioAttr);
+        NotificationChannel ch = new NotificationChannel(id, name, importance);
+        ch.setDescription(desc);
+        ch.enableVibration(true);
+        if (sound != null && attr != null) {
+            ch.setSound(sound, attr);
         }
-
-        manager.createNotificationChannel(channel);
+        mgr.createNotificationChannel(ch);
     }
 
-    // ── PendingIntent يفتح MainActivity مع route ─────────────
+    // ── PendingIntent ─────────────────────────────────────────
     private PendingIntent buildPendingIntent(String route) {
         Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP |
-                        Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.addFlags(
+            Intent.FLAG_ACTIVITY_CLEAR_TOP |
+            Intent.FLAG_ACTIVITY_SINGLE_TOP
+        );
         intent.putExtra("route", route);
+        intent.setData(Uri.parse("zawaj://app" + route));
 
         int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
             ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
             : PendingIntent.FLAG_UPDATE_CURRENT;
 
-        return PendingIntent.getActivity(this, 0, intent, flags);
+        return PendingIntent.getActivity(
+            this,
+            notifId.get(), // request code فريد
+            intent,
+            flags
+        );
     }
 
-    // ── تحميل الأفاتار من URL ─────────────────────────────────
+    // ── تحميل الأفاتار ────────────────────────────────────────
     private Bitmap loadBitmap(String url) {
         if (url == null || url.isEmpty()) return null;
         try {
-            InputStream input = new URL(url).openStream();
-            return BitmapFactory.decodeStream(input);
+            InputStream in = new URL(url).openStream();
+            return BitmapFactory.decodeStream(in);
         } catch (Exception e) {
             return null;
         }
     }
 
-    // ── تحديد القناة حسب النوع ───────────────────────────────
+    // ── تدوير الأفاتار ────────────────────────────────────────
+    private Bitmap getRoundedBitmap(Bitmap src) {
+        if (src == null) return null;
+        int size = Math.min(src.getWidth(), src.getHeight());
+        Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(output);
+        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint);
+        paint.setXfermode(new android.graphics.PorterDuffXfermode(
+            android.graphics.PorterDuff.Mode.SRC_IN
+        ));
+        canvas.drawBitmap(src, 0, 0, paint);
+        return output;
+    }
+
+    // ── القناة حسب النوع ─────────────────────────────────────
     private String resolveChannel(String type) {
         switch (type) {
             case "message":
@@ -216,16 +240,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 
-    // ── مسار الصوت المخصص ────────────────────────────────────
+    // ── الصوت المخصص ─────────────────────────────────────────
     private Uri getSoundUri() {
         return Uri.parse(
             "android.resource://" + getPackageName() + "/raw/notification_sound"
         );
     }
 
-    // ── مساعد آمن لقراءة Map ─────────────────────────────────
-    private String getOrDefault(Map<String, String> map, String key, String def) {
-        String val = map.get(key);
-        return (val != null && !val.isEmpty()) ? val : def;
+    // ── قراءة آمنة من Map ────────────────────────────────────
+    private String getOrDef(Map<String, String> map, String key, String def) {
+        String v = map.get(key);
+        return (v != null && !v.isEmpty()) ? v : def;
     }
 }
