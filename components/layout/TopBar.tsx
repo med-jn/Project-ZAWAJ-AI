@@ -49,7 +49,7 @@ export default function TopBar() {
         className="fixed top-0 right-0 left-0 h-[var(--header-h)] z-[200] flex items-center justify-between px-4 flex-row-reverse"
         style={{ backdropFilter: 'blur(10px)', background: 'transparent' }}
       >
-            <div className="scale-[0.70] origin-left -mb-2"><Brand />
+            <div className="scale-[0.65] origin-left -mb-2"><Brand />
             </div>
 
 
