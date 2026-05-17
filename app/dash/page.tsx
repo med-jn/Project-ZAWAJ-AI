@@ -123,6 +123,33 @@ function PerksList({ perks, onChange }: { perks: string[]; onChange: (p: string[
   );
 }
 
+/* ── Coins Stepper (خطوة 500، بدون نص حدود) ─────────── */
+function CoinsStepper({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  return (
+    <div className="flex items-center gap-3 justify-center py-2">
+      <button onClick={() => onChange(Math.max(1000, value - 500))}
+        disabled={value <= 1000}
+        className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+        style={{ background:'var(--glass-bg)', border:'1px solid var(--glass-border)',
+          color: value <= 1000 ? 'var(--text-tertiary)' : 'var(--text-main)', fontSize:20 }}>
+        −
+      </button>
+      <span className="font-black" style={{ fontSize:'var(--text-xl)', color:'var(--text-main)',
+        minWidth:90, textAlign:'center', fontVariantNumeric:'tabular-nums' }}>
+        {value.toLocaleString('ar-TN')}
+      </span>
+      <button onClick={() => onChange(Math.min(10000, value + 500))}
+        disabled={value >= 10000}
+        className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+        style={{ background:'var(--glass-bg)', border:'1px solid var(--glass-border)',
+          color: value >= 10000 ? 'var(--text-tertiary)' : 'var(--text-main)', fontSize:20 }}>
+        +
+      </button>
+      <LoveCoin size={20} />
+    </div>
+  );
+}
+
 /* ── Main Page ────────────────────────────────────────── */
 export default function DashPage() {
   const router = useRouter();
@@ -252,7 +279,7 @@ export default function DashPage() {
       updated_at:    new Date().toISOString(),
     }, { onConflict: 'mediator_id' });
     setSavingPricing(false);
-    if (error) { toast.error('فشل الحفظ'); return; }
+    if (error) { console.error('[pricing save]', error); toast.error('فشل الحفظ: ' + error.message); return; }
     setPricing({ ...pForm });
     setEditPricing(false);
     toast.success('تم حفظ العروض بنجاح');
@@ -333,7 +360,9 @@ export default function DashPage() {
         {/* ══ LEVEL PROGRESS ══════════════════════════════ */}
         <div className="rounded-[24px] p-4"
           style={{ background:'var(--glass-bg)', border:'1px solid var(--glass-border)' }}>
-          <div className="flex items-center justify-between mb-3">
+
+          {/* عنوان + عداد */}
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2 icon-wrap">
               <Icon i={TrendingUp} size={14} color="#D4AF37" />
               <span className="font-black" style={{ fontSize:'var(--text-xs)', color:'var(--text-main)' }}>
@@ -341,36 +370,54 @@ export default function DashPage() {
               </span>
             </div>
             <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)' }}>
-              {total.toLocaleString('ar-TN')} اشتراك
+              {total.toLocaleString('ar-TN')} اشتراك كلي
             </span>
           </div>
 
+          {/* المستوى الحالي والتالي */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <LevelBadge subscribers={total} size="sm" />
+              <span className="font-black" style={{ fontSize:'var(--text-xs)', color:'var(--text-main)', direction:'ltr' }}>
+                {progress.currentLevel.label}
+              </span>
+            </div>
+            {progress.nextLevel ? (
+              <div className="flex items-center gap-2"
+                style={{ opacity:0.45 }}>
+                <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)', direction:'ltr' }}>
+                  {progress.nextLevel.label}
+                </span>
+                <LevelBadge subscribers={progress.nextLevel.minSubscribers} size="sm" />
+              </div>
+            ) : (
+              <span className="font-black" style={{ fontSize:'var(--text-2xs)', color:'#D4AF37' }}>
+                الحد الأقصى ✦
+              </span>
+            )}
+          </div>
+
           {/* Progress bar */}
-          <div className="relative h-3 rounded-full overflow-hidden mb-2"
+          <div className="relative h-2.5 rounded-full overflow-hidden mb-3"
             style={{ background:'var(--bg-soft)' }}>
             <motion.div
               initial={{ width:0 }}
-              animate={{ width:`${progress.progressPercentage}%` }}
-              transition={{ duration:1.2, ease:'easeOut', delay:0.3 }}
+              animate={{ width:`${Math.min(progress.progressPercentage, 100)}%` }}
+              transition={{ duration:1.4, ease:'easeOut', delay:0.2 }}
               className="absolute inset-y-0 right-0 rounded-full"
-              style={{ background:'linear-gradient(to left,var(--color-primary),#D4AF37)' }} />
+              style={{ background:'linear-gradient(to left,var(--color-primary),#D4AF37)',
+                boxShadow:'0 0 8px rgba(212,175,55,0.4)' }} />
           </div>
 
+          {/* إحصاء التقدم */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <LevelBadge subscribers={total} size="sm" />
-              <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)' }}>الحالي</span>
-            </div>
+            <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)', fontVariantNumeric:'tabular-nums' }}>
+              {progress.progressPercentage.toFixed(1)}٪ مكتمل
+            </span>
             {progress.nextLevel && (
-              <div className="flex items-center gap-1.5">
-                <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)' }}>
-                  {progress.subscribersNeeded} للمستوى التالي
-                </span>
-                <span className="font-bold" style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)',
-                  opacity:0.5, direction:'ltr' }}>
-                  Lv.{progress.nextLevel.levelNumber}
-                </span>
-              </div>
+              <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)' }}>
+                {progress.subscribersNeeded} اشتراك للمستوى التالي
+              </span>
             )}
           </div>
         </div>
@@ -508,26 +555,20 @@ export default function DashPage() {
               <motion.div key="view" initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
                 className="space-y-3">
                 {pricing && [
-                  { label:pricing.tier_1_label, coins:pricing.tier_1_coins, perks:pricing.tier_1_perks, popular:pricing.popular_tier===1, accent:'rgba(179,51,75,0.12)', border:'var(--border-soft)', color:'var(--color-primary)' },
-                  { label:pricing.tier_2_label, coins:pricing.tier_2_coins, perks:pricing.tier_2_perks, popular:pricing.popular_tier===2, accent:'rgba(212,175,55,0.10)', border:'var(--border-gold)', color:'#D4AF37' },
+                  { label:pricing.tier_1_label, coins:pricing.tier_1_coins, perks:pricing.tier_1_perks },
+                  { label:pricing.tier_2_label, coins:pricing.tier_2_coins, perks:pricing.tier_2_perks },
                 ].map((t, i) => (
-                  <div key={i} className="rounded-[20px] p-4 relative"
-                    style={{ background:t.accent, border:`1.5px solid ${t.border}` }}>
-                    {t.popular && (
-                      <span className="absolute top-3 left-3 px-2 py-0.5 rounded-full font-black"
-                        style={{ fontSize:'9px', background:'rgba(212,175,55,0.2)', color:'#D4AF37' }}>
-                        الأشهر
-                      </span>
-                    )}
+                  <div key={i} className="rounded-[20px] p-4"
+                    style={{ background:'var(--glass-bg)', border:'1px solid var(--glass-border)' }}>
                     <div className="flex items-center justify-between mb-2">
                       <span className="font-black" style={{ fontSize:'var(--text-sm)', color:'var(--text-main)' }}>{t.label}</span>
                       <span className="flex items-center gap-1.5 font-black"
-                        style={{ fontSize:'var(--text-base)', color:t.color }}>
+                        style={{ fontSize:'var(--text-base)', color:'var(--text-main)' }}>
                         {t.coins.toLocaleString('ar-TN')} <LoveCoin size={15} />
                       </span>
                     </div>
                     <div className="space-y-1">
-                      {t.perks.map((p, j) => (
+                      {(t.perks ?? []).map((p: string, j: number) => (
                         <div key={j} className="flex items-center gap-2 icon-wrap">
                           <Icon i={Check} size={11} color="#22c55e" strokeWidth={2.5} />
                           <span style={{ fontSize:'var(--text-2xs)', color:'var(--text-secondary)' }}>{p}</span>
@@ -575,24 +616,11 @@ export default function DashPage() {
 
                       {/* عدد العملات */}
                       <div>
-                        <label style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)', fontWeight:600, display:'block', marginBottom:6 }}>
-                          قيمة الاشتراك (1,000 – 10,000 عملة)
+                        <label style={{ fontSize:'var(--text-2xs)', color:'var(--text-tertiary)', fontWeight:600, display:'block', marginBottom:8 }}>
+                          قيمة الاشتراك
                         </label>
-                        <div className="flex items-center gap-3">
-                          <input type="number" value={coins} min={1000} max={10000} step={100}
-                            onChange={e => setPForm(f => f ? { ...f, [`${pre}_coins`]: Number(e.target.value) } : f)}
-                            style={{ flex:1, padding:'8px 12px', borderRadius:12, outline:'none', direction:'ltr',
-                              background:'var(--bg-soft)', border:'1px solid var(--glass-border)',
-                              color, fontSize:'var(--text-base)', fontWeight:900, fontFamily:'inherit' }} />
-                          <LoveCoin size={20} />
-                        </div>
-                        {(coins < 1000 || coins > 10000) && (
-                          <p className="flex items-center gap-1 mt-1 icon-wrap"
-                            style={{ fontSize:'var(--text-2xs)', color:'var(--color-primary)' }}>
-                            <Icon i={AlertCircle} size={11} color="var(--color-primary)" />
-                            خارج النطاق المسموح
-                          </p>
-                        )}
+                        <CoinsStepper value={coins}
+                          onChange={v => setPForm(f => f ? { ...f, [`${pre}_coins`]: v } : f)} />
                       </div>
 
                       {/* المميزات */}
