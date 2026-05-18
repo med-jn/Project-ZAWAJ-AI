@@ -1,18 +1,17 @@
 'use client';
 /**
- * 📁 app/profile/page.tsx — ZAWAJ AI
- * يقرأ userId من ?id=xxx — متوافق مع output: export
- * route من الإشعارات: /profile?id=USER_ID
+ * 📁 app/view/page.tsx — ZAWAJ AI
+ * صفحة عرض الملف الشخصي — Premium Edition
  */
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter }    from 'next/navigation';
 import { motion, AnimatePresence }       from 'framer-motion';
 import {
-  ArrowRight, MoreVertical, Heart, Flag, ShieldOff, Copy,
+  ArrowRight, Heart, Flag, ShieldOff,
   MapPin, Briefcase, GraduationCap, BookOpen, Baby, Home,
   Users, Activity, Flame, Moon, Star, Globe, Smile, Ruler,
-  HandHeart, ShieldCheck, Check, Share2,
+  HandHeart, ShieldCheck, Check, Share2, MoreVertical,
 } from 'lucide-react';
 import { supabase }     from '@/lib/supabase/client';
 import { AutoBadge }    from '@/components/auto-badge';
@@ -28,7 +27,7 @@ import ChatWindow from '@/components/chat/ChatWindow';
 function TelegramIcon({ size = 20 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.16 13.947l-2.965-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.993.612z"/>
+      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
     </svg>
   );
 }
@@ -36,84 +35,121 @@ function TelegramIcon({ size = 20 }: { size?: number }) {
 // ── حالة التواجد ──────────────────────────────────────────────
 function getOnlineStatus(lastActiveAt?: string, gender?: string) {
   const f = gender === 'female';
-  if (!lastActiveAt) return { text: f ? 'غير متصلة' : 'غير متصل', color: 'rgba(255,255,255,0.3)', dot: false };
+  if (!lastActiveAt) return { label: f ? 'غير متصلة' : 'غير متصل', online: false };
   const mins = Math.floor((Date.now() - new Date(lastActiveAt).getTime()) / 60000);
-  if (mins < 5)  return { text: f ? 'متواجدة الآن' : 'متواجد الآن', color: '#22c55e', dot: true };
-  if (mins < 60) return { text: `منذ ${mins} دقيقة`, color: 'rgba(255,255,255,0.5)', dot: false };
+  if (mins < 5)  return { label: f ? 'متواجدة الآن' : 'متواجد الآن', online: true };
+  if (mins < 60) return { label: `منذ ${mins} دقيقة`, online: false };
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return { text: `منذ ${hrs} ساعة`, color: 'rgba(255,255,255,0.4)', dot: false };
+  if (hrs < 24)  return { label: `منذ ${hrs} ساعة`, online: false };
   const days = Math.floor(hrs / 24);
-  if (days < 7)  return { text: `منذ ${days} أيام`, color: 'rgba(255,255,255,0.3)', dot: false };
-  return { text: f ? 'غير متصلة' : 'غير متصل', color: 'rgba(255,255,255,0.25)', dot: false };
+  if (days < 7)  return { label: `منذ ${days} أيام`, online: false };
+  return { label: f ? 'غير متصلة' : 'غير متصل', online: false };
 }
 
-function CompletionBar({ pct }: { pct: number }) {
-  const col = pct >= 80 ? '#22c55e' : pct >= 50 ? 'var(--color-gold)' : 'var(--color-accent)';
-  return (
-    <div className="mb-3 rounded-[22px] px-4 py-3.5" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-      <div className="flex justify-between items-center mb-2" dir="rtl">
-        <span style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.66)' }}>اكتمال الملف</span>
-        <span className="font-black" style={{ color: col, fontSize: 'calc(var(--base-font-size) * 0.75)' }}>{pct}%</span>
-      </div>
-      <div className="h-[5px] rounded-full overflow-hidden" style={{ background: 'var(--glass-border)' }}>
-        <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
-          transition={{ duration: 1.1, ease: [0.34, 1.56, 0.64, 1], delay: 0.3 }}
-          className="h-full rounded-full" style={{ background: `linear-gradient(90deg, ${col}80, ${col})` }} />
-      </div>
-    </div>
-  );
-}
-
-function Row({ icon, label, value }: { icon: React.ReactNode; label: string; value?: string | number | null }) {
+// ── صف معلومة ────────────────────────────────────────────────
+function Row({ icon, label, value }: {
+  icon: React.ReactNode; label: string; value?: string | number | null;
+}) {
   if (value === undefined || value === null || value === '') return null;
   return (
-    <div className="flex items-center gap-3 py-[9px] border-b last:border-0" dir="rtl" style={{ borderColor: 'var(--glass-border)' }}>
-      <span className="text-[14px] flex-shrink-0" style={{ color: 'var(--color-accent)', opacity: 0.75 }}>{icon}</span>
-      <span className="flex-shrink-0 font-medium" style={{ color: 'var(--text-tertiary)', minWidth: 100, fontSize: 'calc(var(--base-font-size) * 0.69)' }}>{label}</span>
-      <span className="font-bold flex-1 text-right leading-snug" style={{ color: 'var(--text-main)', fontSize: 'calc(var(--base-font-size) * 0.8)' }}>{value}</span>
+    <div className="flex items-center gap-3 py-[10px] border-b last:border-0" dir="rtl"
+      style={{ borderColor: 'var(--glass-border)' }}>
+      <span style={{ color: 'var(--color-accent)', opacity: 0.7, flexShrink: 0, display: 'flex' }}>{icon}</span>
+      <span style={{ color: 'var(--text-tertiary)', flexShrink: 0, minWidth: 96, fontSize: 'calc(var(--base-font-size) * 0.69)' }}>
+        {label}
+      </span>
+      <span style={{ color: 'var(--text-main)', fontWeight: 700, flex: 1, textAlign: 'right', fontSize: 'calc(var(--base-font-size) * 0.8)', lineHeight: 1.4 }}>
+        {value}
+      </span>
     </div>
   );
 }
 
-function Block({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  const kids = Array.isArray(children) ? (children as any[]).flat().filter(Boolean) : [children].filter(Boolean);
+// ── بلوك قسم ─────────────────────────────────────────────────
+function Block({ title, icon, children }: {
+  title: string; icon: React.ReactNode; children: React.ReactNode;
+}) {
+  const kids = Array.isArray(children)
+    ? (children as any[]).flat().filter(Boolean)
+    : [children].filter(Boolean);
   if (!kids.length) return null;
   return (
-    <div className="mb-3 rounded-[22px] overflow-hidden" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-soft)' }}>
-      <div className="flex items-center gap-2 px-4 pt-3 pb-2.5" style={{ borderBottom: '1px solid var(--glass-border)' }}>
-        <span className="text-[13px] flex-shrink-0" style={{ color: 'var(--color-accent)', opacity: 0.7 }}>{icon}</span>
-        <span className="font-black tracking-[0.2em] uppercase" style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.59)' }}>{title}</span>
+    <div className="mb-3 rounded-[20px] overflow-hidden" style={{
+      background: 'var(--glass-bg)',
+      border: '1px solid var(--glass-border)',
+    }}>
+      <div className="flex items-center gap-2 px-4 pt-3 pb-2" style={{ borderBottom: '1px solid var(--glass-border)' }}>
+        <span style={{ color: 'var(--color-accent)', opacity: 0.65, display: 'flex' }}>{icon}</span>
+        <span style={{ fontSize: 'calc(var(--base-font-size) * 0.58)', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>
+          {title}
+        </span>
       </div>
-      <div className="px-4 py-0.5">{kids}</div>
+      <div className="px-4 pb-1">{kids}</div>
     </div>
   );
 }
 
-function ActionBtn({ onClick, icon, color, bg, border, active, disabled, size = 54 }: {
-  onClick: () => void; icon: React.ReactNode; color: string; bg: string; border: string;
-  active?: boolean; disabled?: boolean; size?: number;
+// ── زر دائري موحّد ───────────────────────────────────────────
+const BTN = 52; // حجم واحد لكل الأزرار
+
+function CircleBtn({
+  onClick, icon, active, danger, disabled,
+  bgActive, colorActive, borderActive,
+}: {
+  onClick: () => void;
+  icon: React.ReactNode;
+  active?: boolean;
+  danger?: boolean;
+  disabled?: boolean;
+  bgActive?: string;
+  colorActive?: string;
+  borderActive?: string;
 }) {
   return (
-    <motion.button whileTap={{ scale: disabled ? 1 : 0.85 }} whileHover={{ scale: disabled ? 1 : 1.08 }}
-      onClick={onClick} disabled={disabled}
+    <motion.button
+      whileTap={{ scale: disabled ? 1 : 0.82 }}
+      onClick={onClick}
+      disabled={disabled}
       style={{
-        width: size, height: size, borderRadius: '50%',
+        width: BTN, height: BTN,
+        borderRadius: '50%',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: bg, border: `1.5px solid ${border}`,
-        cursor: disabled ? 'default' : 'pointer', color,
-        transition: 'all 0.2s ease',
-        boxShadow: active ? `0 0 20px ${color}66` : 'none',
         flexShrink: 0,
-      }}>
+        border: `1.5px solid ${active && borderActive ? borderActive : 'var(--glass-border)'}`,
+        background: active && bgActive ? bgActive : 'var(--glass-bg)',
+        color: active && colorActive ? colorActive : danger ? '#f87171' : 'rgba(255,255,255,0.55)',
+        cursor: disabled ? 'default' : 'pointer',
+        boxShadow: active ? `0 0 16px ${colorActive ?? 'transparent'}44` : 'none',
+        transition: 'all 0.22s ease',
+      }}
+    >
       {icon}
     </motion.button>
   );
 }
 
+// ── شريط الاكتمال ─────────────────────────────────────────────
+function CompletionBar({ pct }: { pct: number }) {
+  const col = pct >= 80 ? '#22c55e' : pct >= 50 ? 'var(--color-gold)' : 'var(--color-accent)';
+  return (
+    <div className="mb-3 rounded-[20px] px-4 py-3" style={{
+      background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+    }}>
+      <div className="flex justify-between items-center mb-2" dir="rtl">
+        <span style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.66)' }}>اكتمال الملف</span>
+        <span style={{ color: col, fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 0.75)' }}>{pct}%</span>
+      </div>
+      <div style={{ height: 5, borderRadius: 99, background: 'var(--glass-border)', overflow: 'hidden' }}>
+        <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+          transition={{ duration: 1.1, ease: [0.34, 1.56, 0.64, 1], delay: 0.3 }}
+          style={{ height: '100%', borderRadius: 99, background: `linear-gradient(90deg,${col}88,${col})` }} />
+      </div>
+    </div>
+  );
+}
+
 // ══════════════════════════════════════════════════════════════
-// المكوّن الداخلي — يستخدم useSearchParams
-// ══════════════════════════════════════════════════════════════
-function ProfileContent() {
+function ViewContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const userId       = searchParams.get('id') ?? '';
@@ -124,10 +160,9 @@ function ProfileContent() {
   const [liked,    setLiked]    = useState(false);
   const [liking,   setLiking]   = useState(false);
   const [loading,  setLoading]  = useState(true);
-  const [showMenu, setShowMenu] = useState(false);
+  const [menu,     setMenu]     = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [convId,   setConvId]   = useState<string | null>(null);
-  const [copied,   setCopied]   = useState(false);
   const [shared,   setShared]   = useState(false);
   const [blocked,  setBlocked]  = useState(false);
   const [reported, setReported] = useState(false);
@@ -139,20 +174,19 @@ function ProfileContent() {
 
   useEffect(() => {
     if (!userId) return;
-    const run = async () => {
+    (async () => {
       setLoading(true);
-      const [profileRes, walletRes] = await Promise.all([
+      const [pR, wR] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).single(),
         supabase.from('wallets').select('badge_type,badge_expires_at').eq('id', userId).maybeSingle(),
       ]);
-      if (profileRes.data) setProfile(profileRes.data);
-      if (walletRes.data?.badge_type && walletRes.data.badge_type !== 'none') {
-        const exp = walletRes.data.badge_expires_at;
-        if (!exp || new Date(exp) > new Date()) setBadge(walletRes.data.badge_type);
+      if (pR.data) setProfile(pR.data);
+      if (wR.data?.badge_type && wR.data.badge_type !== 'none') {
+        const exp = wR.data.badge_expires_at;
+        if (!exp || new Date(exp) > new Date()) setBadge(wR.data.badge_type);
       }
       setLoading(false);
-    };
-    run();
+    })();
   }, [userId]);
 
   useEffect(() => {
@@ -199,9 +233,10 @@ function ProfileContent() {
   };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/profile?id=${userId}`;
+    const url = `${window.location.origin}/view?id=${userId}`;
     if (navigator.share) {
-      try { await navigator.share({ title: profile?.full_name ?? 'ZAWAJ AI', text: 'شاهد هذا الملف على ZAWAJ AI', url }); } catch (_) {}
+      try { await navigator.share({ title: profile?.full_name ?? 'ZAWAJ AI', text: 'شاهد هذا الملف على ZAWAJ AI', url }); }
+      catch (_) { await navigator.clipboard.writeText(url); }
     } else {
       await navigator.clipboard.writeText(url);
     }
@@ -211,7 +246,7 @@ function ProfileContent() {
 
   const handleBlock = async () => {
     if (!me) return;
-    setShowMenu(false);
+    setMenu(false);
     await supabase.from('blocks').upsert(
       { blocker_id: me.id, blocked_id: userId },
       { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
@@ -222,38 +257,30 @@ function ProfileContent() {
 
   const handleReport = async () => {
     if (!me) return;
-    setShowMenu(false);
-    await supabase.from('reports').insert({ reporter_id: me.id, reported_id: userId, reason: 'بلاغ من صفحة الملف', status: 'pending' });
+    setMenu(false);
+    await supabase.from('reports').insert({
+      reporter_id: me.id, reported_id: userId,
+      reason: 'بلاغ من صفحة الملف', status: 'pending',
+    });
     setReported(true);
-    setTimeout(() => setReported(false), 2000);
+    setTimeout(() => setReported(false), 2500);
   };
 
-  const handleCopy = () => {
-    setShowMenu(false);
-    navigator.clipboard.writeText(`${window.location.origin}/profile?id=${userId}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  if (!userId) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: 'var(--bg-main)' }}>
-      <span style={{ color: 'var(--text-tertiary)' }}>معرّف المستخدم مفقود</span>
-    </div>
-  );
-
-  if (loading || !profile) return (
+  // ── Loading ──────────────────────────────────────────────────
+  if (!userId || loading || !profile) return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
-        style={{ width: 32, height: 32, borderRadius: '50%', border: '2.5px solid var(--color-accent)', borderTopColor: 'transparent' }} />
+      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
+        style={{ width: 30, height: 30, borderRadius: '50%', border: '2.5px solid var(--color-accent)', borderTopColor: 'transparent' }} />
     </div>
   );
 
+  // ── بيانات مشتقة ─────────────────────────────────────────────
   const isMale      = profile.gender === 'male';
   const gender      = isMale ? 'male' : 'female';
   const committed   = COMMITTED_LEVELS.includes(profile.religious_commitment ?? -1);
   const pct         = profile.profile_completion_percent ?? 0;
   const name        = profile.full_name ?? '—';
-  const status      = getOnlineStatus(profile.last_active_at, profile.gender);
+  const onlineStatus = getOnlineStatus(profile.last_active_at, profile.gender);
   const loc         = [profile.country, profile.city].filter(Boolean).join(' — ');
   const hw          = [profile.height ? `${profile.height} سم` : null, profile.weight ? `${profile.weight} كغ` : null].filter(Boolean).join(' · ') || null;
   const maritalLabel  = profile.marital_status       ? getMaritalLabel(profile.marital_status, gender) : null;
@@ -263,121 +290,201 @@ function ProfileContent() {
   const jobLabel      = profile.occupation_id        ? getSpecialtyLabel(profile.occupation_id, gender) : null;
   const nat           = profile.country ? getNationality(profile.country, gender) : (profile.nationality ?? null);
   const isOwn         = me?.id === userId;
-  const NAV           = 62;
 
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-        style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: isOwn ? 24 : NAV + 100 }}>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}
+        style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: isOwn ? 24 : 110 }}>
 
-        {/* TopBar */}
+        {/* ── Hero ────────────────────────────────────────────── */}
         <div style={{
-          position: 'sticky', top: 0, zIndex: 10,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '0 16px', height: 56,
-          background: 'var(--bg-main)', borderBottom: '1px solid var(--glass-border)',
-        }}>
-          <motion.button whileTap={{ scale: 0.85 }} onClick={() => router.back()}
-            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)' }}>
-            <ArrowRight size={18} />
-          </motion.button>
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          padding: '28px 20px 20px', gap: 10,
+        }} dir="rtl">
 
-          <span style={{ color: 'var(--text-main)', fontWeight: 700, fontSize: 'calc(var(--base-font-size) * 0.95)' }}>{name}</span>
-
-          <div style={{ position: 'relative' }}>
-            <motion.button whileTap={{ scale: 0.85 }} onClick={() => setShowMenu(v => !v)}
-              style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)', borderRadius: '50%', width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-tertiary)' }}>
-              <MoreVertical size={18} />
-            </motion.button>
-            <AnimatePresence>
-              {showMenu && (
-                <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowMenu(false)} />
-                  <motion.div initial={{ opacity: 0, scale: 0.88, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.88, y: -8 }} transition={{ duration: 0.15 }}
-                    style={{ position: 'absolute', top: 44, left: 0, zIndex: 20, background: 'var(--bg-elevated)', border: '1px solid var(--glass-border)', borderRadius: 18, overflow: 'hidden', width: 168, boxShadow: '0 10px 40px rgba(0,0,0,0.6)' }}>
-                    {[
-                      { label: reported ? 'تم الإبلاغ ✓' : 'إبلاغ',    icon: <Flag size={13}/>,     color: '#f87171', action: handleReport },
-                      { label: blocked  ? 'تم الحظر ✓'  : 'حظر',       icon: <ShieldOff size={13}/>, color: '#fb923c', action: handleBlock },
-                      { label: copied   ? 'تم النسخ ✓'  : 'نسخ الرابط', icon: <Copy size={13}/>,     color: 'var(--text-secondary)', action: handleCopy },
-                    ].map((item, i) => (
-                      <button key={i} onClick={item.action}
-                        style={{ width: '100%', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl', background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: i < 2 ? '1px solid var(--glass-border)' : 'none', color: item.color, fontFamily: 'inherit', fontSize: 'calc(var(--base-font-size) * 0.82)', fontWeight: 600 }}>
-                        {item.icon}{item.label}
-                      </button>
-                    ))}
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-          </div>
-        </div>
-
-        {/* Hero */}
-        <div style={{ padding: '28px 20px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }} dir="rtl">
-          <motion.div whileTap={{ scale: 0.96 }}
+          {/* الصورة مع نقطة الاتصال */}
+          <motion.div whileTap={{ scale: 0.95 }}
             onClick={() => !profile.is_photos_blurred && setLightbox(true)}
             style={{ position: 'relative', cursor: profile.is_photos_blurred ? 'default' : 'pointer' }}>
-            <img src={profile.avatar_url || '/default-avatar.png'} alt={name}
-              style={{ width: 100, height: 100, borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--glass-border)', filter: profile.is_photos_blurred ? 'blur(12px)' : 'none' }} />
-            {status.dot && (
-              <div style={{ position: 'absolute', bottom: 4, left: 4, width: 14, height: 14, borderRadius: '50%', background: '#22c55e', border: '2px solid var(--bg-main)' }} />
+
+            {/* حلقة خارجية خفيفة عند الاتصال */}
+            {onlineStatus.online && (
+              <motion.div
+                animate={{ scale: [1, 1.06, 1] }}
+                transition={{ repeat: Infinity, duration: 2.5, ease: 'easeInOut' }}
+                style={{
+                  position: 'absolute', inset: -4, borderRadius: '50%',
+                  border: '2px solid var(--color-primary)',
+                  opacity: 0.4,
+                }}
+              />
             )}
+
+            <img
+              src={profile.avatar_url || '/default-avatar.png'}
+              alt={name}
+              style={{
+                width: 104, height: 104, borderRadius: '50%', objectFit: 'cover',
+                border: '2.5px solid var(--glass-border)',
+                filter: profile.is_photos_blurred ? 'blur(14px)' : 'none',
+              }}
+            />
+
+            {/* نقطة الاتصال — لون primary */}
+            <div style={{
+              position: 'absolute', bottom: 4, right: 4,
+              width: 16, height: 16, borderRadius: '50%',
+              background: onlineStatus.online ? 'var(--color-primary)' : 'rgba(255,255,255,0.2)',
+              border: '2.5px solid var(--bg-main)',
+              boxShadow: onlineStatus.online ? '0 0 8px var(--color-primary)' : 'none',
+              transition: 'all 0.3s ease',
+            }} />
           </motion.div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.35)', textAlign: 'center' }}>{name}</span>
+          {/* الاسم + البادج */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 2 }}>
+            <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.3)', textAlign: 'center', letterSpacing: '-0.01em' }}>
+              {name}
+            </span>
             {badge && <AutoBadge value={badge as any} isBroker={false} size="text-[10px]" />}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {profile.age && <span style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.85)', fontWeight: 600 }}>{profile.age} سنة</span>}
-            {profile.city && <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.82)' }}><MapPin size={12} />{profile.city}</span>}
+          {/* العمر + المدينة */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {profile.age && (
+              <span style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.84)', fontWeight: 600 }}>
+                {profile.age} سنة
+              </span>
+            )}
+            {profile.city && (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 3, color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.8)' }}>
+                <MapPin size={11} /> {profile.city}
+              </span>
+            )}
           </div>
 
-          <span style={{ fontSize: 'calc(var(--base-font-size) * 0.75)', color: status.color, fontWeight: 500 }}>{status.text}</span>
+          {/* حالة الاتصال نص */}
+          <span style={{
+            fontSize: 'calc(var(--base-font-size) * 0.72)',
+            color: onlineStatus.online ? 'var(--color-primary)' : 'rgba(255,255,255,0.3)',
+            fontWeight: 500,
+          }}>
+            {onlineStatus.label}
+          </span>
 
-          {/* أزرار الأكشن الدائرية */}
+          {/* ── 4 أزرار دائرية متساوية ── */}
           {!isOwn && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              style={{ display: 'flex', gap: 24, marginTop: 10, alignItems: 'center' }}>
-              <ActionBtn onClick={handleLike} disabled={liking}
-                icon={<Heart size={21} fill={liked ? '#ef4444' : 'none'} strokeWidth={liked ? 0 : 1.8} />}
-                color={liked ? '#ef4444' : 'rgba(255,255,255,0.45)'}
-                bg={liked ? 'rgba(239,68,68,0.15)' : 'var(--glass-bg)'}
-                border={liked ? 'rgba(239,68,68,0.4)' : 'var(--glass-border)'} active={liked} />
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.18, type: 'spring', stiffness: 300, damping: 24 }}
+              style={{ display: 'flex', gap: 18, marginTop: 12, alignItems: 'center' }}>
 
-              <ActionBtn onClick={handleMessage}
-                icon={<TelegramIcon size={21} />}
-                color="#38bdf8" bg="rgba(56,189,248,0.12)" border="rgba(56,189,248,0.3)" />
+              {/* إعجاب */}
+              <CircleBtn
+                onClick={handleLike} disabled={liking}
+                active={liked}
+                bgActive="rgba(239,68,68,0.18)"
+                colorActive="#ef4444"
+                borderActive="rgba(239,68,68,0.45)"
+                icon={
+                  <Heart size={20}
+                    fill={liked ? '#ef4444' : 'none'}
+                    strokeWidth={liked ? 0 : 1.6}
+                    color={liked ? '#ef4444' : 'rgba(255,255,255,0.55)'}
+                  />
+                }
+              />
 
-              <ActionBtn onClick={handleShare}
-                icon={shared ? <Check size={21} /> : <Share2 size={21} />}
-                color={shared ? '#22c55e' : 'var(--color-primary)'}
-                bg={shared ? 'rgba(34,197,94,0.12)' : 'var(--glass-bg)'}
-                border={shared ? 'rgba(34,197,94,0.3)' : 'var(--glass-border)'} active={shared} />
+              {/* رسالة */}
+              <CircleBtn
+                onClick={handleMessage}
+                active={false}
+                bgActive="rgba(56,189,248,0.15)"
+                colorActive="#38bdf8"
+                borderActive="rgba(56,189,248,0.35)"
+                icon={<TelegramIcon size={20} />}
+              />
+
+              {/* مشاركة */}
+              <CircleBtn
+                onClick={handleShare}
+                active={shared}
+                bgActive="rgba(34,197,94,0.15)"
+                colorActive="#22c55e"
+                borderActive="rgba(34,197,94,0.35)"
+                icon={
+                  shared
+                    ? <Check size={20} color="#22c55e" strokeWidth={2.2} />
+                    : <Share2 size={19} color="rgba(255,255,255,0.55)" strokeWidth={1.6} />
+                }
+              />
+
+              {/* ثلاث نقاط — حظر/بلاغ */}
+              <div style={{ position: 'relative' }}>
+                <CircleBtn
+                  onClick={() => setMenu(v => !v)}
+                  active={menu}
+                  bgActive="var(--glass-bg)"
+                  colorActive="var(--text-main)"
+                  borderActive="var(--glass-border)"
+                  icon={<MoreVertical size={20} color="rgba(255,255,255,0.45)" strokeWidth={1.6} />}
+                />
+
+                <AnimatePresence>
+                  {menu && (
+                    <>
+                      <div style={{ position: 'fixed', inset: 0, zIndex: 100 }} onClick={() => setMenu(false)} />
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.88, y: 8 }}
+                        transition={{ duration: 0.16, type: 'spring', stiffness: 400, damping: 28 }}
+                        style={{
+                          position: 'absolute', bottom: BTN + 10, left: '50%',
+                          transform: 'translateX(-50%)',
+                          zIndex: 101,
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--glass-border)',
+                          borderRadius: 18, overflow: 'hidden', width: 160,
+                          boxShadow: '0 12px 40px rgba(0,0,0,0.65)',
+                        }}
+                      >
+                        <button onClick={handleReport}
+                          style={{ width: '100%', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl', background: 'transparent', border: 'none', borderBottom: '1px solid var(--glass-border)', cursor: 'pointer', color: reported ? '#4ade80' : '#f87171', fontFamily: 'inherit', fontSize: 'calc(var(--base-font-size) * 0.82)', fontWeight: 600 }}>
+                          <Flag size={13} /> {reported ? 'تم الإبلاغ ✓' : 'إبلاغ'}
+                        </button>
+                        <button onClick={handleBlock}
+                          style={{ width: '100%', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl', background: 'transparent', border: 'none', cursor: 'pointer', color: blocked ? '#4ade80' : '#fb923c', fontFamily: 'inherit', fontSize: 'calc(var(--base-font-size) * 0.82)', fontWeight: 600 }}>
+                          <ShieldOff size={13} /> {blocked ? 'تم الحظر ✓' : 'حظر'}
+                        </button>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             </motion.div>
           )}
         </div>
 
-        {/* المحتوى */}
-        <div style={{ padding: '16px 16px 0' }}>
+        {/* ── فاصل ────────────────────────────────────────────── */}
+        <div style={{ height: 1, background: 'var(--glass-border)', margin: '0 16px 16px' }} />
+
+        {/* ── المحتوى ──────────────────────────────────────────── */}
+        <div style={{ padding: '0 16px' }}>
+
           <Block title="البيانات الأساسية" icon={<Users size={13}/>}>
-            <Row icon={<Users size={13}/>}      label="الحالة المدنية"  value={maritalLabel} />
-            <Row icon={<Globe size={13}/>}       label="الجنسية"         value={nat} />
-            <Row icon={<MapPin size={13}/>}      label="الإقامة"         value={loc} />
-            <Row icon={<Ruler size={13}/>}       label="الطول / الوزن"   value={hw} />
-            <Row icon={<Smile size={13}/>}       label="لون البشرة"      value={profile.skin_color} />
-            <Row icon={<Globe size={13}/>}       label="الانتقال"        value={profile.travel_willingness} />
-            <Row icon={<HandHeart size={13}/>}   label="نوع الزواج"      value={profile.marriage_type} />
+            <Row icon={<Users size={13}/>}    label="الحالة المدنية"  value={maritalLabel} />
+            <Row icon={<Globe size={13}/>}     label="الجنسية"         value={nat} />
+            <Row icon={<MapPin size={13}/>}    label="الإقامة"         value={loc} />
+            <Row icon={<Ruler size={13}/>}     label="الطول / الوزن"   value={hw} />
+            <Row icon={<Smile size={13}/>}     label="لون البشرة"      value={profile.skin_color} />
+            <Row icon={<Globe size={13}/>}     label="الانتقال"        value={profile.travel_willingness} />
+            <Row icon={<HandHeart size={13}/>} label="نوع الزواج"      value={profile.marriage_type} />
           </Block>
 
           <Block title="المهنة والتعليم" icon={<Briefcase size={13}/>}>
-            <Row icon={<Briefcase size={13}/>}    label="المهنة"           value={jobLabel} />
-            <Row icon={<GraduationCap size={13}/>} label="المستوى الدراسي" value={eduLabel} />
-            <Row icon={<Flame size={13}/>}         label="الوضع المادي"    value={profile.financial_status} />
+            <Row icon={<Briefcase size={13}/>}     label="المهنة"           value={jobLabel} />
+            <Row icon={<GraduationCap size={13}/>} label="المستوى الدراسي"  value={eduLabel} />
+            <Row icon={<Flame size={13}/>}          label="الوضع المادي"     value={profile.financial_status} />
           </Block>
 
           <Block title="الأطفال" icon={<Baby size={13}/>}>
@@ -426,20 +533,24 @@ function ProfileContent() {
           )}
 
           {profile.bio && (
-            <div className="mb-3 rounded-[22px] overflow-hidden" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <div className="mb-3 rounded-[20px] overflow-hidden" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
               <div className="px-4 pt-3 pb-2" style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.59)', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>نبذة شخصية</span>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.58)', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase' }}>نبذة شخصية</span>
               </div>
-              <p className="px-4 py-3 leading-[1.75]" dir="rtl" style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.81)' }}>"{profile.bio}"</p>
+              <p className="px-4 py-3 leading-relaxed" dir="rtl" style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.81)', margin: 0 }}>
+                "{profile.bio}"
+              </p>
             </div>
           )}
 
           {profile.partner_requirements && (
-            <div className="mb-3 rounded-[22px] overflow-hidden" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <div className="mb-3 rounded-[20px] overflow-hidden" style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
               <div className="px-4 pt-3 pb-2" style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <span style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.59)', fontWeight: 900, letterSpacing: '0.15em', textTransform: 'uppercase' }}>يبحث عن</span>
+                <span style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * 0.58)', fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase' }}>يبحث عن</span>
               </div>
-              <p className="px-4 py-3 leading-[1.75]" dir="rtl" style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.81)' }}>{profile.partner_requirements}</p>
+              <p className="px-4 py-3 leading-relaxed" dir="rtl" style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.81)', margin: 0 }}>
+                {profile.partner_requirements}
+              </p>
             </div>
           )}
 
@@ -452,11 +563,12 @@ function ProfileContent() {
         {lightbox && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setLightbox(false)}
-            style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.93)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
-            <motion.img initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.85, opacity: 0 }} transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+            style={{ position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}>
+            <motion.img
+              initial={{ scale: 0.88, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.88, opacity: 0 }} transition={{ type: 'spring', stiffness: 280, damping: 26 }}
               src={profile.avatar_url || '/default-avatar.png'} alt={name}
-              style={{ maxWidth: '92vw', maxHeight: '88vh', borderRadius: 20, objectFit: 'contain', boxShadow: '0 30px 80px rgba(0,0,0,0.8)' }}
+              style={{ maxWidth: '90vw', maxHeight: '86vh', borderRadius: 22, objectFit: 'contain', boxShadow: '0 40px 100px rgba(0,0,0,0.9)' }}
               onClick={e => e.stopPropagation()} />
           </motion.div>
         )}
@@ -465,7 +577,8 @@ function ProfileContent() {
       {/* ChatWindow */}
       <AnimatePresence>
         {chatOpen && convId && profile && (
-          <ChatWindow conversationId={convId} currentUserId={me!.id}
+          <ChatWindow
+            conversationId={convId} currentUserId={me!.id}
             recipient={{ id: profile.id, name: profile.full_name ?? '—', avatar: profile.avatar_url || '/default-avatar.png', role: profile.role ?? 'user', last_seen: profile.last_active_at }}
             onBack={() => setChatOpen(false)} onOpenProfile={() => {}} />
         )}
@@ -475,17 +588,15 @@ function ProfileContent() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// Export مع Suspense — مطلوب لـ useSearchParams مع static export
-// ══════════════════════════════════════════════════════════════
-export default function ProfilePage() {
+export default function ViewPage() {
   return (
     <Suspense fallback={
       <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
-          style={{ width: 32, height: 32, borderRadius: '50%', border: '2.5px solid var(--color-accent)', borderTopColor: 'transparent' }} />
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
+          style={{ width: 30, height: 30, borderRadius: '50%', border: '2.5px solid var(--color-accent)', borderTopColor: 'transparent' }} />
       </div>
     }>
-      <ProfileContent />
+      <ViewContent />
     </Suspense>
   );
 }
