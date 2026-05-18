@@ -35,7 +35,7 @@ function resolveRoute(type: string, record: any, sender: any): string {
     case 'mediator':
       return record.conversation_id ? `/chat?id=${record.conversation_id}` : '/mediators';
     case 'like': case 'view': case 'match': case 'contact_request':
-      return sender?.id ? `/profile/view?id=${sender.id}` : '/likes';
+      return sender?.id ? `/view?id=${sender.id}` : '/likes';
     case 'subscription': return '/points';
     default: return '/notifications';
   }
