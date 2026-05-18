@@ -7,13 +7,14 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import {
-  Heart, Flag, ShieldOff, MapPin, Briefcase,
+  Heart, ShieldOff, MapPin, Briefcase,
   GraduationCap, BookOpen, Baby, Home, Users, Activity,
   Flame, Moon, Star, Globe, Smile, Ruler, HandHeart,
-  ShieldCheck, Check, Share2, MoreVertical, Send,
+  ShieldCheck, Check, Share2, MoreVertical,
 } from 'lucide-react';
-import { supabase }  from '@/lib/supabase/client';
-import { AutoBadge } from '@/components/auto-badge';
+import { supabase }     from '@/lib/supabase/client';
+import { AutoBadge }    from '@/components/auto-badge';
+import ReportSheet      from '@/components/security/ReportSheet';
 import {
   COMMITTED_LEVELS, getNationality,
   getMaritalLabel, getEducationLabel,
@@ -23,74 +24,49 @@ import { getSpecialtyLabel } from '@/constants/occupations';
 import ChatWindow from '@/components/chat/ChatWindow';
 
 // ══════════════════════════════════════════════════════════════
-// 🔊 صوت خفيف بـ Web Audio API — لا ملفات خارجية
+// 🔊 صوت من ملفات MP3
 // ══════════════════════════════════════════════════════════════
-function playSound(type: 'like' | 'unlike' | 'message' | 'share') {
+function playSound(name: 'like' | 'unlike' | 'message' | 'share') {
   try {
-    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    const configs: Record<string, { freq: number[]; dur: number; wave: OscillatorType }> = {
-      like:    { freq: [440, 660, 880], dur: 0.35, wave: 'sine' },
-      unlike:  { freq: [440, 330],      dur: 0.25, wave: 'sine' },
-      message: { freq: [523, 659],      dur: 0.3,  wave: 'triangle' },
-      share:   { freq: [392, 523],      dur: 0.25, wave: 'sine' },
-    };
-
-    const cfg = configs[type];
-    osc.type = cfg.wave;
-    gain.gain.setValueAtTime(0.12, ctx.currentTime);
-
-    cfg.freq.forEach((f, i) => {
-      const t = ctx.currentTime + (i * cfg.dur / cfg.freq.length);
-      osc.frequency.setValueAtTime(f, t);
-    });
-
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + cfg.dur);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + cfg.dur);
+    const audio = new Audio(`/sounds/${name}.mp3`);
+    audio.volume = 0.55;
+    audio.play().catch(() => {});
   } catch (_) {}
 }
 
 // ══════════════════════════════════════════════════════════════
-// 💫 جسيمات القلب عند الإعجاب
+// 💫 جسيمات الإعجاب
 // ══════════════════════════════════════════════════════════════
-interface Particle { id: number; x: number; y: number; rotate: number; scale: number }
+interface Particle { id: number; x: number; y: number; r: number; s: number }
 
-function HeartParticles({ active }: { active: boolean }) {
-  const [particles, setParticles] = useState<Particle[]>([]);
-
+function LikeParticles({ burst }: { burst: boolean }) {
+  const [ps, setPs] = useState<Particle[]>([]);
   useEffect(() => {
-    if (!active) return;
-    const p: Particle[] = Array.from({ length: 8 }, (_, i) => ({
+    if (!burst) return;
+    setPs(Array.from({ length: 10 }, (_, i) => ({
       id: Date.now() + i,
-      x: (Math.random() - 0.5) * 80,
-      y: -(Math.random() * 60 + 20),
-      rotate: (Math.random() - 0.5) * 60,
-      scale: Math.random() * 0.5 + 0.3,
-    }));
-    setParticles(p);
-    const t = setTimeout(() => setParticles([]), 800);
+      x: (Math.random() - 0.5) * 90,
+      y: -(Math.random() * 70 + 20),
+      r: (Math.random() - 0.5) * 70,
+      s: Math.random() * 0.55 + 0.25,
+    })));
+    const t = setTimeout(() => setPs([]), 900);
     return () => clearTimeout(t);
-  }, [active]);
+  }, [burst]);
 
   return (
-    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible' }}>
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'visible', zIndex: 10 }}>
       <AnimatePresence>
-        {particles.map(p => (
+        {ps.map(p => (
           <motion.div key={p.id}
-            initial={{ x: 0, y: 0, opacity: 1, scale: p.scale, rotate: 0 }}
-            animate={{ x: p.x, y: p.y, opacity: 0, scale: 0, rotate: p.rotate }}
-            exit={{}}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
+            initial={{ x: 0, y: 0, opacity: 1, scale: p.s, rotate: 0 }}
+            animate={{ x: p.x, y: p.y, opacity: 0, scale: 0, rotate: p.r }}
+            transition={{ duration: 0.75, ease: [0.22, 1, 0.36, 1] }}
             style={{
               position: 'absolute', top: '50%', left: '50%',
-              marginLeft: -6, marginTop: -6,
-              fontSize: 12, color: '#ef4444',
-              pointerEvents: 'none',
+              marginLeft: -7, marginTop: -7,
+              fontSize: 14, color: '#ef4444',
+              pointerEvents: 'none', userSelect: 'none',
             }}>
             ♥
           </motion.div>
@@ -101,19 +77,31 @@ function HeartParticles({ active }: { active: boolean }) {
 }
 
 // ══════════════════════════════════════════════════════════════
+// أيقونة إرسال رسالة — طائرة ورقية بزاوية صحيحة
+// ══════════════════════════════════════════════════════════════
+function SendIcon({ size = 20, color = 'currentColor' }: { size?: number; color?: string }) {
+  return (
+    <svg
+      width={size} height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.65}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="22" y1="2" x2="11" y2="13" />
+      <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
 // حالة التواجد
 // ══════════════════════════════════════════════════════════════
-function getOnlineStatus(lastActiveAt?: string, gender?: string) {
-  const f = gender === 'female';
-  if (!lastActiveAt) return { label: f ? 'غير متصلة' : 'غير متصل', online: false };
-  const mins = Math.floor((Date.now() - new Date(lastActiveAt).getTime()) / 60000);
-  if (mins < 5)  return { label: f ? 'متواجدة الآن' : 'متواجد الآن', online: true };
-  if (mins < 60) return { label: `منذ ${mins} دقيقة`, online: false };
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return { label: `منذ ${hrs} ساعة`, online: false };
-  const days = Math.floor(hrs / 24);
-  if (days < 7)  return { label: `منذ ${days} أيام`, online: false };
-  return { label: f ? 'غير متصلة' : 'غير متصل', online: false };
+function getOnlineStatus(lastActiveAt?: string) {
+  if (!lastActiveAt) return false;
+  return Math.floor((Date.now() - new Date(lastActiveAt).getTime()) / 60000) < 5;
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -163,35 +151,39 @@ function CompletionBar({ pct }: { pct: number }) {
 }
 
 // ══════════════════════════════════════════════════════════════
-// زر دائري — حجم ثابت 52px لكل الأزرار
+// زر دائري موحّد — 54px ثابت
 // ══════════════════════════════════════════════════════════════
-const BTN = 52;
+const BTN = 54;
 
-function CircleBtn({ onClick, icon, glowColor, disabled, children }: {
+function Btn({ onClick, children, glow, lit, disabled }: {
   onClick: () => void;
-  icon?: React.ReactNode;
-  glowColor?: string;
+  children: React.ReactNode;
+  glow?: string;
+  lit?: boolean;
   disabled?: boolean;
-  children?: React.ReactNode;
 }) {
   return (
     <motion.button
       whileTap={{ scale: disabled ? 1 : 0.78 }}
-      whileHover={{ scale: disabled ? 1 : 1.06 }}
+      whileHover={{ scale: disabled ? 1 : 1.07 }}
       onClick={onClick}
       disabled={disabled}
       style={{
         width: BTN, height: BTN, borderRadius: '50%',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0, position: 'relative',
-        background: 'var(--glass-bg)',
-        border: '1.5px solid var(--glass-border)',
+        background: lit && glow
+          ? `radial-gradient(circle at center, ${glow}22 0%, transparent 70%), var(--glass-bg)`
+          : 'var(--glass-bg)',
+        border: `1.5px solid ${lit && glow ? glow + '55' : 'var(--glass-border)'}`,
         cursor: disabled ? 'default' : 'pointer',
-        boxShadow: glowColor ? `0 0 20px ${glowColor}55, inset 0 0 12px ${glowColor}18` : 'none',
-        transition: 'box-shadow 0.25s ease, background 0.25s ease, border-color 0.25s ease',
+        boxShadow: lit && glow
+          ? `0 0 18px ${glow}44, 0 2px 12px rgba(0,0,0,0.3)`
+          : '0 2px 8px rgba(0,0,0,0.18)',
+        transition: 'all 0.22s ease',
       }}
     >
-      {icon || children}
+      {children}
     </motion.button>
   );
 }
@@ -202,26 +194,33 @@ function ViewContent() {
   const router       = useRouter();
   const userId       = searchParams.get('id') ?? '';
 
-  const [profile,     setProfile]     = useState<any>(null);
-  const [badge,       setBadge]       = useState('');
-  const [me,          setMe]          = useState<any>(null);
-  const [liked,       setLiked]       = useState(false);
-  const [liking,      setLiking]      = useState(false);
-  const [likePopped,  setLikePopped]  = useState(false);
-  const [loading,     setLoading]     = useState(true);
-  const [menu,        setMenu]        = useState(false);
-  const [chatOpen,    setChatOpen]    = useState(false);
-  const [convId,      setConvId]      = useState<string | null>(null);
-  const [shared,      setShared]      = useState(false);
-  const [blocked,     setBlocked]     = useState(false);
-  const [reported,    setReported]    = useState(false);
-  const [lightbox,    setLightbox]    = useState(false);
-  const [msgFlash,    setMsgFlash]    = useState(false);
+  const [profile,    setProfile]    = useState<any>(null);
+  const [me,         setMe]         = useState<any>(null);
+  const [myProfile,  setMyProfile]  = useState<any>(null);
+  const [badge,      setBadge]      = useState('');
+  const [liked,      setLiked]      = useState(false);
+  const [liking,     setLiking]     = useState(false);
+  const [burst,      setBurst]      = useState(false);
+  const [loading,    setLoading]    = useState(true);
+  const [menu,       setMenu]       = useState(false);
+  const [chatOpen,   setChatOpen]   = useState(false);
+  const [convId,     setConvId]     = useState<string | null>(null);
+  const [shared,     setShared]     = useState(false);
+  const [blocked,    setBlocked]    = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [lightbox,   setLightbox]   = useState(false);
+  const [msgFlash,   setMsgFlash]   = useState(false);
 
   const heartCtrl = useAnimation();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => { if (data.user) setMe(data.user); });
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) return;
+      setMe(data.user);
+      const { data: mp } = await supabase
+        .from('profiles').select('show_photos').eq('id', data.user.id).single();
+      setMyProfile(mp);
+    });
   }, []);
 
   useEffect(() => {
@@ -258,26 +257,22 @@ function ViewContent() {
   const handleLike = async () => {
     if (!me || liking) return;
     setLiking(true);
-
     if (liked) {
       playSound('unlike');
       setLiked(false);
-      await heartCtrl.start({
-        scale: [1, 0.7, 1],
-        transition: { duration: 0.25 },
-      });
+      await heartCtrl.start({ scale: [1, 0.65, 1], transition: { duration: 0.22 } });
       await supabase.from('likes').delete()
         .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like');
     } else {
       playSound('like');
       setLiked(true);
-      setLikePopped(true);
-      // نبضة قوية
+      setBurst(true);
       await heartCtrl.start({
-        scale: [1, 1.5, 0.85, 1.2, 1],
-        transition: { duration: 0.5, times: [0, 0.2, 0.4, 0.7, 1] },
+        scale:    [1, 1.55, 0.8, 1.25, 0.95, 1],
+        rotate:   [0, -8, 8, -4, 4, 0],
+        transition: { duration: 0.55, times: [0, 0.18, 0.35, 0.55, 0.75, 1] },
       });
-      setTimeout(() => setLikePopped(false), 800);
+      setTimeout(() => setBurst(false), 900);
       await supabase.from('likes').upsert(
         { from_user: me.id, to_user: userId, action: 'like' },
         { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
@@ -286,13 +281,12 @@ function ViewContent() {
     setLiking(false);
   };
 
-  // ── رسالة مع مؤثر ───────────────────────────────────────────
+  // ── رسالة ───────────────────────────────────────────────────
   const handleMessage = async () => {
     if (!me) return;
     playSound('message');
     setMsgFlash(true);
-    setTimeout(() => setMsgFlash(false), 400);
-
+    setTimeout(() => setMsgFlash(false), 500);
     const { data: ex } = await supabase.from('conversations').select('id')
       .or(`and(user_1.eq.${me.id},user_2.eq.${userId}),and(user_1.eq.${userId},user_2.eq.${me.id})`)
       .maybeSingle();
@@ -316,9 +310,10 @@ function ViewContent() {
       await navigator.clipboard.writeText(url);
     }
     setShared(true);
-    setTimeout(() => setShared(false), 2000);
+    setTimeout(() => setShared(false), 2200);
   };
 
+  // ── حظر ─────────────────────────────────────────────────────
   const handleBlock = async () => {
     if (!me) return;
     setMenu(false);
@@ -330,17 +325,7 @@ function ViewContent() {
     setTimeout(() => router.back(), 1200);
   };
 
-  const handleReport = async () => {
-    if (!me) return;
-    setMenu(false);
-    await supabase.from('reports').insert({
-      reporter_id: me.id, reported_id: userId,
-      reason: 'بلاغ من صفحة الملف', status: 'pending',
-    });
-    setReported(true);
-    setTimeout(() => setReported(false), 2500);
-  };
-
+  // ── Loading ──────────────────────────────────────────────────
   if (!userId || loading || !profile) return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
@@ -348,12 +333,13 @@ function ViewContent() {
     </div>
   );
 
+  // ── بيانات مشتقة ─────────────────────────────────────────────
   const isMale      = profile.gender === 'male';
   const gender      = isMale ? 'male' : 'female';
   const committed   = COMMITTED_LEVELS.includes(profile.religious_commitment ?? -1);
   const pct         = profile.profile_completion_percent ?? 0;
   const name        = profile.full_name ?? '—';
-  const os          = getOnlineStatus(profile.last_active_at, profile.gender);
+  const isOnline    = getOnlineStatus(profile.last_active_at);
   const loc         = [profile.country, profile.city].filter(Boolean).join(' — ');
   const hw          = [profile.height ? `${profile.height} سم` : null, profile.weight ? `${profile.weight} كغ` : null].filter(Boolean).join(' · ') || null;
   const maritalLabel  = profile.marital_status       ? getMaritalLabel(profile.marital_status, gender) : null;
@@ -364,39 +350,55 @@ function ViewContent() {
   const nat           = profile.country ? getNationality(profile.country, gender) : (profile.nationality ?? null);
   const isOwn         = me?.id === userId;
 
+  // ── منطق الضبابية ────────────────────────────────────────────
+  // صاحب الحساب اختار إخفاء صوره → نعرضها ضبابية
+  // المستخدم الحالي اختار عدم رؤية الصور → كل الصور ضبابية
+  const photoBlurred = profile.is_photos_blurred || (myProfile?.show_photos === false);
+
   return (
     <>
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.28 }}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.26 }}
         style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: isOwn ? 24 : 110 }}>
 
-        {/* Hero */}
+        {/* ── Hero ────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 20px', gap: 10 }} dir="rtl">
 
-          {/* الصورة */}
+          {/* الصورة مع نقطة الاتصال */}
           <motion.div whileTap={{ scale: 0.94 }}
-            onClick={() => !profile.is_photos_blurred && setLightbox(true)}
-            style={{ position: 'relative', cursor: profile.is_photos_blurred ? 'default' : 'pointer' }}>
+            onClick={() => !photoBlurred && setLightbox(true)}
+            style={{ position: 'relative', cursor: photoBlurred ? 'default' : 'pointer' }}>
 
-            {os.online && (
+            {/* حلقة نابضة عند الاتصال */}
+            {isOnline && (
               <motion.div
-                animate={{ scale: [1, 1.08, 1], opacity: [0.5, 0.2, 0.5] }}
-                transition={{ repeat: Infinity, duration: 2.2, ease: 'easeInOut' }}
+                animate={{ scale: [1, 1.1, 1], opacity: [0.6, 0.15, 0.6] }}
+                transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
                 style={{ position: 'absolute', inset: -5, borderRadius: '50%', border: '2px solid var(--color-primary)', pointerEvents: 'none' }}
               />
             )}
 
             <img src={profile.avatar_url || '/default-avatar.png'} alt={name}
-              style={{ width: 108, height: 108, borderRadius: '50%', objectFit: 'cover', border: '2.5px solid var(--glass-border)', filter: profile.is_photos_blurred ? 'blur(14px)' : 'none', display: 'block' }} />
+              style={{
+                width: 108, height: 108, borderRadius: '50%', objectFit: 'cover',
+                border: '2.5px solid var(--glass-border)',
+                filter: photoBlurred ? 'blur(14px)' : 'none',
+                display: 'block',
+              }} />
 
-            {/* نقطة الاتصال */}
+            {/* نقطة الاتصال — تقع على حافة الصورة */}
             <div style={{
-              position: 'absolute', bottom: 5, right: 5,
-              width: 15, height: 15, borderRadius: '50%',
-              background: os.online ? 'var(--color-primary)' : 'rgba(255,255,255,0.18)',
+              position: 'absolute',
+              // تقع على الحافة: bottom = radius - dot_radius = 54 - 8 = 46 → لكن CSS: bottom يحسب من bottom border
+              // نريد مركز النقطة على محيط الدائرة: الصورة 108px → radius=54
+              // زاوية 45° bottom-right: x = 54 + 54*cos(45°) - 8 = 54 + 38.2 - 8 = 84.2 → right = 108 - 84.2 - 8 = 15.8
+              bottom: 7, right: 7,
+              width: 16, height: 16, borderRadius: '50%',
+              background: isOnline ? 'var(--color-primary)' : 'rgba(150,150,170,0.5)',
               border: '2.5px solid var(--bg-main)',
-              boxShadow: os.online ? '0 0 10px var(--color-primary)' : 'none',
-              transition: 'all 0.3s ease',
+              boxShadow: isOnline ? '0 0 10px var(--color-primary), 0 0 4px var(--color-primary)' : 'none',
+              transition: 'all 0.35s ease',
+              zIndex: 2,
             }} />
           </motion.div>
 
@@ -416,20 +418,15 @@ function ViewContent() {
             )}
           </div>
 
-          {/* حالة الاتصال */}
-          <span style={{ fontSize: 'calc(var(--base-font-size) * 0.72)', color: os.online ? 'var(--color-primary)' : 'rgba(255,255,255,0.28)', fontWeight: 500 }}>
-            {os.label}
-          </span>
-
-          {/* ── 4 أزرار متساوية 52px ── */}
+          {/* ── 4 أزرار دائرية متساوية ── */}
           {!isOwn && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 280, damping: 22 }}
-              style={{ display: 'flex', gap: 18, marginTop: 14, alignItems: 'center' }}>
+              transition={{ delay: 0.18, type: 'spring', stiffness: 280, damping: 22 }}
+              style={{ display: 'flex', gap: 16, marginTop: 16, alignItems: 'center' }}>
 
               {/* ❤️ إعجاب */}
               <div style={{ position: 'relative' }}>
-                <HeartParticles active={likePopped} />
+                <LikeParticles burst={burst} />
                 <motion.button
                   animate={heartCtrl}
                   whileTap={{ scale: liking ? 1 : 0.78 }}
@@ -438,73 +435,89 @@ function ViewContent() {
                   style={{
                     width: BTN, height: BTN, borderRadius: '50%',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                    background: liked ? 'rgba(239,68,68,0.18)' : 'var(--glass-bg)',
-                    border: `1.5px solid ${liked ? 'rgba(239,68,68,0.5)' : 'var(--glass-border)'}`,
+                    flexShrink: 0, position: 'relative',
+                    background: liked
+                      ? 'radial-gradient(circle at center, rgba(239,68,68,0.22) 0%, transparent 70%), var(--glass-bg)'
+                      : 'var(--glass-bg)',
+                    border: `1.5px solid ${liked ? 'rgba(239,68,68,0.55)' : 'var(--glass-border)'}`,
                     cursor: liking ? 'default' : 'pointer',
-                    boxShadow: liked ? '0 0 20px rgba(239,68,68,0.4), inset 0 0 10px rgba(239,68,68,0.1)' : 'none',
-                    transition: 'all 0.25s ease',
+                    boxShadow: liked
+                      ? '0 0 20px rgba(239,68,68,0.45), 0 2px 12px rgba(0,0,0,0.25)'
+                      : '0 2px 8px rgba(0,0,0,0.18)',
+                    transition: 'all 0.24s ease',
                   }}>
-                  <Heart size={20}
+                  <Heart size={21}
                     fill={liked ? '#ef4444' : 'none'}
                     strokeWidth={liked ? 0 : 1.6}
-                    color={liked ? '#ef4444' : 'rgba(255,255,255,0.5)'}
+                    color={liked ? '#ef4444' : 'rgba(255,255,255,0.55)'}
                   />
                 </motion.button>
               </div>
 
-              {/* ✈️ رسالة — Send icon بدون دائرة */}
+              {/* ✈️ رسالة */}
               <motion.button
                 whileTap={{ scale: 0.78 }}
+                whileHover={{ scale: 1.07 }}
                 onClick={handleMessage}
                 style={{
                   width: BTN, height: BTN, borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
-                  background: msgFlash ? 'rgba(56,189,248,0.25)' : 'var(--glass-bg)',
-                  border: `1.5px solid ${msgFlash ? 'rgba(56,189,248,0.6)' : 'var(--glass-border)'}`,
+                  background: msgFlash
+                    ? 'radial-gradient(circle at center, rgba(56,189,248,0.22) 0%, transparent 70%), var(--glass-bg)'
+                    : 'var(--glass-bg)',
+                  border: `1.5px solid ${msgFlash ? 'rgba(56,189,248,0.55)' : 'var(--glass-border)'}`,
                   cursor: 'pointer',
-                  boxShadow: msgFlash ? '0 0 22px rgba(56,189,248,0.5)' : 'none',
-                  transition: 'all 0.2s ease',
+                  boxShadow: msgFlash
+                    ? '0 0 20px rgba(56,189,248,0.45), 0 2px 12px rgba(0,0,0,0.25)'
+                    : '0 2px 8px rgba(0,0,0,0.18)',
+                  transition: 'all 0.22s ease',
                 }}>
-                <Send size={19} color={msgFlash ? '#38bdf8' : 'rgba(255,255,255,0.5)'} strokeWidth={1.6}
-                  style={{ transform: 'rotate(-35deg) translateY(-1px)' }} />
+                {/* أيقونة إرسال محاذاة ومتوازنة بصرياً */}
+                <SendIcon size={20} color={msgFlash ? '#38bdf8' : 'rgba(255,255,255,0.55)'} />
               </motion.button>
 
               {/* 🔗 مشاركة */}
               <motion.button
                 whileTap={{ scale: 0.78 }}
+                whileHover={{ scale: 1.07 }}
                 onClick={handleShare}
                 style={{
                   width: BTN, height: BTN, borderRadius: '50%',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
-                  background: shared ? 'rgba(34,197,94,0.18)' : 'var(--glass-bg)',
-                  border: `1.5px solid ${shared ? 'rgba(34,197,94,0.5)' : 'var(--glass-border)'}`,
+                  background: shared
+                    ? 'radial-gradient(circle at center, rgba(34,197,94,0.22) 0%, transparent 70%), var(--glass-bg)'
+                    : 'var(--glass-bg)',
+                  border: `1.5px solid ${shared ? 'rgba(34,197,94,0.55)' : 'var(--glass-border)'}`,
                   cursor: 'pointer',
-                  boxShadow: shared ? '0 0 20px rgba(34,197,94,0.4)' : 'none',
-                  transition: 'all 0.25s ease',
+                  boxShadow: shared
+                    ? '0 0 20px rgba(34,197,94,0.45), 0 2px 12px rgba(0,0,0,0.25)'
+                    : '0 2px 8px rgba(0,0,0,0.18)',
+                  transition: 'all 0.22s ease',
                 }}>
                 {shared
                   ? <Check size={20} color="#22c55e" strokeWidth={2.2} />
-                  : <Share2 size={19} color="rgba(255,255,255,0.5)" strokeWidth={1.6} />}
+                  : <Share2 size={19} color="rgba(255,255,255,0.55)" strokeWidth={1.6} />}
               </motion.button>
 
-              {/* ⋮ ثلاث نقاط */}
+              {/* ⋮ ثلاث نقاط — حظر + بلاغ */}
               <div style={{ position: 'relative' }}>
                 <motion.button
                   whileTap={{ scale: 0.78 }}
+                  whileHover={{ scale: 1.07 }}
                   onClick={() => setMenu(v => !v)}
                   style={{
                     width: BTN, height: BTN, borderRadius: '50%',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
-                    background: menu ? 'rgba(255,255,255,0.08)' : 'var(--glass-bg)',
+                    background: menu ? 'rgba(255,255,255,0.07)' : 'var(--glass-bg)',
                     border: '1.5px solid var(--glass-border)',
                     cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.18)',
                     transition: 'all 0.2s ease',
                   }}>
-                  <MoreVertical size={19} color="rgba(255,255,255,0.45)" strokeWidth={1.6} />
+                  <MoreVertical size={19} color="rgba(255,255,255,0.5)" strokeWidth={1.6} />
                 </motion.button>
 
                 <AnimatePresence>
@@ -522,12 +535,12 @@ function ViewContent() {
                           zIndex: 101,
                           background: 'var(--bg-elevated)',
                           border: '1px solid var(--glass-border)',
-                          borderRadius: 18, overflow: 'hidden', width: 158,
+                          borderRadius: 18, overflow: 'hidden', width: 160,
                           boxShadow: '0 16px 50px rgba(0,0,0,0.7)',
                         }}>
-                        <button onClick={handleReport}
-                          style={{ width: '100%', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl', background: 'transparent', border: 'none', borderBottom: '1px solid var(--glass-border)', cursor: 'pointer', color: reported ? '#4ade80' : '#f87171', fontFamily: 'inherit', fontSize: 'calc(var(--base-font-size) * 0.82)', fontWeight: 600 }}>
-                          <Flag size={13} /> {reported ? 'تم الإبلاغ ✓' : 'إبلاغ'}
+                        <button onClick={() => { setMenu(false); setReportOpen(true); }}
+                          style={{ width: '100%', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl', background: 'transparent', border: 'none', borderBottom: '1px solid var(--glass-border)', cursor: 'pointer', color: '#f87171', fontFamily: 'inherit', fontSize: 'calc(var(--base-font-size) * 0.82)', fontWeight: 600 }}>
+                          <span style={{ fontSize: 13 }}>🚩</span> إبلاغ
                         </button>
                         <button onClick={handleBlock}
                           style={{ width: '100%', padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl', background: 'transparent', border: 'none', cursor: 'pointer', color: blocked ? '#4ade80' : '#fb923c', fontFamily: 'inherit', fontSize: 'calc(var(--base-font-size) * 0.82)', fontWeight: 600 }}>
@@ -557,9 +570,9 @@ function ViewContent() {
             <Row icon={<HandHeart size={13}/>} label="نوع الزواج"      value={profile.marriage_type} />
           </Block>
           <Block title="المهنة والتعليم" icon={<Briefcase size={13}/>}>
-            <Row icon={<Briefcase size={13}/>}     label="المهنة"           value={jobLabel} />
-            <Row icon={<GraduationCap size={13}/>} label="المستوى الدراسي"  value={eduLabel} />
-            <Row icon={<Flame size={13}/>}          label="الوضع المادي"     value={profile.financial_status} />
+            <Row icon={<Briefcase size={13}/>}     label="المهنة"          value={jobLabel} />
+            <Row icon={<GraduationCap size={13}/>} label="المستوى الدراسي" value={eduLabel} />
+            <Row icon={<Flame size={13}/>}          label="الوضع المادي"    value={profile.financial_status} />
           </Block>
           <Block title="الأطفال" icon={<Baby size={13}/>}>
             <Row icon={<Baby size={13}/>} label="لديه أطفال"
@@ -635,6 +648,15 @@ function ViewContent() {
         )}
       </AnimatePresence>
 
+      {/* ReportSheet */}
+      <ReportSheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        reportedUserId={userId}
+        targetType="profile"
+        targetId={userId}
+      />
+
       {/* ChatWindow */}
       <AnimatePresence>
         {chatOpen && convId && profile && (
@@ -647,6 +669,7 @@ function ViewContent() {
   );
 }
 
+// ══════════════════════════════════════════════════════════════
 export default function ViewPage() {
   return (
     <Suspense fallback={
