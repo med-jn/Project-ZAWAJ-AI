@@ -4,7 +4,8 @@
     "namespace": "android_app",
     "package_name": "com.zawaj.ai",
     "sha256_cert_fingerprints": [
-      "81:7F:CC:A4:0B:D9:FA:B8:15:23:31:75:04:C8:55:9C:42:A6:5F:07:4F:1E:0B:7B:22:CE:23:03:51:1D:99:6C"
+      "81:7F:CC:A4:0B:D9:FA:B8:15:23:31:75:04:C8:55:9C:42:A6:5F:07:4F:1E:0B:7B:22:CE:23:03:51:1D:99:6C",
+      "68:7D:FF:CE:16:29:CB:93:12:40:8E:3A:CA:32:97:B3:0C:9B:DC:61:55:07:86:4C:F8:75:83:B6:F1:A9:BC:E2"
     ]
   }
 }]

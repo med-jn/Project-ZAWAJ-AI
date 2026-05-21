@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, ShieldX } from "lucide-react";
-import { supabase } from "@/lib/supabase/Client";
+import { supabase } from "@/lib/supabase/client";
 
 type BlockedProfile = {
   id: string;
