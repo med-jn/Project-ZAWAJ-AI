@@ -12,12 +12,9 @@ import {
   KeyRound, ShieldX,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
-import PageHeader  from '@/components/layout/PageHeader'; // هيدر المشروع الموجود
+import PageHeader  from '@/components/layout/PageHeader';
 import BlockedUsersSheet from '@/components/security/BlockedUsersSheet';
 
-// ══════════════════════════════════════════════════════════════
-// أنواع
-// ══════════════════════════════════════════════════════════════
 type AlertType = 'success' | 'error' | 'warning';
 type ModalType = 'disable' | 'delete' | null;
 interface Alert { type: AlertType; msg: string; }
@@ -159,7 +156,6 @@ function ConfirmSheet({ type, loading, onConfirm, onClose, deleteReason, setDele
         }}
       >
         <div style={{ width: '2.5rem', height: '0.2rem', borderRadius: 99, background: 'var(--glass-border)', margin: '0 auto var(--sp-5)' }} />
-
         <div style={{
           width: '3.25rem', height: '3.25rem', borderRadius: 'var(--radius-sm)',
           background: isDel ? 'rgba(179,51,75,0.1)' : 'rgba(234,179,8,0.08)',
@@ -168,7 +164,6 @@ function ConfirmSheet({ type, loading, onConfirm, onClose, deleteReason, setDele
         }}>
           {isDel ? <Trash2 size={20} /> : <PowerOff size={20} />}
         </div>
-
         <h3 style={{ textAlign: 'center', fontSize: 'var(--text-lg)', fontWeight: 800, margin: '0 0 var(--sp-2)', color: 'var(--text-main)' }}>
           {isDel ? 'حذف الحساب نهائياً' : 'تعطيل الحساب مؤقتاً'}
         </h3>
@@ -177,7 +172,6 @@ function ConfirmSheet({ type, loading, onConfirm, onClose, deleteReason, setDele
             ? 'سيتم حذف جميع بياناتك وصورك ونقاطك نهائياً. هذا الإجراء لا يمكن التراجع عنه.'
             : 'سيُخفى ملفك ولن تتلقى أي إشعارات. يمكنك العودة في أي وقت بتسجيل الدخول.'}
         </p>
-
         {isDel && (
           <select
             value={deleteReason} onChange={e => setDeleteReason(e.target.value)}
@@ -197,7 +191,6 @@ function ConfirmSheet({ type, loading, onConfirm, onClose, deleteReason, setDele
             <option value="other">أسباب أخرى</option>
           </select>
         )}
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
           <button
             onClick={onConfirm} disabled={loading}
@@ -298,34 +291,34 @@ export default function SecurityPage() {
   const handleEmailChange = useCallback(async () => {
     setEmailAlert(null);
     const t = newEmail.trim().toLowerCase();
-    if (!t)                              { setEmailAlert({ type: 'error',   msg: 'أدخل البريد الإلكتروني الجديد' }); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t)) { setEmailAlert({ type: 'error', msg: 'البريد الإلكتروني غير صالح' }); return; }
-    if (t === user?.email)               { setEmailAlert({ type: 'warning', msg: 'هذا هو بريدك الحالي بالفعل' }); return; }
+    if (!t)                                      { setEmailAlert({ type: 'error',   msg: 'أدخل البريد الإلكتروني الجديد' }); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t))  { setEmailAlert({ type: 'error',   msg: 'البريد الإلكتروني غير صالح' });    return; }
+    if (t === user?.email)                        { setEmailAlert({ type: 'warning', msg: 'هذا هو بريدك الحالي بالفعل' });   return; }
     setEmailLoading(true);
     const { error } = await supabase.auth.updateUser({ email: t });
     setEmailLoading(false);
-    if (error) { setEmailAlert({ type: 'error', msg: 'فشل تغيير البريد. حاول مجدداً.' }); }
+    if (error) { setEmailAlert({ type: 'error',   msg: 'فشل تغيير البريد. حاول مجدداً.' }); }
     else       { setEmailAlert({ type: 'success', msg: `أُرسل رابط التأكيد إلى ${t}` }); setNewEmail(''); }
   }, [newEmail, user]);
 
-  // ── نسيت كلمة المرور (إرسال رابط reset) ──────────────────
+  // ── نسيت كلمة المرور ──────────────────────────────────────
   const handleForgotPassword = useCallback(async () => {
     setPassLoading(true); setPassAlert(null);
     const { error } = await supabase.auth.resetPasswordForEmail(user?.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: 'https://zawaj.orcaup.com/reset-password',
     });
     setPassLoading(false);
-    if (error) { setPassAlert({ type: 'error', msg: 'فشل إرسال الرابط. حاول مجدداً.' }); }
+    if (error) { setPassAlert({ type: 'error',   msg: 'فشل إرسال الرابط. حاول مجدداً.' }); }
     else       { setPassAlert({ type: 'success', msg: 'تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني' }); }
   }, [user]);
 
   // ── تغيير كلمة المرور ─────────────────────────────────────
   const handlePasswordChange = useCallback(async () => {
     setPassAlert(null);
-    if (!newPass)             { setPassAlert({ type: 'error', msg: 'أدخل كلمة المرور الجديدة' }); return; }
-    if (newPass.length < 8)   { setPassAlert({ type: 'error', msg: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' }); return; }
-    if (newPass !== confirmPass) { setPassAlert({ type: 'error', msg: 'كلمتا المرور غير متطابقتين' }); return; }
-    if (!isGoogle && !currPass)  { setPassAlert({ type: 'error', msg: 'أدخل كلمة مرورك الحالية' }); return; }
+    if (!newPass)               { setPassAlert({ type: 'error', msg: 'أدخل كلمة المرور الجديدة' });          return; }
+    if (newPass.length < 8)     { setPassAlert({ type: 'error', msg: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل' }); return; }
+    if (newPass !== confirmPass) { setPassAlert({ type: 'error', msg: 'كلمتا المرور غير متطابقتين' });        return; }
+    if (!isGoogle && !currPass)  { setPassAlert({ type: 'error', msg: 'أدخل كلمة مرورك الحالية' });          return; }
     setPassLoading(true);
     if (!isGoogle) {
       const { error: e } = await supabase.auth.signInWithPassword({ email: user.email, password: currPass });
@@ -333,7 +326,7 @@ export default function SecurityPage() {
     }
     const { error } = await supabase.auth.updateUser({ password: newPass });
     setPassLoading(false);
-    if (error) { setPassAlert({ type: 'error', msg: 'فشل تغيير كلمة المرور. حاول مجدداً.' }); }
+    if (error) { setPassAlert({ type: 'error',   msg: 'فشل تغيير كلمة المرور. حاول مجدداً.' }); }
     else       { setPassAlert({ type: 'success', msg: 'تم تغيير كلمة مرورك بنجاح ✓' }); setCurrPass(''); setNewPass(''); setConfirmPass(''); }
   }, [currPass, newPass, confirmPass, isGoogle, user]);
 
@@ -357,7 +350,11 @@ export default function SecurityPage() {
         `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`,
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}`, 'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY! },
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+            'apikey':        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
           body: JSON.stringify({ reason: deleteReason || null }),
         }
       );
@@ -381,7 +378,6 @@ export default function SecurityPage() {
     <>
       <main style={{ minHeight: '100dvh', background: 'var(--bg-main)', paddingBottom: 'calc(var(--nav-h-safe) + var(--sp-4))' }}>
 
-        {/* هيدر المشروع */}
         <PageHeader title="الأمان والخصوصية" />
 
         <div style={{
@@ -397,7 +393,10 @@ export default function SecurityPage() {
             padding: 'var(--sp-3) var(--sp-4)', borderRadius: 'var(--radius-sm)',
             background: 'rgba(179,51,75,0.06)', border: '1px solid rgba(179,51,75,0.15)',
           }}>
-            {isGoogle ? <Chrome size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} /> : <Mail size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />}
+            {isGoogle
+              ? <Chrome size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              : <Mail   size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+            }
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', direction: 'ltr', flex: 1 }}>{user?.email}</span>
             {isGoogle && (
               <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--color-primary)', fontWeight: 700, background: 'rgba(179,51,75,0.1)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>Google</span>
@@ -428,13 +427,14 @@ export default function SecurityPage() {
             {!isGoogle && (
               <div style={{ display: 'flex', gap: 'var(--sp-2)', marginBottom: 'var(--sp-4)', background: 'rgba(255,255,255,0.04)', borderRadius: 'var(--radius-sm)', padding: 3 }}>
                 {([['change', 'تغيير كلمة المرور'], ['forgot', 'نسيت كلمة المرور']] as const).map(([mode, label]) => (
-                  <button key={mode} onClick={() => { setPassMode(mode); setPassAlert(null); setCurrPass(''); setNewPass(''); setConfirmPass(''); }}
+                  <button key={mode}
+                    onClick={() => { setPassMode(mode); setPassAlert(null); setCurrPass(''); setNewPass(''); setConfirmPass(''); }}
                     style={{
                       flex: 1, padding: 'var(--sp-2)', borderRadius: 'var(--radius-xs)',
                       background: passMode === mode ? 'var(--color-primary)' : 'transparent',
                       border: 'none', color: passMode === mode ? '#fff' : 'var(--text-tertiary)',
-                      fontSize: 'var(--text-2xs)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-                      transition: 'all 0.2s',
+                      fontSize: 'var(--text-2xs)', fontWeight: 700, cursor: 'pointer',
+                      fontFamily: 'inherit', transition: 'all 0.2s',
                     }}
                   >
                     {label}
@@ -444,11 +444,10 @@ export default function SecurityPage() {
             )}
 
             <AnimatePresence mode="wait">
-              {/* وضع: نسيت كلمة المرور */}
               {!isGoogle && passMode === 'forgot' ? (
                 <motion.div key="forgot" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
                   <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-relaxed)', marginBottom: 'var(--sp-4)', textAlign: 'right' }}>
-                    سنُرسل لك رابطاً على بريدك الإلكتروني <strong style={{ color: 'var(--text-main)', direction: 'ltr', display: 'inline-block' }}>{user?.email}</strong> لإعادة تعيين كلمة مرورك.
+                    سنُرسل لك رابطاً على بريدك <strong style={{ color: 'var(--text-main)', direction: 'ltr', display: 'inline-block' }}>{user?.email}</strong> لإعادة تعيين كلمة مرورك.
                   </p>
                   <button onClick={handleForgotPassword} disabled={passLoading} className="btn-premium"
                     style={{ width: '100%', height: 'var(--btn-h)', fontSize: 'var(--text-sm)', opacity: passLoading ? 0.5 : 1, gap: 'var(--sp-2)' }}>
@@ -457,7 +456,6 @@ export default function SecurityPage() {
                   </button>
                 </motion.div>
               ) : (
-                /* وضع: تغيير كلمة المرور */
                 <motion.div key="change" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
                   style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
                   {!isGoogle && (
@@ -469,7 +467,6 @@ export default function SecurityPage() {
                   <StrengthBar pass={newPass} />
                   <Field label="تأكيد كلمة المرور" type={showConf ? 'text' : 'password'} value={confirmPass} onChange={setConfirmPass} placeholder="••••••••" icon={<Lock size={14} />}
                     endIcon={<button onClick={() => setShowConf(p => !p)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', display: 'flex', padding: 0 }}>{showConf ? <EyeOff size={14} /> : <Eye size={14} />}</button>} />
-                  {/* مؤشر تطابق كلمة المرور */}
                   {confirmPass && newPass && (
                     <p style={{ fontSize: 'var(--text-2xs)', color: newPass === confirmPass ? '#22c55e' : '#ef4444', margin: 0 }}>
                       {newPass === confirmPass ? '✓ كلمتا المرور متطابقتان' : '✗ كلمتا المرور غير متطابقتين'}
@@ -492,7 +489,6 @@ export default function SecurityPage() {
               padding: 'var(--sp-4)', borderRadius: 'var(--radius-md)',
               background: 'var(--bg-soft)', border: '1px solid var(--glass-border)',
               cursor: 'pointer', fontFamily: 'inherit', textAlign: 'right',
-              transition: 'border-color 0.2s',
             }}
           >
             <div style={{ width: '2rem', height: '2rem', borderRadius: 'var(--radius-xs)', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)', flexShrink: 0 }}>
@@ -540,7 +536,6 @@ export default function SecurityPage() {
         </div>
       </main>
 
-      {/* Bottom Sheet تأكيد */}
       <AnimatePresence>
         {modal && (
           <ConfirmSheet
@@ -552,7 +547,6 @@ export default function SecurityPage() {
         )}
       </AnimatePresence>
 
-      {/* قائمة المحظورين */}
       <BlockedUsersSheet open={blockedOpen} onClose={() => setBlockedOpen(false)} />
     </>
   );

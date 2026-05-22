@@ -19,6 +19,18 @@ export default function AuthCallbackPage() {
 
         await new Promise(r => setTimeout(r, 500));
 
+        // ── فحص نوع الرابط ──────────────────────────────────
+        const searchParams = new URLSearchParams(search);
+        const hashParams   = new URLSearchParams(hash.replace('#', '?'));
+        const type = searchParams.get('type') || hashParams.get('type');
+
+        // إذا كان رابط إعادة تعيين كلمة المرور
+        if (type === 'recovery') {
+          router.replace('/reset-password');
+          return;
+        }
+
+        // ── باقي الحالات (تأكيد إيميل، تسجيل دخول، إلخ) ───
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
