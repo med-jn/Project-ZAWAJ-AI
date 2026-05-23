@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, Settings, Shield, Package, UserPen ,
+  Menu, X, Settings, Shield, ShieldCog, Package, UserPen ,
   HelpCircle, FileText, LogOut, ChevronLeft, Info
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,8 +15,9 @@ const MENU_ITEMS = [
     group: 'الحساب',
     items: [
       { icon: UserPen,   label: 'تعديل الملف',           href: '/profile/edit' },
+      { icon: ShieldCog,   label: 'الأمان والخصوصية',           href: '/security' },
       { icon: Settings,   label: 'الإعدادات',           href: '/settings' },
-      { icon: Package,    label: 'النقاط',  href: '/points' },
+      { icon: Package,    label: 'رصيد النقاط',  href: '/points' },
     ],
   },
   {
@@ -25,7 +26,7 @@ const MENU_ITEMS = [
       { icon: Info,       label: 'حول التطبيق',        href: '/about'    },
       { icon: HelpCircle, label: 'المساعدة والدعم',    href: '/help'     },
       { icon: FileText,   label: 'شروط الاستخدام',   href: '/terms'    },
-            { icon: Shield,     label: 'السياسات والخصوصية',    href: '/privacy'  },
+            { icon: Shield,     label: 'سياسة الخصوصية',    href: '/privacy'  },
 
     ],
   },

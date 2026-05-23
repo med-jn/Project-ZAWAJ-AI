@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail, Lock, Eye, EyeOff, AlertTriangle,
-  Trash2, PowerOff, CheckCircle, ShieldCheck, Chrome,
+  Trash2, PowerOff, CheckCircle, ShieldCheck, Globe,
   KeyRound, ShieldX,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
@@ -394,7 +394,7 @@ export default function SecurityPage() {
             background: 'rgba(179,51,75,0.06)', border: '1px solid rgba(179,51,75,0.15)',
           }}>
             {isGoogle
-              ? <Chrome size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+              ? <Globe size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
               : <Mail   size={14} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
             }
             <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', direction: 'ltr', flex: 1 }}>{user?.email}</span>
