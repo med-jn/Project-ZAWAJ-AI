@@ -1,13 +1,13 @@
 "use client";
 
-// TermsContent.tsx
-// مكوّن شروط الاستخدام — ZAWAJ AI
-// المسار: app/terms/TermsContent.tsx
-// ✅ 3 وثائق بتبويبات | ✅ Accordion | ✅ RTL | ✅ globals.css فقط
+// LegalContent.tsx
+// مكوّن السياسات القانونية — ZAWAJ AI
+// المسار: app/legal/LegalContent.tsx
+// ✅ 5 وثائق بتبويبات | ✅ Accordion | ✅ RTL | ✅ globals.css فقط
 
 import { useState, useCallback } from "react";
-import { ChevronDown } from "lucide-react";
-import { TERMS_DOCUMENTS, type TermsDocument, type TermsSection } from "./terms-of-use";
+import { ChevronDown, Mail } from "lucide-react";
+import { LEGAL_DOCUMENTS, type LegalDocument, type LegalSection } from "./legal-policies";
 import { PRIVACY_META } from "../privacy/privacy-policy";
 
 // ─────────────────────────────────────────────
@@ -18,13 +18,12 @@ function AccordionItem({
   isOpen,
   onToggle,
 }: {
-  section: TermsSection;
+  section: LegalSection;
   isOpen: boolean;
   onToggle: () => void;
 }) {
   return (
     <div style={{ borderBottom: "1px solid var(--border-soft)" }}>
-      {/* رأس القسم */}
       <button
         onClick={onToggle}
         style={{
@@ -66,7 +65,6 @@ function AccordionItem({
         />
       </button>
 
-      {/* المحتوى */}
       <div
         style={{
           maxHeight: isOpen ? "9999px" : "0",
@@ -96,7 +94,7 @@ function AccordionItem({
 // ─────────────────────────────────────────────
 // وثيقة كاملة بـ accordion
 // ─────────────────────────────────────────────
-function DocumentAccordion({ doc }: { doc: TermsDocument }) {
+function DocumentAccordion({ doc }: { doc: LegalDocument }) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   const toggleSection = useCallback((id: string) => {
@@ -117,7 +115,6 @@ function DocumentAccordion({ doc }: { doc: TermsDocument }) {
 
   return (
     <div>
-      {/* وصف الوثيقة + زر فتح الكل */}
       <div
         style={{
           padding: "var(--sp-4) var(--sp-5)",
@@ -161,7 +158,6 @@ function DocumentAccordion({ doc }: { doc: TermsDocument }) {
         </button>
       </div>
 
-      {/* الأقسام */}
       {doc.sections.map((section) => (
         <AccordionItem
           key={section.id}
@@ -177,10 +173,9 @@ function DocumentAccordion({ doc }: { doc: TermsDocument }) {
 // ─────────────────────────────────────────────
 // المكوّن الرئيسي
 // ─────────────────────────────────────────────
-export default function TermsContent() {
-  const [activeDoc, setActiveDoc] = useState<string>(TERMS_DOCUMENTS[0].id);
-
-  const currentDoc = TERMS_DOCUMENTS.find((d) => d.id === activeDoc)!;
+export default function LegalContent() {
+  const [activeDoc, setActiveDoc] = useState<string>(LEGAL_DOCUMENTS[0].id);
+  const currentDoc = LEGAL_DOCUMENTS.find((d) => d.id === activeDoc)!;
 
   return (
     <div
@@ -207,7 +202,7 @@ export default function TermsContent() {
             textAlign: "right",
           }}
         >
-          الشروط والسياسات
+          السياسات القانونية
         </h1>
         <p
           style={{
@@ -220,18 +215,17 @@ export default function TermsContent() {
           آخر تحديث: {PRIVACY_META.lastUpdated}
         </p>
 
-        {/* ── تبويبات الوثائق الثلاث ── */}
+        {/* ── تبويبات الوثائق الخمس ── */}
         <div
           style={{
             display: "flex",
-            gap: "var(--sp-2)",
+            gap: "var(--sp-1)",
             overflowX: "auto",
             paddingBottom: "0",
-            scrollbarWidth: "none",
           }}
           className="no-scrollbar"
         >
-          {TERMS_DOCUMENTS.map((doc) => {
+          {LEGAL_DOCUMENTS.map((doc) => {
             const isActive = doc.id === activeDoc;
             return (
               <button
@@ -239,15 +233,19 @@ export default function TermsContent() {
                 onClick={() => setActiveDoc(doc.id)}
                 style={{
                   flexShrink: 0,
-                  padding: "var(--sp-2) var(--sp-4)",
+                  padding: "var(--sp-2) var(--sp-3)",
                   borderRadius: "var(--radius-full) var(--radius-full) 0 0",
                   border: "none",
                   borderBottom: isActive
                     ? "2px solid var(--color-primary)"
                     : "2px solid transparent",
-                  background: isActive ? "var(--color-primary-soft)" : "transparent",
-                  color: isActive ? "var(--color-primary)" : "var(--text-tertiary)",
-                  fontSize: "var(--text-xs)",
+                  background: isActive
+                    ? "var(--color-primary-soft)"
+                    : "transparent",
+                  color: isActive
+                    ? "var(--color-primary)"
+                    : "var(--text-tertiary)",
+                  fontSize: "var(--text-2xs)",
                   fontWeight: isActive ? 700 : 500,
                   cursor: "pointer",
                   fontFamily: "inherit",
@@ -270,12 +268,7 @@ export default function TermsContent() {
           marginTop: "var(--sp-2)",
         }}
       >
-        {/* عنوان الوثيقة */}
-        <div
-          style={{
-            padding: "var(--sp-4) var(--sp-5) 0",
-          }}
-        >
+        <div style={{ padding: "var(--sp-4) var(--sp-5) 0" }}>
           <h2
             style={{
               fontSize: "var(--text-lg)",
@@ -299,6 +292,10 @@ export default function TermsContent() {
           padding: "var(--sp-5)",
           background: "var(--bg-surface)",
           borderTop: "1px solid var(--border-soft)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "var(--sp-2)",
           textAlign: "center",
         }}
       >
@@ -306,21 +303,30 @@ export default function TermsContent() {
           style={{
             fontSize: "var(--text-xs)",
             color: "var(--text-tertiary)",
-            margin: "0 0 var(--sp-2) 0",
+            margin: 0,
           }}
         >
           © {new Date().getFullYear()} ZAWAJ AI by ORCAUP · جميع الحقوق محفوظة
         </p>
         <a
-          href={`mailto:${PRIVACY_META.contactEmail}`}
+          href={`mailto:${PRIVACY_META.supportEmail}`}
           style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--sp-2)",
             fontSize: "var(--text-xs)",
             color: "var(--color-primary)",
             textDecoration: "none",
             fontWeight: 600,
           }}
         >
-          {PRIVACY_META.contactEmail}
+          <Mail
+            style={{
+              width: "var(--icon-sm)",
+              height: "var(--icon-sm)",
+            }}
+          />
+          {PRIVACY_META.supportEmail}
         </a>
       </div>
     </div>

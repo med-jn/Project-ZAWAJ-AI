@@ -1,27 +1,26 @@
 'use client';
 /**
- * app/mediators/page.tsx  (v4)
- * - كل الأيقونات من Lucide عبر <Icon> wrapper (.icon-wrap)
- * - كل الـ sheets تأخذ paddingBottom: var(--nav-h-safe) في الـ footer
- * - لا إيموجي في أي مكان
+ * app/mediators/page.tsx
+ * ✅ حُذف عرض الرصيد تماماً
+ * ✅ SubscribeSheet → RequestMediationSheet (طلب وساطة بدون عملات)
+ * ✅ "اشتراك الآن" → "طلب وساطة"
  */
 
-import { useState, useEffect }     from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect }            from 'react';
+import { motion, AnimatePresence }        from 'framer-motion';
 import {
   Star, Users, MessageCircle, Flag, ChevronLeft,
-  Crown, Send, X, Clock, ShieldCheck, UserX, Loader2,
+  Crown, Send, X, ShieldCheck, UserX, Loader2,
 } from 'lucide-react';
-import { LoveCoin }       from '@/components/ui/LoveCoin';
-import { toast }          from 'sonner';
-import { MediatorCard }   from '@/components/mediators/MediatorCard';
-import { SubscribeSheet } from '@/components/mediators/SubscribeSheet';
-import { SuccessScreen }  from '@/components/mediators/SuccessScreen';
-import { Stars }          from '@/components/mediators/Stars';
-import { Icon }           from '@/components/mediators/Icon';
-import { LevelBadge }     from '@/components/gems';
-import { useMediators }   from '@/hooks/useMediators';
-import type { MediatorRow, SuccessData } from '@/components/mediators/types';
+import { toast }                          from 'sonner';
+import { MediatorCard }                   from '@/components/mediators/MediatorCard';
+import { RequestMediationSheet }          from '@/components/mediators/RequestMediationSheet';
+import { SuccessScreen }                  from '@/components/mediators/SuccessScreen';
+import { Stars }                          from '@/components/mediators/Stars';
+import { Icon }                           from '@/components/mediators/Icon';
+import { LevelBadge }                     from '@/components/gems';
+import { useMediators }                   from '@/hooks/useMediators';
+import type { MediatorRow, SuccessData }  from '@/components/mediators/types';
 
 function Spinner({ size = 24 }: { size?: number }) {
   return (
@@ -33,12 +32,14 @@ function Spinner({ size = 24 }: { size?: number }) {
 }
 
 export default function MediatorsPage() {
-  const { mediators, loading, currentUser, balance,
+  const {
+    mediators, loading, currentUser,
     subscribers, subLoading, load, openMediator,
-    submitRating, reportMediator, unsubscribe } = useMediators();
+    submitRating, reportMediator, unsubscribe,
+  } = useMediators();
 
   const [selected,           setSelected]           = useState<MediatorRow | null>(null);
-  const [subscribeTarget,    setSubscribeTarget]    = useState<MediatorRow | null>(null);
+  const [requestTarget,      setRequestTarget]      = useState<MediatorRow | null>(null);
   const [successData,        setSuccessData]        = useState<SuccessData | null>(null);
   const [showRate,           setShowRate]           = useState(false);
   const [myRating,           setMyRating]           = useState(0);
@@ -89,17 +90,12 @@ export default function MediatorsPage() {
   return (
     <div className="min-h-full px-4 py-5" dir="rtl" style={{ background: 'var(--bg-main)' }}>
 
-      {/* Top bar */}
+      {/* Top bar — بدون رصيد */}
       {currentUser && (
         <div className="flex items-center justify-between mb-4 px-1">
-          <h1 className="font-black" style={{ fontSize: 'var(--text-lg)', color: 'var(--text-main)' }}>الوسطاء</h1>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full"
-            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-            <span className="font-black" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
-              {balance.toLocaleString('ar-TN')}
-            </span>
-            <LoveCoin size={16} />
-          </div>
+          <h1 className="font-black" style={{ fontSize: 'var(--text-lg)', color: 'var(--text-main)' }}>
+            الوسطاء
+          </h1>
         </div>
       )}
 
@@ -114,18 +110,20 @@ export default function MediatorsPage() {
         {mediators.map((m, i) => (
           <MediatorCard key={m.id} mediator={m} rank={i + 1}
             isAuthenticated={!!currentUser}
-            onSubscribe={setSubscribeTarget}
+            onRequestMediation={setRequestTarget}
             onOpenDetail={openDetail} />
         ))}
       </div>
 
-      {/* Subscribe sheet */}
+      {/* Request Mediation sheet */}
       <AnimatePresence>
-        {subscribeTarget && !successData && (
-          <SubscribeSheet mediator={subscribeTarget} balance={balance}
+        {requestTarget && !successData && (
+          <RequestMediationSheet
+            mediator={requestTarget}
             userName={currentUser?.full_name ?? 'مستخدم'}
-            onClose={() => setSubscribeTarget(null)}
-            onSuccess={d => { setSubscribeTarget(null); setSuccessData(d); load(); }} />
+            onClose={() => setRequestTarget(null)}
+            onSuccess={() => { setRequestTarget(null); load(); }}
+          />
         )}
       </AnimatePresence>
 
@@ -218,7 +216,7 @@ export default function MediatorsPage() {
                         style={{ background: 'linear-gradient(135deg, #800020, var(--color-primary))',
                           opacity: myRating === 0 ? 0.4 : 1, fontSize: 'var(--text-sm)' }}>
                         <Icon i={Send} size={13} color="#fff" />
-                        {submitting ? 'جاري...' : 'إرسال التقييم'}
+                        {submitting ? 'جارٍ...' : 'إرسال التقييم'}
                       </button>
                     </motion.div>
                   )}
@@ -265,13 +263,13 @@ export default function MediatorsPage() {
                 {/* Subscribers */}
                 <div>
                   <p className="font-black mb-3" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
-                    المشتركون ({currentUser?.gender === 'male' ? 'الإناث' : 'الذكور'})
+                    الأعضاء ({currentUser?.gender === 'male' ? 'الإناث' : 'الذكور'})
                   </p>
                   {subLoading && <div className="flex justify-center py-8"><Spinner /></div>}
                   {!subLoading && subscribers.length === 0 && (
                     <div className="text-center py-10 icon-wrap">
                       <Icon i={Users} size={30} color="var(--text-tertiary)" className="mx-auto mb-2" />
-                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>لا يوجد مشتركون بعد</p>
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>لا يوجد أعضاء بعد</p>
                     </div>
                   )}
                   <div className="space-y-3">
@@ -291,7 +289,7 @@ export default function MediatorsPage() {
                             {s.full_name || '—'}
                           </p>
                           <div className="flex items-center gap-2 mt-0.5">
-                            {s.city && <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>📍 {s.city}</span>}
+                            {s.city && <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>{s.city}</span>}
                             {s.age  && <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>{s.age} سنة</span>}
                           </div>
                           {s.profile_completion_percent > 0 && (
@@ -302,7 +300,6 @@ export default function MediatorsPage() {
                                   width: `${s.profile_completion_percent}%`,
                                   background: s.profile_completion_percent >= 80 ? '#22c55e'
                                     : s.profile_completion_percent >= 50 ? '#D4AF37' : 'var(--color-primary)',
-                                  transition: 'width 0.6s ease',
                                 }} />
                               </div>
                               <span className="font-bold" style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
@@ -321,7 +318,7 @@ export default function MediatorsPage() {
                 </div>
               </div>
 
-              {/* ── Footer — مرفوع فوق الـ navbar ── */}
+              {/* Footer */}
               <div style={{ borderTop: '1px solid var(--glass-border)', paddingBottom: 'var(--nav-h-safe)' }}>
 
                 {/* Unsubscribe panel */}
@@ -334,11 +331,11 @@ export default function MediatorsPage() {
                         <div className="flex items-center gap-2 mb-2 icon-wrap">
                           <Icon i={UserX} size={15} color="#f87171" />
                           <p className="font-black" style={{ fontSize: 'var(--text-sm)', color: '#f87171' }}>
-                            تأكيد إلغاء الاشتراك
+                            تأكيد إلغاء الوساطة
                           </p>
                         </div>
                         <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 14 }}>
-                          ستفقد الوصول إلى قائمة المشتركين وخدمات الوسيط. لا يمكن استرداد العملات المدفوعة.
+                          ستفقد الوصول إلى قائمة الأعضاء وخدمات الوسيط.
                         </p>
                         <div className="flex gap-2 icon-wrap">
                           <button onClick={doUnsubscribe} disabled={unsubscribeLoading}
@@ -368,7 +365,7 @@ export default function MediatorsPage() {
                       <div className="flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-1.5 font-black"
                         style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)',
                           fontSize: 'var(--text-xs)', color: '#D4AF37' }}>
-                        <Icon i={Crown} size={14} color="#D4AF37" /> مشترك ✓
+                        <Icon i={ShieldCheck} size={14} color="#D4AF37" /> بانتظار الوسيط ✓
                       </div>
                       <button onClick={() => setShowUnsubscribe(v => !v)}
                         className="w-11 rounded-2xl flex items-center justify-center flex-shrink-0"
@@ -379,12 +376,12 @@ export default function MediatorsPage() {
                     </div>
                   ) : (
                     <motion.button whileTap={{ scale: 0.97 }}
-                      onClick={() => { setSelected(null); setSubscribeTarget(selected); }}
+                      onClick={() => { setSelected(null); setRequestTarget(selected); }}
                       disabled={!currentUser}
                       className="flex-[2] py-3.5 rounded-2xl font-black text-white flex items-center justify-center gap-2"
                       style={{ background: 'linear-gradient(135deg, #800020, var(--color-primary))',
                         boxShadow: '0 8px 24px var(--shadow-red-glow)', fontSize: 'var(--text-sm)' }}>
-                      <Icon i={Crown} size={14} color="#fff" /> اشتراك الآن
+                      <Icon i={ShieldCheck} size={14} color="#fff" /> طلب وساطة
                     </motion.button>
                   )}
 

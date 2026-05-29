@@ -11,26 +11,27 @@ export default function AuthCallbackPage() {
       try {
         const hash   = window.location.hash;
         const search = window.location.search;
-        const params = hash || search;
 
+        // ── اقرأ type قبل أي شيء آخر ────────────────────────
+        const searchParams = new URLSearchParams(search);
+        const hashParams   = new URLSearchParams(hash.replace('#', '?'));
+        const type = searchParams.get('type') || hashParams.get('type');
+
+        // ── استبدل الكود بـ session ──────────────────────────
+        const params = hash || search;
         if (params) {
           await supabase.auth.exchangeCodeForSession(window.location.href);
         }
 
         await new Promise(r => setTimeout(r, 500));
 
-        // ── فحص نوع الرابط ──────────────────────────────────
-        const searchParams = new URLSearchParams(search);
-        const hashParams   = new URLSearchParams(hash.replace('#', '?'));
-        const type = searchParams.get('type') || hashParams.get('type');
-
-        // إذا كان رابط إعادة تعيين كلمة المرور
+        // ── توجيه حسب النوع ───────────────────────────────────
         if (type === 'recovery') {
           router.replace('/reset-password');
           return;
         }
 
-        // ── باقي الحالات (تأكيد إيميل، تسجيل دخول، إلخ) ───
+        // ── باقي الحالات ──────────────────────────────────────
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {

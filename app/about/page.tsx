@@ -1,13 +1,11 @@
-import type { Metadata } from 'next';
-import AboutContent from './AboutContent';
+// page.tsx
+// المسار: app/about/page.tsx
 
-export const metadata: Metadata = {
-  title: 'حول التطبيق | ZAWAJ AI',
-  description: 'تعرف على رؤية ZAWAJ AI، المنصة الرائدة في تيسير الزواج الجاد باستخدام تقنيات الذكاء الاصطناعي تحت إشراف orcaPROD.',
-  openGraph: {
-    title: 'حول تطبيق ZAWAJ AI',
-    description: 'رؤيتنا والتقنيات المستخدمة في تطوير منصة الزواج الجاد.',
-  }
+import AboutContent from "./AboutContent";
+
+export const metadata = {
+  title: "عن التطبيق | ZAWAJ AI",
+  description: "تعرّف على ZAWAJ AI — منصة التعارف الجاد بهدف الزواج للعالم العربي والجالية المسلمة",
 };
 
 export default function AboutPage() {

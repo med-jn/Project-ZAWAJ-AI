@@ -1,10 +1,11 @@
-// app/terms/page.tsx
-import type { Metadata } from 'next';
-import TermsContent from './TermsContent';
+// page.tsx
+// المسار: app/terms/page.tsx
 
-export const metadata: Metadata = {
-  title: 'شروط الخدمة | ZAWAJ AI',
-  description: 'اطلع على شروط استخدام تطبيق ZAWAJ AI.',
+import TermsContent from "./TermsContent";
+
+export const metadata = {
+  title: "الشروط والسياسات | ZAWAJ AI",
+  description: "شروط الاستخدام وإرشادات المجتمع وسياسة الملكية الفكرية لتطبيق ZAWAJ AI",
 };
 
 export default function TermsPage() {

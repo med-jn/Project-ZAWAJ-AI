@@ -4,7 +4,7 @@ export { LevelBadge }        from './LevelBadge';
 export { Row }               from './Row';
 export { ConfirmRow }        from './ConfirmRow';
 export { SuccessScreen }     from './SuccessScreen';
-export { SubscribeSheet }    from './SubscribeSheet';
+export { SubscribeSheet }    from './RequestMediationSheet';
 export { MediatorCard }      from './MediatorCard';
 export { TIERS }             from './constants';
 export type { Tier }         from './constants';

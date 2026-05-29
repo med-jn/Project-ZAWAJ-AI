@@ -1,10 +1,11 @@
-// app/privacy/page.tsx
-import type { Metadata } from 'next';
-import PrivacyContent from './PrivacyContent';
+// page.tsx
+// المسار: app/privacy/page.tsx
 
-export const metadata: Metadata = {
-  title: 'سياسة الخصوصية | ZAWAJ AI',
-  description: 'تعرف على كيفية حماية بياناتك وخصوصيتك في تطبيق زواج AI. نحن نلتزم بأعلى معايير الأمان والشفافية.',
+import PrivacyContent from "./PrivacyContent";
+
+export const metadata = {
+  title: "سياسة الخصوصية | ZAWAJ AI",
+  description: "سياسة خصوصية تطبيق ZAWAJ AI — كيف نجمع بياناتك ونحميها",
 };
 
 export default function PrivacyPage() {

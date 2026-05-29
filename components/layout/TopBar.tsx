@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Menu, X, Settings, Shield, ShieldCog, Package, UserPen ,
+  Menu, X, Settings, Shield, ShieldCog, Package, UserPen , SlidersHorizontal,
   HelpCircle, FileText, LogOut, ChevronLeft, Info
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ const MENU_ITEMS = [
     group: 'الحساب',
     items: [
       { icon: UserPen,   label: 'تعديل الملف',           href: '/profile/edit' },
+            { icon: SlidersHorizontal,   label: 'االبحث المتقدم',           href: '/filter' },
       { icon: ShieldCog,   label: 'الأمان والخصوصية',           href: '/security' },
       { icon: Settings,   label: 'الإعدادات',           href: '/settings' },
       { icon: Package,    label: 'رصيد النقاط',  href: '/points' },

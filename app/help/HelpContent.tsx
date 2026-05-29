@@ -1,77 +1,389 @@
-'use client';
-import { Brand } from '@/components/ui/brand';
-import Footer from '@/components/layout/Footer';
+"use client";
 
-export default function HelpContent() {
-  const supportEmail = "contact.orcaprod@gmail.com";
+// HelpContent.tsx
+// صفحة المساعدة — ZAWAJ AI
+// المسار: app/help/HelpContent.tsx
+// ✅ 6 فئات بتبويبات | ✅ Accordion | ✅ روابط سياسات | ✅ تواصل | ✅ globals.css فقط
+
+import { useState, useCallback } from "react";
+import { ChevronDown, Mail, ChevronLeft } from "lucide-react";
+import Link from "next/link";
+import { FAQ_CATEGORIES, POLICY_LINKS, type FaqItem, type FaqCategory } from "./help-data";
+import { APP_INFO } from "../about/about-data";
+
+// ─────────────────────────────────────────────
+// سؤال accordion منفرد
+// ─────────────────────────────────────────────
+function FaqAccordionItem({
+  item,
+  isOpen,
+  onToggle,
+}: {
+  item: FaqItem;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div style={{ borderBottom: "1px solid var(--border-soft)" }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "var(--sp-4) var(--sp-5)",
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          gap: "var(--sp-3)",
+          WebkitTapHighlightColor: "transparent",
+        }}
+      >
+        <span
+          style={{
+            flex: 1,
+            textAlign: "right",
+            fontSize: "var(--text-sm)",
+            fontWeight: 600,
+            color: isOpen ? "var(--color-primary)" : "var(--text-main)",
+            lineHeight: "var(--lh-snug)",
+            transition: "color 0.2s ease",
+          }}
+        >
+          {item.question}
+        </span>
+        <ChevronDown
+          style={{
+            flexShrink: 0,
+            width: "var(--icon-md)",
+            height: "var(--icon-md)",
+            color: isOpen ? "var(--color-primary)" : "var(--text-tertiary)",
+            transform: isOpen ? "rotate(180deg)" : "rotate(0deg)",
+            transition: "transform 0.25s ease, color 0.2s ease",
+          }}
+          strokeWidth={2.5}
+        />
+      </button>
+
+      <div
+        style={{
+          maxHeight: isOpen ? "9999px" : "0",
+          overflow: "hidden",
+          transition: isOpen ? "max-height 0.45s ease" : "max-height 0.25s ease",
+        }}
+      >
+        <div style={{ padding: "0 var(--sp-5) var(--sp-5)" }}>
+          <p
+            style={{
+              margin: 0,
+              fontSize: "var(--text-sm)",
+              lineHeight: "var(--lh-relaxed)",
+              color: "var(--text-secondary)",
+              whiteSpace: "pre-line",
+              textAlign: "right",
+            }}
+          >
+            {item.answer}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// قائمة أسئلة الفئة النشطة
+// ─────────────────────────────────────────────
+function CategoryFaq({ category }: { category: FaqCategory }) {
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+
+  const toggleItem = useCallback((id: string) => {
+    setOpenItems((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-main)] p-6 pb-20 font-cairo selection:bg-[var(--color-primary)]/30" dir="rtl">
-      {/* Header - موحد مع بقية الوثائق */}
-      <div className="flex flex-col items-center mb-16 gap-4 border-b border-[var(--glass-border)] pb-10 text-center">
-        <div className="scale-60 origin-center -mb-4"><Brand /></div>
-        <h1 className="text-3xl font-black text-[var(--color-primary)] uppercase">المساعدة والدعم</h1>
-        <p className="text-[11px] font-sans font-bold tracking-[0.3em] uppercase opacity-40">Help & Support</p>
+    <div>
+      {category.items.map((item) => (
+        <FaqAccordionItem
+          key={item.id}
+          item={item}
+          isOpen={!!openItems[item.id]}
+          onToggle={() => toggleItem(item.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// المكوّن الرئيسي
+// ─────────────────────────────────────────────
+export default function HelpContent() {
+  const [activeCategory, setActiveCategory] = useState<string>(FAQ_CATEGORIES[0].id);
+  const currentCategory = FAQ_CATEGORIES.find((c) => c.id === activeCategory)!;
+
+  return (
+    <div
+      dir="rtl"
+      style={{
+        minHeight: "100dvh",
+        background: "var(--bg-main)",
+        paddingBottom: "var(--sp-16)",
+      }}
+    >
+      {/* ══ هيدر ══ */}
+      <div
+        style={{
+          padding: "var(--sp-6) var(--sp-5) 0",
+          background: "var(--bg-surface)",
+        }}
+      >
+        <h1
+          style={{
+            fontSize: "var(--text-2xl)",
+            fontWeight: 800,
+            color: "var(--text-main)",
+            margin: "0 0 var(--sp-1) 0",
+            textAlign: "right",
+          }}
+        >
+          المساعدة
+        </h1>
+        <p
+          style={{
+            fontSize: "var(--text-xs)",
+            color: "var(--text-tertiary)",
+            margin: "0 0 var(--sp-4) 0",
+            textAlign: "right",
+          }}
+        >
+          الأسئلة الشائعة والإجابات
+        </p>
+
+        {/* ── تبويبات الفئات ── */}
+        <div
+          style={{
+            display: "flex",
+            gap: "var(--sp-1)",
+            overflowX: "auto",
+            paddingBottom: "0",
+          }}
+          className="no-scrollbar"
+        >
+          {FAQ_CATEGORIES.map((cat) => {
+            const isActive = cat.id === activeCategory;
+            return (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                style={{
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "var(--sp-1)",
+                  padding: "var(--sp-2) var(--sp-3)",
+                  borderRadius: "var(--radius-full) var(--radius-full) 0 0",
+                  border: "none",
+                  borderBottom: isActive
+                    ? "2px solid var(--color-primary)"
+                    : "2px solid transparent",
+                  background: isActive
+                    ? "var(--color-primary-soft)"
+                    : "transparent",
+                  color: isActive
+                    ? "var(--color-primary)"
+                    : "var(--text-tertiary)",
+                  fontSize: "var(--text-2xs)",
+                  fontWeight: isActive ? 700 : 500,
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all 0.2s ease",
+                  WebkitTapHighlightColor: "transparent",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      <div className="max-w-4xl mx-auto space-y-16 leading-relaxed text-right">
-        
-        {/* 1. نظام النقاط والاشتراكات */}
-        <section className="relative pr-6 border-r-2 border-[var(--color-primary)]/20">
-          <div className="flex justify-between items-baseline mb-4 gap-4">
-            <h2 className="text-xl font-bold text-[var(--color-gold-hover)]">1. نظام النقاط (Credits)</h2>
-            <span className="text-[10px] font-sans opacity-30 uppercase font-bold tracking-widest">Economy & Billing</span>
-          </div>
-          <div className="space-y-3 text-sm text-[var(--text-secondary)]">
-            <p>تُستخدم النقاط داخل تطبيق ZAWAJ AI لفتح المحادثات وإرسال الإعجابات المميزة. يمكنك الحصول عليها عبر الشراء المباشر أو من خلال مشاهدة الإعلانات المكافئة.</p>
-            <p className="text-[12px] italic opacity-60 font-sans" dir="ltr">
-              Credits are used to unlock chats and send premium likes. You can earn them via direct purchase or rewarded ads.
-            </p>
-          </div>
-        </section>
+      {/* ══ أسئلة الفئة النشطة ══ */}
+      <div
+        style={{
+          background: "var(--bg-surface)",
+          marginTop: "var(--sp-2)",
+        }}
+      >
+        {/* عنوان الفئة */}
+        <div
+          style={{
+            padding: "var(--sp-4) var(--sp-5)",
+            borderBottom: "1px solid var(--border-soft)",
+            display: "flex",
+            alignItems: "center",
+            gap: "var(--sp-2)",
+          }}
+        >
+          <span style={{ fontSize: "var(--text-lg)" }}>{currentCategory.icon}</span>
+          <h2
+            style={{
+              margin: 0,
+              fontSize: "var(--text-md)",
+              fontWeight: 700,
+              color: "var(--text-main)",
+            }}
+          >
+            {currentCategory.label}
+          </h2>
+        </div>
 
-        {/* 2. دور الوسطاء (Mediators) */}
-        <section className="relative pr-6 border-r-2 border-[var(--color-primary)]/20">
-          <div className="flex justify-between items-baseline mb-4 gap-4">
-            <h2 className="text-xl font-bold text-[var(--color-gold-hover)]">2. الوسطاء والخصوصية</h2>
-            <span className="text-[10px] font-sans opacity-30 uppercase font-bold tracking-widest">Human Mediation</span>
-          </div>
-          <div className="space-y-3 text-sm text-[var(--text-secondary)]">
-            <p>الوسطاء هم أشخاص حقيقيون معتمدون من إدارة orcaPROD، مهمتهم مراجعة الملفات وتسهيل التواصل بين الطرفين لضمان الجدية التامة وحل النزاعات التقنية.</p>
-            <p className="text-[12px] italic opacity-60 font-sans" dir="ltr">
-              Verified mediators facilitate matching and ensure serious intent, operating under strict orcaPROD privacy standards.
-            </p>
-          </div>
-        </section>
-
-        {/* 3. الذكاء الاصطناعي والأمان */}
-        <section className="relative pr-6 border-r-2 border-[var(--color-primary)]/20">
-          <div className="flex justify-between items-baseline mb-4 gap-4">
-            <h2 className="text-xl font-bold text-[var(--color-gold-hover)]">3. الدعم الفني والذكاء الاصطناعي</h2>
-            <span className="text-[10px] font-sans opacity-30 uppercase font-bold tracking-widest">AI & Tech Support</span>
-          </div>
-          <div className="space-y-3 text-sm text-[var(--text-secondary)]">
-            <p>يعمل محرك Gemini AI على تحليل بلاغات المستخدمين واكتشاف الحسابات الوهمية تلقائياً. في حال واجهت مشكلة تقنية في التسجيل أو الدفع، يرجى التواصل معنا فوراً.</p>
-            <p className="text-[12px] italic opacity-60 font-sans" dir="ltr">
-              Gemini AI monitors reports and fake accounts. For technical issues with registration or billing, please contact us immediately.
-            </p>
-          </div>
-        </section>
-
-        {/* 4. قنوات التواصل الرسمية */}
-        <section className="mt-12 p-10 rounded-[2rem] bg-gradient-to-b from-[var(--color-primary)]/5 to-transparent border border-[var(--glass-border)] text-center">
-          <h2 className="text-xl font-bold mb-4">هل تحتاج لمساعدة فورية؟</h2>
-          <p className="text-sm opacity-70 mb-8">نحن في <span className="font-bold text-[var(--color-primary)] uppercase">orcaPROD</span> نلتزم بالرد على استفساراتكم خلال 24 ساعة.</p>
-          <div className="inline-flex flex-col gap-4">
-            <a href={`mailto:${supportEmail}`} className="px-10 py-4 rounded-xl bg-[var(--color-primary)] text-white font-sans font-black tracking-wider text-sm hover:scale-105 transition-transform">
-              {supportEmail}
-            </a>
-            <p className="text-[10px] font-sans opacity-40 uppercase tracking-tighter text-center">Direct Developer Support</p>
-          </div>
-        </section>
-
+        <CategoryFaq key={activeCategory} category={currentCategory} />
       </div>
-      <Footer />
+
+      {/* ══ روابط السياسات ══ */}
+      <div
+        style={{
+          padding: "var(--sp-6) var(--sp-5) var(--sp-4)",
+          background: "var(--bg-surface)",
+          marginTop: "var(--sp-2)",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 var(--sp-3) 0",
+            fontSize: "var(--text-sm)",
+            fontWeight: 700,
+            color: "var(--text-main)",
+            textAlign: "right",
+          }}
+        >
+          الشروط والسياسات
+        </h3>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "var(--sp-2)",
+          }}
+        >
+          {POLICY_LINKS.map((link) => (
+            <Link
+              key={link.id}
+              href={link.href}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "var(--sp-3) var(--sp-4)",
+                background: "var(--bg-soft)",
+                borderRadius: "var(--radius-md)",
+                textDecoration: "none",
+                border: "1px solid var(--border-soft)",
+              }}
+            >
+              <ChevronLeft
+                style={{
+                  width: "var(--icon-sm)",
+                  height: "var(--icon-sm)",
+                  color: "var(--text-tertiary)",
+                  flexShrink: 0,
+                }}
+              />
+              <div style={{ flex: 1, textAlign: "right", marginRight: "var(--sp-2)" }}>
+                <p
+                  style={{
+                    margin: "0 0 2px 0",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 600,
+                    color: "var(--text-main)",
+                  }}
+                >
+                  {link.label}
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "var(--text-2xs)",
+                    color: "var(--text-tertiary)",
+                  }}
+                >
+                  {link.desc}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ══ تواصل معنا ══ */}
+      <div
+        style={{
+          padding: "var(--sp-5)",
+          background: "var(--bg-surface)",
+          marginTop: "var(--sp-2)",
+          borderTop: "1px solid var(--border-soft)",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 var(--sp-3) 0",
+            fontSize: "var(--text-sm)",
+            fontWeight: 700,
+            color: "var(--text-main)",
+            textAlign: "right",
+          }}
+        >
+          لم تجد إجابتك؟
+        </h3>
+        <a
+          href={`mailto:${APP_INFO.supportEmail}`}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "var(--sp-4)",
+            background: "var(--color-primary-soft)",
+            borderRadius: "var(--radius-md)",
+            textDecoration: "none",
+            border: "1px solid var(--border-soft)",
+          }}
+        >
+          <Mail
+            style={{
+              width: "var(--icon-md)",
+              height: "var(--icon-md)",
+              color: "var(--color-primary)",
+              flexShrink: 0,
+            }}
+          />
+          <div style={{ flex: 1, textAlign: "right", marginRight: "var(--sp-3)" }}>
+            <p
+              style={{
+                margin: "0 0 2px 0",
+                fontSize: "var(--text-sm)",
+                fontWeight: 700,
+                color: "var(--color-primary)",
+              }}
+            >
+              تواصل مع الدعم
+            </p>
+            <p
+              style={{
+                margin: 0,
+                fontSize: "var(--text-xs)",
+                color: "var(--text-secondary)",
+              }}
+            >
+              {APP_INFO.supportEmail}
+            </p>
+          </div>
+        </a>
+      </div>
     </div>
   );
 }

@@ -1,63 +1,52 @@
 'use client';
 /**
  * 📁 components/cards/usercard.tsx — ZAWAJ AI
- * ✅ يمين = إعجاب | يسار = تجاهل
- * ✅ بادجات مباشرة من wallets (bronze/silver/gold/diamond)
- * ✅ أزرار كبسولة بـ CSS variables
- * ✅ خصم النقاط عبر EconomyService
+ * ✅ سوايب يمين = إعجاب | سوايب يسار = تجاهل
+ * ✅ الضغط على الصورة يفتح /view/[id]
+ * ✅ زرّان فقط: إعجاب + تجاهل — ثلاثي الأبعاد عصري
+ * ✅ تدرج أسفل من var(--bg-main)
+ * ✅ بدون أي منطق نقاط/شراء
  */
 
 import { useRef, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, useMotionValue, useTransform, animate } from 'framer-motion';
-import { Heart, X, Eye, MapPin } from 'lucide-react';
-import { supabase }    from '@/lib/supabase/client';
-import { LevelBadge }  from '@/components/badges';
-import { sendLike }    from '@/lib/services/EconomyService';
+import { Heart, X, MapPin } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
-// ── نوع البادج المسموح به ──────────────────────────────────────
-type BadgeType = 'bronze' | 'silver' | 'gold' | 'diamond';
-const VALID_BADGES: BadgeType[] = ['bronze', 'silver', 'gold', 'diamond'];
-const toBadge = (v?: string): BadgeType | null =>
-  VALID_BADGES.includes(v as BadgeType) ? (v as BadgeType) : null;
-
-// ══════════════════════════════════════════════════════════════
-//  Props
-// ══════════════════════════════════════════════════════════════
+// ── Props ──────────────────────────────────────────────────────
 export interface UserCardData {
-  id:                   string;
-  name:                 string;
-  age:                  number;
-  gender?:              'male' | 'female';
-  city?:                string;
-  mainPhoto:            string;
-  prefersBlur?:         boolean;
-  badge_type?:          string;   // من wallets: none|bronze|silver|gold|diamond
-  religious_commitment?: number;
-  currentUser?:         { id: string } | null;
+  id:           string;
+  name:         string;
+  age:          number;
+  gender?:      'male' | 'female';
+  city?:        string;
+  mainPhoto:    string;
+  prefersBlur?: boolean;
+  currentUser?: { id: string } | null;
 }
 
 interface UserCardProps {
   userData:      UserCardData;
   onNext:        () => void;
-  onViewProfile: (userId: string) => void;
 }
 
 // ══════════════════════════════════════════════════════════════
-//  المكوّن
-// ══════════════════════════════════════════════════════════════
-export default function UserCard({ userData: u, onNext, onViewProfile }: UserCardProps) {
+export default function UserCard({ userData: u, onNext }: UserCardProps) {
+  const router = useRouter();
   const [likeFlash, setLikeFlash] = useState(false);
   const [passFlash, setPassFlash] = useState(false);
   const [busy,      setBusy]      = useState(false);
   const hasViewed = useRef(false);
+  const tapTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const x      = useMotionValue(0);
-  const rotate = useTransform(x, [-220, 220], [12, -12]);
-  const cardOp = useTransform(x, [-280, -90, 0, 90, 280], [0, 1, 1, 1, 0]);
-  const likeOp = useTransform(x, [0, 120], [0, 0.4]);
-  const passOp = useTransform(x, [-120, 0], [0.4, 0]);
+  const x       = useMotionValue(0);
+  const rotate  = useTransform(x, [-240, 240], [14, -14]);
+  const cardOp  = useTransform(x, [-300, -100, 0, 100, 300], [0, 1, 1, 1, 0]);
+  const likeOp  = useTransform(x, [0, 130], [0, 1]);
+  const passOp  = useTransform(x, [-130, 0], [1, 0]);
 
-  // ── تسجيل الفعل + حذف المعاكس ──────────────────────────────
+  // ── تسجيل الفعل ────────────────────────────────────────────
   const act = useCallback(async (action: 'like' | 'pass' | 'view') => {
     if (!u.currentUser?.id) return;
     if (action !== 'view') setBusy(true);
@@ -75,72 +64,93 @@ export default function UserCard({ userData: u, onNext, onViewProfile }: UserCar
         { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
       );
     } catch (e) { console.error('[UserCard]', e); }
-    finally   { if (action !== 'view') setBusy(false); }
+    finally { if (action !== 'view') setBusy(false); }
   }, [u]);
 
-  // ── سوايب ─────────────────────────────────────────────────
+  // ── سوايب كامل حتى الاختفاء ─────────────────────────────────
   const swipeTo = useCallback(async (dir: 1 | -1) => {
+    if (busy) return;
     const action = dir === 1 ? 'like' : 'pass';
-    await act(action);
-    if (action === 'like' && u.currentUser?.id)
-      sendLike(u.currentUser.id).catch(() => {});
-    animate(x, dir * 700, { duration: 0.27 });
-    setTimeout(() => { x.set(0); onNext(); }, 305);
-  }, [act, x, onNext, u.currentUser]);
+    act(action);
+    // انزلاق حتى خارج الشاشة
+    await animate(x, dir * 800, { duration: 0.38, ease: [0.32, 0, 0.67, 0] });
+    x.set(0);
+    onNext();
+  }, [act, x, onNext, busy]);
 
   const onDragEnd = (_: any, info: any) => {
-    if      (info.offset.x >  105) { flash('like'); swipeTo(1);  }
-    else if (info.offset.x < -105) { flash('pass'); swipeTo(-1); }
-    else animate(x, 0, { type: 'spring', stiffness: 360, damping: 28 });
+    if      (info.offset.x >  110) { flash('like'); swipeTo(1);  }
+    else if (info.offset.x < -110) { flash('pass'); swipeTo(-1); }
+    else animate(x, 0, { type: 'spring', stiffness: 380, damping: 30 });
   };
 
   const flash = (t: 'like' | 'pass') => {
-    if (t === 'like') { setLikeFlash(true); setTimeout(() => setLikeFlash(false), 400); }
-    else              { setPassFlash(true); setTimeout(() => setPassFlash(false), 400); }
+    if (t === 'like') { setLikeFlash(true); setTimeout(() => setLikeFlash(false), 450); }
+    else              { setPassFlash(true); setTimeout(() => setPassFlash(false), 450); }
   };
 
-  // تسجيل الزيارة عند الظهور
+  // تسجيل الزيارة مرة واحدة
   if (!hasViewed.current && u.currentUser) {
     hasViewed.current = true;
     act('view');
   }
 
-  const badge = toBadge(u.badge_type);
+  // ── الضغط على الصورة يفتح الملف الكامل ─────────────────────
+  // نفرّق بين tap ودراغ باستخدام مؤقت + offset صغير
+  const handleTap = () => {
+    router.push(`/view/${u.id}`);
+  };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', paddingBottom: 'var(--nav-h)' }}>
+    <div style={{
+      position: 'fixed', inset: 0, overflow: 'hidden',
+      paddingBottom: 'var(--nav-h)',
+    }}>
 
-      {/* ═══ البطاقة ═══ */}
+      {/* ══ البطاقة ══ */}
       <motion.div
         style={{ x, rotate, opacity: cardOp }}
-        drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.48}
+        drag="x"
+        dragConstraints={{ left: 0, right: 0 }}
+        dragElastic={0.45}
+        dragMomentum={false}
         onDragEnd={onDragEnd}
+        onTap={handleTap}
         className="absolute inset-0"
+        style={{ x, rotate, opacity: cardOp, position: 'absolute', inset: 0 }}
       >
         {/* الصورة */}
         <img
-          src={u.mainPhoto || '/default-avatar.png'} alt={u.name} draggable={false}
-          className="absolute inset-0 w-full h-full object-cover select-none"
+          src={u.mainPhoto || '/default-avatar.png'}
+          alt={u.name}
+          draggable={false}
           style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            userSelect: 'none',
             filter:    u.prefersBlur ? 'blur(24px)' : 'none',
             transform: u.prefersBlur ? 'scale(1.1)' : 'none',
           }}
         />
 
-        {/* تدرج أسفل */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.35) 40%, transparent 70%)',
+        {/* تدرج أسفل — يتكيف مع اللايت/دارك من var(--bg-main) */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(to top, var(--bg-main) 0%, rgba(0,0,0,0) 55%)',
         }} />
 
-        {/* overlay إعجاب (أخضر، يمين) */}
-        <motion.div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(to left, rgba(34,197,94,0.55), transparent 55%)',
+        {/* overlay إعجاب */}
+        <motion.div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(to left, rgba(34,197,94,0.5), transparent 60%)',
           opacity: likeOp,
         }} />
 
-        {/* overlay تجاهل (أحمر، يسار) */}
-        <motion.div className="absolute inset-0 pointer-events-none" style={{
-          background: 'linear-gradient(to right, rgba(164,22,26,0.55), transparent 55%)',
+        {/* overlay تجاهل */}
+        <motion.div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(to right, rgba(164,22,26,0.5), transparent 60%)',
           opacity: passOp,
         }} />
 
@@ -148,8 +158,10 @@ export default function UserCard({ userData: u, onNext, onViewProfile }: UserCar
         <motion.div style={{
           position: 'absolute', top: 'var(--sp-8)', right: 'var(--sp-6)',
           opacity: likeOp, pointerEvents: 'none',
-          border: '2.5px solid #22c55e', borderRadius: 'var(--radius-md)',
-          padding: 'var(--sp-1) var(--sp-4)', transform: 'rotate(-10deg)',
+          border: '2.5px solid #22c55e',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--sp-1) var(--sp-4)',
+          transform: 'rotate(-10deg)',
         }}>
           <span style={{ color: '#22c55e', fontWeight: 900, fontSize: 'var(--text-lg)', letterSpacing: '0.08em' }}>
             إعجاب ❤️
@@ -160,41 +172,38 @@ export default function UserCard({ userData: u, onNext, onViewProfile }: UserCar
         <motion.div style={{
           position: 'absolute', top: 'var(--sp-8)', left: 'var(--sp-6)',
           opacity: passOp, pointerEvents: 'none',
-          border: '2.5px solid var(--color-accent)', borderRadius: 'var(--radius-md)',
-          padding: 'var(--sp-1) var(--sp-4)', transform: 'rotate(10deg)',
+          border: '2.5px solid var(--color-accent)',
+          borderRadius: 'var(--radius-md)',
+          padding: 'var(--sp-1) var(--sp-4)',
+          transform: 'rotate(10deg)',
         }}>
           <span style={{ color: 'var(--color-accent)', fontWeight: 900, fontSize: 'var(--text-lg)', letterSpacing: '0.08em' }}>
             تجاوز ✕
           </span>
         </motion.div>
 
-        {/* الاسم + البادج + العمر + المدينة */}
+        {/* الاسم + المعلومات */}
         <div style={{
           position: 'absolute',
           right: 'var(--sp-5)', left: 'var(--sp-5)',
-          bottom: 'calc(var(--nav-h) + 5.5rem)',
+          bottom: 'calc(var(--nav-h) + 5rem)',
           direction: 'rtl', pointerEvents: 'none',
         }}>
-          {/* اسم + بادج */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-2)' }}>
-            <h2 style={{
-              color: '#fff', fontWeight: 900, margin: 0,
-              fontSize: 'var(--text-2xl)',
-              textShadow: '0 2px 16px rgba(0,0,0,0.9)',
-              lineHeight: 'var(--lh-tight)',
-            }}>
-              {u.name}
-            </h2>
-            {badge && <LevelBadge type={badge} size="text-[10px]" />}
-          </div>
+          <h2 style={{
+            color: '#fff', fontWeight: 900, margin: '0 0 var(--sp-2)',
+            fontSize: 'var(--text-2xl)',
+            textShadow: '0 2px 20px rgba(0,0,0,0.95)',
+            lineHeight: 'var(--lh-tight)',
+          }}>
+            {u.name}
+          </h2>
 
-          {/* عمر + مدينة */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-4)', flexWrap: 'wrap' }}>
             {!!u.age && (
               <span style={{
                 color: 'rgba(255,255,255,0.95)', fontWeight: 700,
                 fontSize: 'var(--text-md)',
-                textShadow: '0 1px 8px rgba(0,0,0,0.8)',
+                textShadow: '0 1px 10px rgba(0,0,0,0.9)',
               }}>
                 {u.age} سنة
               </span>
@@ -203,62 +212,50 @@ export default function UserCard({ userData: u, onNext, onViewProfile }: UserCar
               <span style={{
                 display: 'flex', alignItems: 'center', gap: 'var(--sp-1)',
                 color: 'rgba(255,255,255,0.85)', fontSize: 'var(--text-sm)',
-                textShadow: '0 1px 8px rgba(0,0,0,0.8)',
+                textShadow: '0 1px 10px rgba(0,0,0,0.9)',
               }}>
                 <MapPin size={13} style={{ flexShrink: 0 }} />
                 {u.city}
               </span>
             )}
           </div>
+
+          {/* تلميح فتح الملف */}
+          <p style={{
+            color: 'rgba(255,255,255,0.35)', fontSize: 'var(--text-2xs)',
+            margin: 'var(--sp-2) 0 0', fontWeight: 600,
+          }}>
+            اضغط على الصورة لعرض الملف الكامل
+          </p>
         </div>
       </motion.div>
 
-      {/* ═══ أزرار التفاعل ════════════════════════════════════
-          دوائر كاملة — أحجام بـ CSS variables
-          إعجاب (يمين، أكبر) | ملف (وسط) | تجاهل (يسار)
-      ═══════════════════════════════════════════════════════ */}
+      {/* ══ الأزرار — ثلاثي الأبعاد عصري ══ */}
       <div style={{
         position: 'fixed', left: 0, right: 0, zIndex: 180,
         bottom: 'calc(var(--nav-h) + var(--sp-4))',
         display: 'flex', alignItems: 'center',
-        justifyContent: 'center', gap: 'var(--sp-5)',
+        justifyContent: 'center', gap: 'var(--sp-8)',
         direction: 'rtl',
       }}>
 
-        {/* إعجاب — الأكبر، glow أحمر، نبضة عند الضغط */}
-        <CardBtn
+        {/* ── زر الإعجاب ── */}
+        <ActionBtn
           label="إعجاب"
-          icon={<Heart size={22} fill={likeFlash ? '#fff' : 'none'} strokeWidth={2} color="#fff" />}
-          size="var(--btn-h-lg)"
-          bg={likeFlash ? 'var(--color-primary)' : 'linear-gradient(145deg,var(--color-primary-soft),rgba(164,22,26,0.55))'}
-          border="var(--color-primary)"
-          shadow={likeFlash
-            ? '0 0 0 5px var(--color-primary-xsoft), 0 8px 24px var(--shadow-red-glow)'
-            : '0 4px 16px var(--shadow-red-glow)'}
+          icon={<Heart size={26} fill={likeFlash ? '#fff' : 'none'} color="#fff" strokeWidth={2} />}
+          active={likeFlash}
           busy={busy}
+          variant="like"
           onClick={() => { flash('like'); swipeTo(1); }}
         />
 
-        {/* ملف — ذهبي هادئ */}
-        <CardBtn
-          label="ملف"
-          icon={<Eye size={15} color="var(--color-gold)" />}
-          size="var(--btn-h)"
-          bg="rgba(212,175,55,0.08)"
-          border="var(--border-gold)"
-          shadow="none"
-          onClick={() => onViewProfile(u.id)}
-        />
-
-        {/* تجاهل — شفاف */}
-        <CardBtn
+        {/* ── زر التجاهل ── */}
+        <ActionBtn
           label="تجاهل"
-          icon={<X size={17} strokeWidth={2.5} color="var(--text-secondary)" />}
-          size="var(--btn-h)"
-          bg={passFlash ? 'var(--glass-bg)' : 'rgba(255,255,255,0.05)'}
-          border="var(--glass-border)"
-          shadow="none"
+          icon={<X size={22} color={passFlash ? '#fff' : 'rgba(200,200,200,0.8)'} strokeWidth={2.5} />}
+          active={passFlash}
           busy={busy}
+          variant="pass"
           onClick={() => { flash('pass'); swipeTo(-1); }}
         />
 
@@ -268,55 +265,76 @@ export default function UserCard({ userData: u, onNext, onViewProfile }: UserCar
 }
 
 // ══════════════════════════════════════════════════════════════
-//  زر البطاقة — دائرة كاملة بـ CSS variables
+//  زر ثلاثي الأبعاد
 // ══════════════════════════════════════════════════════════════
-function CardBtn({
-  label, icon, size, bg, border, shadow, busy, onClick,
+function ActionBtn({
+  label, icon, active, busy, variant, onClick,
 }: {
   label:   string;
   icon:    React.ReactNode;
-  size:    string;   // CSS variable: 'var(--btn-h)' | 'var(--btn-h-lg)'
-  bg:      string;
-  border:  string;
-  shadow:  string;
+  active:  boolean;
   busy?:   boolean;
+  variant: 'like' | 'pass';
   onClick: () => void;
 }) {
+  const isLike = variant === 'like';
+
+  // ألوان حسب النوع والحالة
+  const bg      = isLike
+    ? active ? '#c0002a' : 'rgba(192,0,42,0.18)'
+    : active ? 'rgba(80,80,100,0.5)' : 'rgba(255,255,255,0.07)';
+
+  const border  = isLike
+    ? active ? 'rgba(255,80,100,0.8)' : 'rgba(192,0,42,0.45)'
+    : active ? 'rgba(200,200,220,0.5)' : 'rgba(255,255,255,0.15)';
+
+  // ظل ثلاثي الأبعاد: طبقتان — واحدة للعمق وواحدة للتوهج
+  const shadow  = isLike
+    ? active
+      ? '0 2px 0 #7a0018, 0 4px 16px rgba(192,0,42,0.6), 0 0 0 3px rgba(192,0,42,0.2)'
+      : '0 4px 0 rgba(100,0,15,0.6), 0 6px 24px rgba(192,0,42,0.3), inset 0 1px 0 rgba(255,120,140,0.15)'
+    : active
+      ? '0 2px 0 rgba(30,30,50,0.8), 0 4px 12px rgba(0,0,0,0.4)'
+      : '0 4px 0 rgba(0,0,0,0.45), 0 6px 20px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.08)';
+
+  const size = isLike ? 72 : 58;
+
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', gap: 'var(--sp-1)',
-    }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-2)' }}>
       <motion.button
-        whileTap={{ scale: 0.74 }}
-        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.82, y: 4 }}
+        whileHover={{ scale: 1.07, y: -2 }}
         transition={{ type: 'spring', stiffness: 500, damping: 22 }}
         onClick={onClick}
         disabled={busy}
         style={{
-          width:  size,
-          height: size,
-          borderRadius: 'var(--radius-full)',   /* ✅ دائرة كاملة */
+          width:  size, height: size,
+          borderRadius: '50%',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background:  bg,
           border:      `1.5px solid ${border}`,
           boxShadow:   shadow,
           cursor:      busy ? 'not-allowed' : 'pointer',
-          opacity:     busy ? 0.35 : 1,
+          opacity:     busy ? 0.4 : 1,
           outline:     'none',
-          backdropFilter: 'blur(12px)',
-          WebkitBackdropFilter: 'blur(12px)',
-          transition:  'background 0.18s, box-shadow 0.18s',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          transition:  'background 0.2s, box-shadow 0.2s, border-color 0.2s',
           flexShrink: 0,
+          // خط داخلي يوهم بالعمق
+          backgroundImage: isLike
+            ? `radial-gradient(ellipse at 30% 25%, rgba(255,100,120,0.18) 0%, transparent 65%)`
+            : `radial-gradient(ellipse at 30% 25%, rgba(255,255,255,0.06) 0%, transparent 65%)`,
         }}
       >
         {icon}
       </motion.button>
+
       <span style={{
         fontSize:      'var(--text-2xs)',
         fontWeight:    700,
-        color:         'rgba(255,255,255,0.5)',
-        letterSpacing: '0.04em',
+        color:         isLike ? 'rgba(255,100,120,0.7)' : 'rgba(255,255,255,0.35)',
+        letterSpacing: '0.06em',
         userSelect:    'none',
       }}>
         {label}
