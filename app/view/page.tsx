@@ -9,11 +9,11 @@ import { motion, AnimatePresence }       from 'framer-motion';
 import {
   MapPin, Briefcase, GraduationCap, BookOpen, Baby, Home,
   Users, Activity, Flame, Moon, Star, Globe, Smile, Ruler,
-  HandHeart, ShieldCheck, Heart, MessageCircle, Share2,
-  Flag, ShieldOff,
+  HandHeart, ShieldCheck,
 } from 'lucide-react';
-import { supabase }   from '@/lib/supabase/client';
-import OnlineDot      from '@/components/profile/OnlineDot';
+import { supabase }      from '@/lib/supabase/client';
+import ProfileActions    from '@/components/profile/ProfileActions';
+import OnlineDot         from '@/components/profile/OnlineDot';
 import {
   COMMITTED_LEVELS, getNationality,
   getMaritalLabel, getEducationLabel,
@@ -22,6 +22,7 @@ import {
 import { getSpecialtyLabel } from '@/constants/occupations';
 import ChatWindow from '@/components/chat/ChatWindow';
 
+// ── صف معلومة ────────────────────────────────────────────────
 function Row({ icon, label, value }: {
   icon: React.ReactNode; label: string; value?: string | number | null;
 }) {
@@ -92,9 +93,10 @@ function ViewContent() {
   const [convId,    setConvId]    = useState<string | null>(null);
   const [shared,    setShared]    = useState(false);
   const [blocked,   setBlocked]   = useState(false);
+  const [msgFlash,  setMsgFlash]  = useState(false);
   const [lightbox,  setLightbox]  = useState(false);
-  const [showMenu,  setShowMenu]  = useState(false);
 
+  // ── جلب المستخدم الحالي + ملفه ──────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
@@ -105,6 +107,7 @@ function ViewContent() {
     });
   }, []);
 
+  // ── جلب بيانات الملف المستهدف ────────────────────────────────
   useEffect(() => {
     if (!userId) return;
     (async () => {
@@ -115,6 +118,7 @@ function ViewContent() {
     })();
   }, [userId]);
 
+  // ── حالة الإعجاب + تسجيل زيارة ──────────────────────────────
   useEffect(() => {
     if (!me || !userId) return;
     supabase.from('likes').select('id')
@@ -128,6 +132,7 @@ function ViewContent() {
     }
   }, [me, userId]);
 
+  // ── إعجاب ────────────────────────────────────────────────────
   const handleLike = async () => {
     if (!me || liking) return;
     setLiking(true);
@@ -145,8 +150,11 @@ function ViewContent() {
     setLiking(false);
   };
 
+  // ── رسالة ────────────────────────────────────────────────────
   const handleMessage = async () => {
     if (!me) return;
+    setMsgFlash(true);
+    setTimeout(() => setMsgFlash(false), 500);
     const { data: ex } = await supabase.from('conversations').select('id')
       .or(`and(user_1.eq.${me.id},user_2.eq.${userId}),and(user_1.eq.${userId},user_2.eq.${me.id})`)
       .maybeSingle();
@@ -159,8 +167,8 @@ function ViewContent() {
     setChatOpen(true);
   };
 
+  // ── مشاركة ───────────────────────────────────────────────────
   const handleShare = async () => {
-    setShowMenu(false);
     const url = `${window.location.origin}/view?id=${userId}`;
     if (navigator.share) {
       try { await navigator.share({ title: profile?.full_name ?? 'ZAWAJ AI', text: 'شاهد هذا الملف على ZAWAJ AI', url }); }
@@ -172,9 +180,9 @@ function ViewContent() {
     setTimeout(() => setShared(false), 2200);
   };
 
+  // ── حظر ──────────────────────────────────────────────────────
   const handleBlock = async () => {
     if (!me) return;
-    setShowMenu(false);
     await supabase.from('blocks').upsert(
       { blocker_id: me.id, blocked_id: userId },
       { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
@@ -183,15 +191,7 @@ function ViewContent() {
     setTimeout(() => router.back(), 1200);
   };
 
-  const handleReport = async () => {
-    if (!me) return;
-    setShowMenu(false);
-    await supabase.from('reports').insert({
-      reporter_id: me.id, reported_id: userId,
-      reason: 'بلاغ من صفحة الملف', status: 'pending',
-    });
-  };
-
+  // ── Loading ───────────────────────────────────────────────────
   if (!userId || loading || !profile) return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
@@ -199,6 +199,7 @@ function ViewContent() {
     </div>
   );
 
+  // ── بيانات مشتقة ─────────────────────────────────────────────
   const isMale      = profile.gender === 'male';
   const gender      = isMale ? 'male' : 'female';
   const committed   = COMMITTED_LEVELS.includes(profile.religious_commitment ?? -1);
@@ -221,7 +222,7 @@ function ViewContent() {
         transition={{ duration: 0.26 }}
         style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: isOwn ? 24 : 110 }}>
 
-        {/* ── Hero ─────────────────────────────────────────── */}
+        {/* ── Hero ────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 20px', gap: 10 }} dir="rtl">
 
           {/* الصورة + OnlineDot */}
@@ -229,16 +230,19 @@ function ViewContent() {
             onClick={() => !photoBlurred && setLightbox(true)}
             style={{ position: 'relative', cursor: photoBlurred ? 'default' : 'pointer' }}>
             <img
-              src={profile.avatar_url || '/default-avatar.png'} alt={name}
+              src={profile.avatar_url || '/default-avatar.png'}
+              alt={name}
               style={{ width: 108, height: 108, borderRadius: '50%', objectFit: 'cover', border: '2.5px solid var(--glass-border)', filter: photoBlurred ? 'blur(14px)' : 'none', display: 'block' }}
             />
             <OnlineDot userId={userId} initialLastActive={profile.last_active_at} size={16} />
           </motion.div>
 
           {/* الاسم */}
-          <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.3)', textAlign: 'center', letterSpacing: '-0.01em' }}>
-            {name}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
+            <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.3)', textAlign: 'center', letterSpacing: '-0.01em' }}>
+              {name}
+            </span>
+          </div>
 
           {/* العمر + المدينة */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -254,94 +258,28 @@ function ViewContent() {
             )}
           </div>
 
-          {/* أزرار التفاعل تحت البيانات الأساسية */}
+          {/* ProfileActions */}
           {!isOwn && me && (
-            <div style={{ display: 'flex', gap: 10, marginTop: 4, width: '100%', maxWidth: 320 }}>
-              {/* إعجاب */}
-              <motion.button whileTap={{ scale: 0.88 }} onClick={handleLike} disabled={liking}
-                style={{
-                  flex: 1, height: 44, borderRadius: 14,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  background: liked ? 'rgba(164,22,26,0.12)' : 'linear-gradient(135deg,rgba(164,22,26,0.75),rgba(164,22,26,0.95))',
-                  border: liked ? '1px solid rgba(164,22,26,0.35)' : 'none',
-                  boxShadow: liked ? 'none' : '0 4px 0 rgba(80,0,10,0.55), 0 6px 18px rgba(164,22,26,0.38)',
-                  color: liked ? 'rgba(164,22,26,0.75)' : '#fff',
-                  fontFamily: 'inherit', fontWeight: 700, fontSize: 'calc(var(--base-font-size) * 0.82)',
-                  cursor: liking ? 'not-allowed' : 'pointer', opacity: liking ? 0.6 : 1,
-                }}>
-                <Heart size={15} fill={liked ? 'rgba(164,22,26,0.75)' : 'none'} />
-                {liked ? 'أرسلت إعجاباً' : 'إعجاب'}
-              </motion.button>
-
-              {/* رسالة */}
-              <motion.button whileTap={{ scale: 0.88 }} onClick={handleMessage}
-                style={{
-                  flex: 1, height: 44, borderRadius: 14,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  background: 'rgba(56,189,248,0.1)', border: '1px solid rgba(56,189,248,0.25)',
-                  cursor: 'pointer', color: '#7dd3fc',
-                  fontFamily: 'inherit', fontWeight: 700, fontSize: 'calc(var(--base-font-size) * 0.82)',
-                }}>
-                <MessageCircle size={15} />
-                رسالة
-              </motion.button>
-
-              {/* المزيد */}
-              <div style={{ position: 'relative' }}>
-                <motion.button whileTap={{ scale: 0.88 }} onClick={() => setShowMenu(v => !v)}
-                  style={{
-                    width: 44, height: 44, borderRadius: 14, flexShrink: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-                    cursor: 'pointer', color: 'var(--text-tertiary)',
-                  }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/>
-                  </svg>
-                </motion.button>
-
-                <AnimatePresence>
-                  {showMenu && (
-                    <>
-                      <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowMenu(false)} />
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.88, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.88, y: -8 }} transition={{ duration: 0.14 }}
-                        style={{
-                          position: 'absolute', bottom: 50, left: 0, zIndex: 20,
-                          background: 'var(--bg-main)', border: '1px solid var(--glass-border)',
-                          borderRadius: 16, overflow: 'hidden', width: 168,
-                          boxShadow: '0 12px 40px rgba(0,0,0,0.35)',
-                        }}>
-                        {[
-                          { label: shared ? 'تمت المشاركة' : 'مشاركة', icon: <Share2 size={13}/>,    color: 'var(--text-secondary)', action: handleShare },
-                          { label: 'إبلاغ',                             icon: <Flag size={13}/>,      color: '#f87171',               action: handleReport },
-                          { label: blocked ? 'تم الحظر' : 'حظر',       icon: <ShieldOff size={13}/>, color: '#fb923c',               action: handleBlock },
-                        ].map((item, i, arr) => (
-                          <button key={i} onClick={item.action} style={{
-                            width: '100%', padding: '11px 16px',
-                            display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl',
-                            background: 'transparent', border: 'none', cursor: 'pointer',
-                            borderBottom: i < arr.length - 1 ? '1px solid var(--glass-border)' : 'none',
-                            color: item.color, fontFamily: 'inherit',
-                            fontSize: 'calc(var(--base-font-size) * 0.8)', fontWeight: 600,
-                          }}>
-                            {item.icon}{item.label}
-                          </button>
-                        ))}
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+            <ProfileActions
+              userId={userId}
+              currentUserId={me.id}
+              liked={liked}
+              liking={liking}
+              onLike={handleLike}
+              onMessage={handleMessage}
+              onShare={handleShare}
+              onBlock={handleBlock}
+              msgFlash={msgFlash}
+              shared={shared}
+              blocked={blocked}
+            />
           )}
         </div>
 
         {/* فاصل */}
         <div style={{ height: 1, background: 'var(--glass-border)', margin: '0 16px 16px' }} />
 
-        {/* ── المحتوى ──────────────────────────────────────── */}
+        {/* ── المحتوى ──────────────────────────────────────────── */}
         <div style={{ padding: '0 16px' }}>
           <Block title="البيانات الأساسية" icon={<Users size={13}/>}>
             <Row icon={<Users size={13}/>}    label="الحالة المدنية"  value={maritalLabel} />
@@ -463,6 +401,7 @@ function ViewContent() {
   );
 }
 
+// ══════════════════════════════════════════════════════════════
 export default function ViewPage() {
   return (
     <Suspense fallback={
