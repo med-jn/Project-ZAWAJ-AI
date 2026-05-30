@@ -1,13 +1,6 @@
 'use client';
 /**
  * 📁 app/likes/page.tsx — ZAWAJ AI
- * أربع تبويبات: إعجاباتي | الرسائل | الزيارات | المعجبون
- * ✅ يحفظ آخر تبويب في sessionStorage
- * ✅ فتح الملف عبر router.push بدل ProfileModal
- * ✅ تدرج البطاقة من var(--bg-main)
- * ✅ Real-time محدود بالتبويب المتأثر
- * ✅ استبعاد زيارات المستخدم لنفسه
- * ✅ بدون أي منطق نقاط/شراء/بادجات
  */
 
 import { useEffect, useState, useRef, useCallback } from 'react';
@@ -23,14 +16,14 @@ import ChatTab      from '@/components/chat/ChatTab';
 type TabId = 'outgoing' | 'messages' | 'views' | 'incoming';
 
 const TABS: { id: TabId; label: string; icon: React.ReactNode }[] = [
-  { id: 'outgoing',  label: 'إعجاباتي', icon: <Heart    size={14} /> },
-  { id: 'messages',  label: 'الرسائل',  icon: <MessageCircle size={14} /> },
-  { id: 'views',     label: 'الزيارات', icon: <Eye      size={14} /> },
-  { id: 'incoming',  label: 'المعجبون', icon: <Users    size={14} /> },
+  { id: 'outgoing',  label: 'إعجاباتي', icon: <Heart         size={15} /> },
+  { id: 'messages',  label: 'الرسائل',  icon: <MessageCircle size={15} /> },
+  { id: 'views',     label: 'الزيارات', icon: <Eye           size={15} /> },
+  { id: 'incoming',  label: 'المعجبون', icon: <Users         size={15} /> },
 ];
 
+// حفظ التبويب في sessionStorage
 const TAB_KEY = 'zawaj_likes_tab';
-
 function getSavedTab(): TabId {
   try {
     const v = sessionStorage.getItem(TAB_KEY);
@@ -38,13 +31,12 @@ function getSavedTab(): TabId {
   } catch {}
   return 'outgoing';
 }
-
 function saveTab(tab: TabId) {
   try { sessionStorage.setItem(TAB_KEY, tab); } catch {}
 }
 
 // ─────────────────────────────────────────────────────────────
-const PROFILE_COLS = 'id, full_name, avatar_url, city, age, is_photos_blurred';
+const COLS = 'id, full_name, avatar_url, city, age, is_photos_blurred';
 
 type LikeRow = {
   id: string;
@@ -54,23 +46,22 @@ type LikeRow = {
     city: string | null; age: number | null; is_photos_blurred: boolean;
   };
 };
-
 type DataState = Record<'outgoing' | 'views' | 'incoming', LikeRow[]>;
 
 // ─────────────────────────────────────────────────────────────
 export default function LikesPage() {
-  const router  = useRouter();
-  const [tab,    setTabState] = useState<TabId>(getSavedTab);
-  const [userId, setUserId]   = useState<string | null>(null);
-  const [loading,setLoading]  = useState(false);
-  const [data,   setData]     = useState<DataState>({ outgoing: [], views: [], incoming: [] });
+  const router = useRouter();
 
-  const tabIdx  = TABS.findIndex(t => t.id === tab);
-  const swipeX  = useRef(0);
+  const [tab,    setTabRaw] = useState<TabId>(getSavedTab);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading,setLoading]= useState(false);
+  const [data,   setData]   = useState<DataState>({ outgoing: [], views: [], incoming: [] });
 
-  // تغيير التبويب مع الحفظ
+  const tabIdx = TABS.findIndex(t => t.id === tab);
+  const swipeX = useRef(0);
+
   const setTab = useCallback((t: TabId) => {
-    setTabState(t);
+    setTabRaw(t);
     saveTab(t);
   }, []);
 
@@ -81,85 +72,50 @@ export default function LikesPage() {
     });
   }, []);
 
-  // ── جلب كل البيانات ────────────────────────────────────────
+  // جلب البيانات
   const fetchAll = useCallback(async (uid: string) => {
     setLoading(true);
     const [a, b, c] = await Promise.all([
       supabase.from('likes')
-        .select(`id, created_at, profile:profiles!to_user(${PROFILE_COLS})`)
+        .select(`id, created_at, profile:profiles!to_user(${COLS})`)
         .eq('from_user', uid).eq('action', 'like')
         .order('created_at', { ascending: false }),
       supabase.from('likes')
-        .select(`id, created_at, profile:profiles!from_user(${PROFILE_COLS})`)
-        .eq('to_user', uid).eq('action', 'view')
-        .neq('from_user', uid)                  // استبعاد المستخدم نفسه
-        .order('created_at', { ascending: false }),
-      supabase.from('likes')
-        .select(`id, created_at, profile:profiles!from_user(${PROFILE_COLS})`)
-        .eq('to_user', uid).eq('action', 'like')
-        .order('created_at', { ascending: false }),
-    ]);
-
-    const clean = (r: any) =>
-      (r.data ?? [])
-        .map((x: any) => ({ id: x.id, created_at: x.created_at, profile: x.profile }))
-        .filter((x: any) => x.profile);
-
-    setData({ outgoing: clean(a), views: clean(b), incoming: clean(c) });
-    setLoading(false);
-  }, []);
-
-  // ── جلب تبويب واحد فقط (real-time محدود) ──────────────────
-  const refreshTab = useCallback(async (uid: string, event: { table: string; eventType: string }) => {
-    // الرسائل تُحدَّث بـ ChatTab داخلياً
-    if (event.table === 'conversations' || event.table === 'messages') return;
-
-    // نُحدّث فقط بيانات likes
-    const [a, b, c] = await Promise.all([
-      supabase.from('likes')
-        .select(`id, created_at, profile:profiles!to_user(${PROFILE_COLS})`)
-        .eq('from_user', uid).eq('action', 'like')
-        .order('created_at', { ascending: false }),
-      supabase.from('likes')
-        .select(`id, created_at, profile:profiles!from_user(${PROFILE_COLS})`)
+        .select(`id, created_at, profile:profiles!from_user(${COLS})`)
         .eq('to_user', uid).eq('action', 'view')
         .neq('from_user', uid)
         .order('created_at', { ascending: false }),
       supabase.from('likes')
-        .select(`id, created_at, profile:profiles!from_user(${PROFILE_COLS})`)
+        .select(`id, created_at, profile:profiles!from_user(${COLS})`)
         .eq('to_user', uid).eq('action', 'like')
         .order('created_at', { ascending: false }),
     ]);
-
     const clean = (r: any) =>
       (r.data ?? [])
         .map((x: any) => ({ id: x.id, created_at: x.created_at, profile: x.profile }))
         .filter((x: any) => x.profile);
-
     setData({ outgoing: clean(a), views: clean(b), incoming: clean(c) });
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     if (!userId) return;
     fetchAll(userId);
-
     const ch = supabase.channel('likes_rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' },
-        (payload) => refreshTab(userId, { table: 'likes', eventType: payload.eventType })
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, () => fetchAll(userId))
       .subscribe();
-
     return () => { supabase.removeChannel(ch); };
-  }, [userId, fetchAll, refreshTab]);
+  }, [userId, fetchAll]);
 
-  // ── سوايب أفقي بين التبويبات ──────────────────────────────
+  // ── سوايب أفقي — RTL: يمين→يسار = تبويب سابق (فهرس أقل) ──
+  // في RTL: السحب لليمين (dx > 0) = الذهاب للتبويب الأيمن = فهرس أقل
+  //         السحب لليسار (dx < 0) = الذهاب للتبويب الأيسر = فهرس أعلى
   const onTouchStart = (e: React.TouchEvent) => { swipeX.current = e.touches[0].clientX; };
   const onTouchEnd   = (e: React.TouchEvent) => {
     const dx = e.changedTouches[0].clientX - swipeX.current;
     if (Math.abs(dx) < 55) return;
-    // RTL: سوايب يسار = التبويب التالي (فهرس أعلى)، يمين = السابق
-    if (dx < 0 && tabIdx < TABS.length - 1) setTab(TABS[tabIdx + 1].id);
-    if (dx > 0 && tabIdx > 0)              setTab(TABS[tabIdx - 1].id);
+    if (dx > 0 && tabIdx > 0)              setTab(TABS[tabIdx - 1].id); // يمين → تبويب سابق (RTL)
+    if (dx < 0 && tabIdx < TABS.length - 1) setTab(TABS[tabIdx + 1].id); // يسار → تبويب تالٍ
   };
 
   const count = tab !== 'messages' ? (data[tab as keyof DataState]?.length ?? 0) : 0;
@@ -171,31 +127,26 @@ export default function LikesPage() {
         position: 'sticky', top: 'var(--header-h)', zIndex: 900,
         background: 'var(--bg-main)',
         borderBottom: '1px solid var(--glass-border)',
-        padding: 'var(--sp-3) var(--sp-4) var(--sp-2)',
+        padding: 'var(--sp-3) var(--sp-4) 0',
       }}>
 
         {/* اسم التبويب + العدد */}
         <AnimatePresence mode="wait">
-          <motion.div
-            key={tab}
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 4 }}
-            transition={{ duration: 0.13 }}
-            style={{
-              display: 'flex', alignItems: 'baseline',
-              gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)',
-            }}
+          <motion.div key={tab}
+            initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.13 }}
+            style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--sp-2)', marginBottom: 'var(--sp-3)' }}
           >
             <span style={{ fontSize: 'var(--text-xl)', fontWeight: 900, color: 'var(--text-main)' }}>
               {TABS[tabIdx].label}
             </span>
             {count > 0 && (
               <span style={{
-                fontSize: 'var(--text-sm)', fontWeight: 700,
+                fontSize: 'var(--text-xs)', fontWeight: 800,
                 color: 'var(--color-primary)',
                 background: 'var(--color-primary-xsoft)',
                 padding: '1px 8px', borderRadius: 'var(--radius-full)',
+                border: '1px solid var(--color-primary-soft)',
               }}>
                 {count}
               </span>
@@ -203,46 +154,41 @@ export default function LikesPage() {
           </motion.div>
         </AnimatePresence>
 
-        {/* التبويبات — أيقونة + نص */}
-        <div style={{ display: 'flex', gap: 'var(--sp-2)' }}>
-          {TABS.map((t, i) => {
-            const active = i === tabIdx;
-            return (
-              <motion.button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                whileTap={{ scale: 0.94 }}
-                style={{
-                  flex: 1,
-                  display: 'flex', flexDirection: 'column',
-                  alignItems: 'center', gap: 4,
-                  padding: 'var(--sp-2) var(--sp-1)',
-                  borderRadius: 'var(--radius-md)',
-                  background: active ? 'var(--color-primary-xsoft)' : 'transparent',
-                  border: `1px solid ${active ? 'var(--color-primary-soft)' : 'transparent'}`,
-                  cursor: 'pointer',
-                  color: active ? 'var(--color-primary)' : 'var(--text-tertiary)',
-                  transition: 'background 0.18s, color 0.18s',
-                  fontFamily: 'inherit',
-                }}
-              >
-                <span style={{ display: 'flex', opacity: active ? 1 : 0.55 }}>{t.icon}</span>
-                <span style={{
-                  fontSize: 'var(--text-2xs)', fontWeight: active ? 800 : 600,
-                  letterSpacing: '0.02em',
-                }}>
-                  {t.label}
-                </span>
-                {/* مؤشر التبويب النشط */}
-                <div style={{
-                  height: 3, width: active ? '60%' : '0%',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--color-primary)',
-                  transition: 'width 0.22s ease',
-                }} />
-              </motion.button>
-            );
-          })}
+        {/* ── الشريط الرقيق مقسّم على 4 — كما في الأصل ── */}
+        <div style={{ display: 'flex', gap: 4 }}>
+          {TABS.map((t, i) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              style={{
+                flex: 1, background: 'none', border: 'none',
+                padding: '0 0 var(--sp-2)', cursor: 'pointer',
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', gap: 4,
+                color: i === tabIdx ? 'var(--color-primary)' : 'var(--text-tertiary)',
+                transition: 'color 0.18s',
+                fontFamily: 'inherit',
+              }}
+            >
+              {/* الأيقونة */}
+              <span style={{ opacity: i === tabIdx ? 1 : 0.45, display: 'flex' }}>
+                {t.icon}
+              </span>
+              {/* النص */}
+              <span style={{
+                fontSize: 'var(--text-2xs)', fontWeight: i === tabIdx ? 800 : 500,
+                letterSpacing: '0.02em', whiteSpace: 'nowrap',
+              }}>
+                {t.label}
+              </span>
+              {/* الشريط الرقيق السفلي — يتلون فقط للتبويب النشط */}
+              <motion.div
+                animate={{ background: i === tabIdx ? 'var(--color-primary)' : 'var(--glass-border)' }}
+                transition={{ duration: 0.2 }}
+                style={{ height: 3, width: '100%', borderRadius: '3px 3px 0 0' }}
+              />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -255,14 +201,11 @@ export default function LikesPage() {
       >
         <AnimatePresence mode="wait">
 
-          {/* تبويب الرسائل */}
+          {/* تبويب الرسائل — ChatTab يفتح /chat?id=... مباشرة */}
           {tab === 'messages' ? (
-            <motion.div
-              key="msg"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+            <motion.div key="msg"
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }} transition={{ duration: 0.15 }}
             >
               {userId
                 ? <ChatTab currentUserId={userId} />
@@ -271,12 +214,10 @@ export default function LikesPage() {
             </motion.div>
 
           ) : (
-            /* باقي التبويبات */
-            <motion.div
-              key={tab}
-              initial={{ opacity: 0, x: 18 }}
+            <motion.div key={tab}
+              initial={{ opacity: 0, x: tab === TABS[tabIdx]?.id ? 0 : 18 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -18 }}
+              exit={{ opacity: 0 }}
               transition={{ duration: 0.17 }}
               style={{
                 display: 'grid',
@@ -290,9 +231,9 @@ export default function LikesPage() {
               ) : !data[tab as keyof DataState]?.length ? (
                 <Empty
                   text={
-                    tab === 'outgoing'  ? 'لم تُرسل أي إعجاب بعد'     :
-                    tab === 'views'     ? 'لم يزر ملفك أحد بعد'        :
-                    'لم يُعجب بك أحد بعد'
+                    tab === 'outgoing'  ? 'لم تُرسل أي إعجاب بعد'  :
+                    tab === 'views'     ? 'لم يزر ملفك أحد بعد'     :
+                                         'لم يُعجب بك أحد بعد'
                   }
                   span={2}
                 />
@@ -302,7 +243,7 @@ export default function LikesPage() {
                     key={row.id}
                     row={row}
                     index={i}
-                    onOpen={id => router.push(`/view/${id}`)}
+                    onOpen={id => router.push(`/view?id=${id}`)}
                   />
                 ))
               )}
@@ -338,7 +279,6 @@ function LikeCard({ row, index, onOpen }: {
         border: '1px solid var(--glass-border)',
       }}
     >
-      {/* الصورة */}
       <img
         src={p.avatar_url || '/default-avatar.png'}
         alt=""
