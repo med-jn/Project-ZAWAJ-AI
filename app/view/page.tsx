@@ -1,6 +1,10 @@
 'use client';
 /**
  * 📁 app/view/page.tsx — ZAWAJ AI
+ * ✅ خصم نقاط الهدايا:
+ *    view    → 1 نقطة عند كل زيارة
+ *    like    → 5 نقاط عند كل إعجاب
+ *    message → 10 نقاط عند أول رسالة جديدة فقط
  */
 
 import { useState, useEffect, Suspense } from 'react';
@@ -20,7 +24,8 @@ import {
   getReligiousLabel, getHousingLabel,
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
-import ChatWindow from '@/components/chat/ChatWindow';
+import ChatWindow        from '@/components/chat/ChatWindow';
+import { useGiftCoins }  from '@/hooks/useGiftCoins'; // ← جديد
 
 // ── صف معلومة ────────────────────────────────────────────────
 function Row({ icon, label, value }: {
@@ -83,6 +88,8 @@ function ViewContent() {
   const router       = useRouter();
   const userId       = searchParams.get('id') ?? '';
 
+  const { deduct } = useGiftCoins(); // ← جديد
+
   const [profile,   setProfile]   = useState<any>(null);
   const [myProfile, setMyProfile] = useState<any>(null);
   const [me,        setMe]        = useState<any>(null);
@@ -118,29 +125,48 @@ function ViewContent() {
     })();
   }, [userId]);
 
-  // ── حالة الإعجاب + تسجيل زيارة ──────────────────────────────
+  // ── حالة الإعجاب + خصم view عند كل زيارة ────────────────────
   useEffect(() => {
-    if (!me || !userId) return;
+    if (!me || !userId || me.id === userId) return;
+
+    // فحص حالة الإعجاب
     supabase.from('likes').select('id')
       .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like').maybeSingle()
       .then(({ data }) => { if (data) setLiked(true); });
-    if (me.id !== userId) {
-      supabase.from('likes').upsert(
-        { from_user: me.id, to_user: userId, action: 'view' },
-        { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
-      );
-    }
-  }, [me, userId]);
+
+    // ① خصم نقطة view
+    deduct({ action: 'view', target_id: userId, notes: 'فتح الملف الشخصي' })
+      .then((ok) => {
+        if (ok) {
+          // ② تسجيل view في likes (بعد نجاح الخصم فقط)
+          supabase.from('likes').upsert(
+            { from_user: me.id, to_user: userId, action: 'view' },
+            { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
+          );
+        }
+        // إذا فشل الخصم (رصيد غير كافٍ) ظهرت رسالة Sonner تلقائياً
+        // المستخدم يرى الملف لكن النقاط تُخصم عند كل محاولة
+      });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [me?.id, userId]);
 
   // ── إعجاب ────────────────────────────────────────────────────
   const handleLike = async () => {
     if (!me || liking) return;
     setLiking(true);
+
     if (liked) {
+      // إلغاء الإعجاب — لا خصم عند الإلغاء
       setLiked(false);
       await supabase.from('likes').delete()
         .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like');
     } else {
+      // إعجاب جديد → خصم 5 نقاط أولاً
+      const ok = await deduct({ action: 'like', target_id: userId, notes: 'إعجاب بملف شخصي' });
+      if (!ok) {
+        setLiking(false);
+        return; // Sonner ظهر تلقائياً
+      }
       setLiked(true);
       await supabase.from('likes').upsert(
         { from_user: me.id, to_user: userId, action: 'like' },
@@ -155,15 +181,26 @@ function ViewContent() {
     if (!me) return;
     setMsgFlash(true);
     setTimeout(() => setMsgFlash(false), 500);
+
+    // البحث عن محادثة موجودة
     const { data: ex } = await supabase.from('conversations').select('id')
       .or(`and(user_1.eq.${me.id},user_2.eq.${userId}),and(user_1.eq.${userId},user_2.eq.${me.id})`)
       .maybeSingle();
-    if (ex) { setConvId(ex.id); }
-    else {
-      const { data: nc } = await supabase.from('conversations')
-        .insert({ user_1: me.id, user_2: userId }).select('id').single();
-      setConvId(nc?.id ?? null);
+
+    if (ex) {
+      // محادثة موجودة → فتح مباشرة بدون خصم
+      setConvId(ex.id);
+      setChatOpen(true);
+      return;
     }
+
+    // محادثة جديدة → خصم 10 نقاط أولاً
+    const ok = await deduct({ action: 'message', target_id: userId, notes: 'بدء محادثة جديدة' });
+    if (!ok) return; // Sonner ظهر تلقائياً
+
+    const { data: nc } = await supabase.from('conversations')
+      .insert({ user_1: me.id, user_2: userId }).select('id').single();
+    setConvId(nc?.id ?? null);
     setChatOpen(true);
   };
 
@@ -225,7 +262,6 @@ function ViewContent() {
         {/* ── Hero ────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 20px', gap: 10 }} dir="rtl">
 
-          {/* الصورة + OnlineDot */}
           <motion.div whileTap={{ scale: 0.94 }}
             onClick={() => !photoBlurred && setLightbox(true)}
             style={{ position: 'relative', cursor: photoBlurred ? 'default' : 'pointer' }}>
@@ -237,14 +273,12 @@ function ViewContent() {
             <OnlineDot userId={userId} initialLastActive={profile.last_active_at} size={16} />
           </motion.div>
 
-          {/* الاسم */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
             <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.3)', textAlign: 'center', letterSpacing: '-0.01em' }}>
               {name}
             </span>
           </div>
 
-          {/* العمر + المدينة */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
             {profile.age && (
               <span style={{ color: 'var(--text-secondary)', fontSize: 'calc(var(--base-font-size) * 0.84)', fontWeight: 600 }}>
@@ -258,7 +292,6 @@ function ViewContent() {
             )}
           </div>
 
-          {/* ProfileActions */}
           {!isOwn && me && (
             <ProfileActions
               userId={userId}
@@ -276,7 +309,6 @@ function ViewContent() {
           )}
         </div>
 
-        {/* فاصل */}
         <div style={{ height: 1, background: 'var(--glass-border)', margin: '0 16px 16px' }} />
 
         {/* ── المحتوى ──────────────────────────────────────────── */}

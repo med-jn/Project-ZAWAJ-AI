@@ -1,10 +1,9 @@
 'use client';
 /**
- * app/points/page.tsx — ZAWAJ AI
+ * 📁 app/points/page.tsx — ZAWAJ AI
  * ✅ يعرض رصيد الهدايا فقط (balance_free)
- * ✅ حُذف "رصيد الشحن" (balance) تماماً من الواجهة
- * ✅ حُذف مصدر "konnect / شحن رصيد" من الـ labels المعروضة
- * ✅ AdMob للمكافآت المجانية — مقبول تماماً
+ * ✅ السجل يُقرأ من gift_transactions (منفصل عن الشراء)
+ * ✅ AdMob للمكافآت المجانية
  */
 import { useState, useEffect, useCallback } from 'react';
 import { PlayCircle, Zap, TrendingUp, TrendingDown, Inbox, Gift } from 'lucide-react';
@@ -20,22 +19,25 @@ const AD_REWARD = 5;
 const PAGE_SIZE = 20;
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-// ── مصادر مقبولة للعرض (بدون konnect/شحن) ──────────────────
-const SOURCE_LABEL: Record<string, string> = {
+// ── تسميات الـ action ──────────────────────────────────────────
+const ACTION_LABEL: Record<string, string> = {
+  like:        'إرسال إعجاب',
+  pass:        'تخطي بطاقة',
+  view:        'فتح ملف شخصي',
+  message:     'بدء محادثة',
   admob:       'مكافأة إعلان',
   daily_bonus: 'مكافأة يومية',
   welcome:     'هدية الترحيب',
-  action:      'عملية',
   admin:       'منحة إدارية',
 };
 
-const ACTION_LABEL: Record<string, string> = {
-  like:                'إرسال إعجاب',
-  pass:                'تخطي بطاقة',
-  back_swipe:          'تراجع عن التخطي',
-  open_chat:           'فتح محادثة',
-  urgent_consultation: 'استشارة عاجلة',
-  gift_to_mediator:    'هدية للوسيط',
+// ── تسميات المصدر (source) ────────────────────────────────────
+const SOURCE_LABEL: Record<string, string> = {
+  action:      'تفاعل',
+  admob:       'مكافأة إعلان',
+  daily_bonus: 'مكافأة يومية',
+  welcome:     'هدية الترحيب',
+  admin:       'منحة إدارية',
 };
 
 function getLabel(source: string, action?: string | null) {
@@ -51,20 +53,19 @@ function fmtDate(iso: string) {
   };
 }
 
-interface Tx {
-  transaction_id: string;
-  amount:         number;
-  balance_after:  number;
-  source:         string;
-  action:         string | null;
-  notes:          string | null;
-  created_at:     string;
+interface GiftTx {
+  id:            string;
+  amount:        number;
+  balance_after: number;
+  source:        string;
+  action:        string | null;
+  notes:         string | null;
+  created_at:    string;
 }
 
 // ════════════════════════════════════════════════════════════
 export default function PointsPage() {
 
-  // نعرض balance_free فقط — رصيد الهدايا
   const { balance_free, loading: walletLoading } = useWallet();
 
   const [userId, setUserId] = useState('');
@@ -76,8 +77,8 @@ export default function PointsPage() {
 
   const { showAd, isAdReady, isLoadingAd, readyCount } = useSmartAdMobReward(userId, AD_REWARD);
 
-  // ── سجل المعاملات (نصفّي konnect من العرض) ──────────────
-  const [txList,  setTxList]  = useState<Tx[]>([]);
+  // ── سجل المعاملات من gift_transactions ──────────────────────
+  const [txList,  setTxList]  = useState<GiftTx[]>([]);
   const [txLoad,  setTxLoad]  = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [offset,  setOffset]  = useState(0);
@@ -89,11 +90,9 @@ export default function PointsPage() {
     const to   = from + PAGE_SIZE - 1;
 
     const { data, error } = await supabase
-      .from('point_transactions')
-      .select('transaction_id,amount,balance_after,source,action,notes,created_at')
+      .from('gift_transactions')          // ← gift_transactions وليس point_transactions
+      .select('id,amount,balance_after,source,action,notes,created_at')
       .eq('user_id', userId)
-      // نخفي معاملات konnect (الشحن) من السجل المعروض
-      .neq('source', 'konnect')
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -122,24 +121,12 @@ export default function PointsPage() {
         padding: 'var(--sp-6) var(--sp-4) 0',
       }}>
 
-        {/* ── بطاقة الرصيد — هدايا فقط ── */}
+        {/* ── بطاقة الرصيد ── */}
         <div className="glass-panel p-5 mb-4 relative overflow-hidden">
-
-          <div style={{
-            position: 'absolute', top: -40, left: -40,
-            width: 180, height: 180, borderRadius: '50%',
-            background: 'radial-gradient(circle,rgba(34,197,94,0.12),transparent 65%)',
-            pointerEvents: 'none',
-          }} />
-          <div style={{
-            position: 'absolute', bottom: -30, right: -20,
-            width: 120, height: 120, borderRadius: '50%',
-            background: 'radial-gradient(circle,rgba(212,175,55,0.08),transparent 65%)',
-            pointerEvents: 'none',
-          }} />
+          <div style={{ position: 'absolute', top: -40, left: -40, width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle,rgba(34,197,94,0.12),transparent 65%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: -30, right: -20, width: 120, height: 120, borderRadius: '50%', background: 'radial-gradient(circle,rgba(212,175,55,0.08),transparent 65%)', pointerEvents: 'none' }} />
 
           <div className="relative z-10">
-            {/* أيقونة + عنوان */}
             <div className="flex items-center gap-2 mb-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center"
                 style={{ background: 'rgba(34,197,94,0.15)', border: '1px solid rgba(34,197,94,0.25)' }}>
@@ -173,8 +160,7 @@ export default function PointsPage() {
             background: isAdReady
               ? 'linear-gradient(135deg,rgba(34,197,94,0.13),rgba(22,163,74,0.20))'
               : 'rgba(255,255,255,0.04)',
-            display: 'flex', alignItems: 'center',
-            justifyContent: 'space-between', gap: 'var(--sp-3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--sp-3)',
             cursor: userId ? 'pointer' : 'not-allowed',
             opacity: !userId ? 0.45 : 1,
             transition: 'all 0.25s ease',
@@ -187,13 +173,10 @@ export default function PointsPage() {
         >
           <div className="flex items-center gap-3">
             <div style={{
-              width: 'var(--btn-h)', height: 'var(--btn-h)',
-              borderRadius: 'var(--radius-full)',
+              width: 'var(--btn-h)', height: 'var(--btn-h)', borderRadius: 'var(--radius-full)',
               background: isAdReady ? 'linear-gradient(135deg,#16a34a,#22c55e)' : 'rgba(255,255,255,0.09)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
-              boxShadow: isAdReady ? '0 4px 14px rgba(34,197,94,0.4)' : 'none',
-              transition: 'all 0.3s',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              boxShadow: isAdReady ? '0 4px 14px rgba(34,197,94,0.4)' : 'none', transition: 'all 0.3s',
             }}>
               <PlayCircle size={20} color="#fff" />
             </div>
@@ -201,10 +184,7 @@ export default function PointsPage() {
               <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-sm)', margin: 0 }}>
                 اكسب عملات مجانية
               </p>
-              <p style={{
-                color: isAdReady ? 'rgba(74,222,128,0.9)' : 'var(--text-tertiary)',
-                fontSize: 'var(--text-2xs)', margin: 0, marginTop: 3, transition: 'color 0.3s',
-              }}>
+              <p style={{ color: isAdReady ? 'rgba(74,222,128,0.9)' : 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', margin: 0, marginTop: 3, transition: 'color 0.3s' }}>
                 {isLoadingAd && !isAdReady ? 'جارٍ تحضير الفيديو…' : `شاهد فيديو قصير واربح ${AD_REWARD} عملات`}
               </p>
             </div>
@@ -212,32 +192,14 @@ export default function PointsPage() {
 
           <div className="flex items-center gap-2 flex-shrink-0">
             {adDots.map((ready, i) => (
-              <div key={i} style={{
-                width: 8, height: 8, borderRadius: '50%',
-                background: ready ? '#4ade80' : 'rgba(255,255,255,0.18)',
-                boxShadow: ready ? '0 0 6px rgba(74,222,128,0.7)' : 'none',
-                transition: 'all 0.4s',
-              }} />
+              <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: ready ? '#4ade80' : 'rgba(255,255,255,0.18)', boxShadow: ready ? '0 0 6px rgba(74,222,128,0.7)' : 'none', transition: 'all 0.4s' }} />
             ))}
-            <div style={{
-              padding: '3px 9px', borderRadius: 'var(--radius-full)',
-              background: isAdReady ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.06)',
-              border: `1px solid ${isAdReady ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`,
-              display: 'flex', alignItems: 'center', gap: 4, marginRight: 4,
-            }}>
+            <div style={{ padding: '3px 9px', borderRadius: 'var(--radius-full)', background: isAdReady ? 'rgba(34,197,94,0.18)' : 'rgba(255,255,255,0.06)', border: `1px solid ${isAdReady ? 'rgba(34,197,94,0.4)' : 'rgba(255,255,255,0.1)'}`, display: 'flex', alignItems: 'center', gap: 4, marginRight: 4 }}>
               {isLoadingAd && !isAdReady
-                ? <div style={{
-                    width: 9, height: 9, borderRadius: '50%',
-                    border: '1.5px solid rgba(255,255,255,0.2)',
-                    borderTopColor: '#4ade80',
-                    animation: 'spin 0.8s linear infinite',
-                  }} />
+                ? <div style={{ width: 9, height: 9, borderRadius: '50%', border: '1.5px solid rgba(255,255,255,0.2)', borderTopColor: '#4ade80', animation: 'spin 0.8s linear infinite' }} />
                 : <Zap size={10} color={isAdReady ? '#4ade80' : 'rgba(255,255,255,0.3)'} />
               }
-              <span style={{
-                color: isAdReady ? '#4ade80' : 'rgba(255,255,255,0.3)',
-                fontSize: 'calc(var(--text-2xs)*0.85)', fontWeight: 800,
-              }}>
+              <span style={{ color: isAdReady ? '#4ade80' : 'rgba(255,255,255,0.3)', fontSize: 'calc(var(--text-2xs)*0.85)', fontWeight: 800 }}>
                 {isLoadingAd && !isAdReady ? 'تحميل' : isAdReady ? 'جاهز' : 'انتظر'}
               </span>
             </div>
@@ -272,7 +234,7 @@ export default function PointsPage() {
             const showDate = isFirst || date !== prevDate;
 
             return (
-              <div key={tx.transaction_id}>
+              <div key={tx.id}>
                 {showDate && (
                   <div className="flex items-center gap-3 py-2">
                     <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.07)' }} />
@@ -283,15 +245,8 @@ export default function PointsPage() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.06)',
-                }}>
-                  <div style={{
-                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
-                    background: isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(179,51,75,0.12)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, background: isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(179,51,75,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {isCredit
                       ? <TrendingUp size={17} color="#4ade80" />
                       : <TrendingDown size={17} color="var(--color-primary)" />
@@ -299,13 +254,11 @@ export default function PointsPage() {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <p style={{ color: 'var(--text-main)', fontWeight: 700, fontSize: 'var(--text-sm)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <p style={{ color: 'var(--text-main)', fontWeight: 700, fontSize: 'var(--text-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {label}
                     </p>
                     {tx.notes && tx.notes !== label && (
-                      <p style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--text-2xs)*0.9)',
-                        marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <p style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--text-2xs)*0.9)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {tx.notes}
                       </p>
                     )}
@@ -333,18 +286,14 @@ export default function PointsPage() {
           {hasMore && !txLoad && txList.length > 0 && (
             <button onClick={() => loadTx()}
               className="w-full py-3 rounded-2xl font-bold transition-all active:scale-95"
-              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)' }}>
+              style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)' }}>
               تحميل المزيد
             </button>
           )}
 
           {txLoad && (
             <div className="flex justify-center py-5">
-              <div style={{ width: 26, height: 26, borderRadius: '50%',
-                border: '2.5px solid rgba(255,255,255,0.08)',
-                borderTopColor: 'var(--color-primary)',
-                animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 26, height: 26, borderRadius: '50%', border: '2.5px solid rgba(255,255,255,0.08)', borderTopColor: 'var(--color-primary)', animation: 'spin 0.8s linear infinite' }} />
             </div>
           )}
         </div>

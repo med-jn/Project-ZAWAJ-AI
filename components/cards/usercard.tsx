@@ -1,6 +1,8 @@
 'use client';
 /**
  * 📁 components/cards/usercard.tsx — ZAWAJ AI
+ * ✅ خصم نقاط الهدايا عند كل تفاعل:
+ *    like → 5 نقاط | pass → 1 نقطة | view → 1 نقطة
  */
 
 import { useRef, useState, useCallback } from 'react';
@@ -8,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { motion, useMotionValue, useTransform, animate, PanInfo } from 'framer-motion';
 import { Heart, X, MapPin } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { useGiftCoins } from '@/hooks/useGiftCoins'; // ← جديد
 
 export interface UserCardData {
   id:           string;
@@ -27,12 +30,13 @@ interface UserCardProps {
 
 export default function UserCard({ userData: u, onNext }: UserCardProps) {
   const router = useRouter();
+  const { deduct } = useGiftCoins(); // ← جديد
+
   const [likeFlash, setLikeFlash] = useState(false);
   const [passFlash, setPassFlash] = useState(false);
   const [busy,      setBusy]      = useState(false);
   const hasViewed  = useRef(false);
 
-  // نتبع هل الحركة كانت drag حقيقي أم مجرد tap
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
 
@@ -42,9 +46,9 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
   const likeOp = useTransform(x, [20, 140], [0, 1]);
   const passOp = useTransform(x, [-140, -20], [1, 0]);
 
-  const act = useCallback(async (action: 'like' | 'pass' | 'view') => {
+  // ── تسجيل التفاعل في Supabase likes ─────────────────────────
+  const recordLike = useCallback(async (action: 'like' | 'pass' | 'view') => {
     if (!u.currentUser?.id) return;
-    if (action !== 'view') setBusy(true);
     try {
       const opposite = action === 'like' ? 'pass' : action === 'pass' ? 'like' : null;
       if (opposite) {
@@ -55,17 +59,34 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
         { from_user: u.currentUser.id, to_user: u.id, action },
         { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
       );
-    } catch (e) { console.error('[UserCard]', e); }
-    finally { if (action !== 'view') setBusy(false); }
+    } catch (e) { console.error('[UserCard] recordLike:', e); }
   }, [u]);
 
+  // ── السوايب + الأزرار ─────────────────────────────────────────
   const swipeTo = useCallback(async (dir: 1 | -1) => {
     if (busy) return;
-    act(dir === 1 ? 'like' : 'pass');
+
+    const action = dir === 1 ? 'like' : 'pass';
+
+    // ① خصم النقاط أولاً — إذا فشل (رصيد غير كافٍ) نوقف السوايب
+    setBusy(true);
+    const ok = await deduct({ action, target_id: u.id });
+    if (!ok) {
+      setBusy(false);
+      // إرجاع البطاقة لمكانها بسلاسة
+      animate(x, 0, { type: 'spring', stiffness: 420, damping: 32 });
+      return;
+    }
+
+    // ② تسجيل في likes
+    await recordLike(action);
+
+    // ③ تحريك البطاقة للخروج
     await animate(x, dir * 900, { duration: 0.38, ease: [0.25, 0.46, 0.45, 0.94] });
     x.set(0);
+    setBusy(false);
     onNext();
-  }, [act, x, onNext, busy]);
+  }, [busy, deduct, recordLike, x, onNext, u.id]);
 
   const flash = (t: 'like' | 'pass') => {
     if (t === 'like') { setLikeFlash(true); setTimeout(() => setLikeFlash(false), 420); }
@@ -78,7 +99,6 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
   };
 
   const onDrag = (_: any, info: PanInfo) => {
-    // إذا تحرك أكثر من 8px نعتبره drag
     if (Math.abs(info.offset.x) > 8) isDragging.current = true;
   };
 
@@ -88,16 +108,20 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     else animate(x, 0, { type: 'spring', stiffness: 420, damping: 32 });
   };
 
-  // click على البطاقة — نتحقق أنه لم يكن drag
+  // ── الضغط على البطاقة لفتح الملف ────────────────────────────
+  // الخصم (view) يتم في view/page.tsx عند وصول الصفحة
   const handleCardClick = () => {
     if (!isDragging.current) {
       router.push(`/view?id=${u.id}`);
     }
   };
 
+  // ── تسجيل view عند أول ظهور البطاقة ──────────────────────────
+  // ملاحظة: view البطاقة في الهوم لا يُخصم — الخصم فقط عند دخول صفحة الملف
+  // هذا حسب المنطق: "فتح الملف الشخصي = 1 نقطة" وليس مجرد ظهور البطاقة
   if (!hasViewed.current && u.currentUser) {
     hasViewed.current = true;
-    act('view');
+    recordLike('view'); // تسجيل في likes فقط، بدون خصم نقاط
   }
 
   return (
@@ -116,33 +140,25 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
         onClick={handleCardClick}
         whileDrag={{ cursor: 'grabbing' }}
       >
-        {/* الصورة */}
         <img src={u.mainPhoto || '/default-avatar.png'} alt={u.name} draggable={false}
           style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', pointerEvents: 'none', filter: u.prefersBlur ? 'blur(24px)' : 'none', transform: u.prefersBlur ? 'scale(1.08)' : 'none' }}
         />
 
-        {/* تدرج أسفل — يتكيف مع لايت/دارك */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to top, var(--bg-main) 0%, color-mix(in srgb, var(--bg-main) 55%, transparent) 32%, transparent 58%)' }} />
 
-        {/* overlay إعجاب */}
         <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to left, rgba(34,197,94,0.45) 0%, transparent 55%)', opacity: likeOp }} />
-
-        {/* overlay تجاهل */}
         <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to right, rgba(164,22,26,0.45) 0%, transparent 55%)', opacity: passOp }} />
 
-        {/* مؤشر إعجاب */}
         <motion.div style={{ position: 'absolute', top: 'var(--sp-10)', right: 'var(--sp-5)', opacity: likeOp, pointerEvents: 'none', border: '2px solid #22c55e', borderRadius: 'var(--radius-md)', padding: '4px 14px', transform: 'rotate(-12deg)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <Heart size={15} color="#22c55e" fill="#22c55e" />
           <span style={{ color: '#22c55e', fontWeight: 900, fontSize: 'var(--text-base)', letterSpacing: '0.06em' }}>إعجاب</span>
         </motion.div>
 
-        {/* مؤشر تجاهل */}
         <motion.div style={{ position: 'absolute', top: 'var(--sp-10)', left: 'var(--sp-5)', opacity: passOp, pointerEvents: 'none', border: '2px solid var(--color-primary)', borderRadius: 'var(--radius-md)', padding: '4px 14px', transform: 'rotate(12deg)', display: 'flex', alignItems: 'center', gap: 6 }}>
           <X size={15} color="var(--color-primary)" strokeWidth={2.5} />
           <span style={{ color: 'var(--color-primary)', fontWeight: 900, fontSize: 'var(--text-base)', letterSpacing: '0.06em' }}>تجاهل</span>
         </motion.div>
 
-        {/* الاسم + المعلومات */}
         <div style={{ position: 'absolute', insetInlineStart: 0, insetInlineEnd: 0, bottom: 'calc(var(--nav-h) + 5.5rem)', padding: '0 var(--sp-5)', direction: 'rtl', pointerEvents: 'none' }}>
           <h2 style={{ margin: '0 0 var(--sp-2)', color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-2xl)', lineHeight: 'var(--lh-tight)', textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}>
             {u.name}
@@ -162,16 +178,12 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
         </div>
       </motion.div>
 
-      {/* ══ الأزرار — 3D بلا نصوص ══ */}
+      {/* ══ الأزرار ══ */}
       <div style={{ position: 'fixed', left: 0, right: 0, bottom: 'calc(var(--nav-h) + var(--sp-6))', zIndex: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-12)', direction: 'rtl', paddingInline: 'var(--sp-6)' }}>
-
-        {/* إعجاب */}
         <Btn3D variant="like" size={74} active={likeFlash} busy={busy}
           onClick={() => { flash('like'); swipeTo(1); }}
           icon={<Heart size={28} fill={likeFlash ? '#fff' : 'rgba(255,255,255,0.9)'} color="#fff" strokeWidth={1.5} />}
         />
-
-        {/* تجاهل */}
         <Btn3D variant="pass" size={62} active={passFlash} busy={busy}
           onClick={() => { flash('pass'); swipeTo(-1); }}
           icon={<X size={22} color={passFlash ? '#fff' : 'rgba(200,200,210,0.85)'} strokeWidth={2.5} />}

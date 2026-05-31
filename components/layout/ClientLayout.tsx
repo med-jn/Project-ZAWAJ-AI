@@ -8,7 +8,6 @@ import PageHeader from '@/components/layout/PageHeader';
 import TopBar from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
 
-import { useAuthHandshake } from '@/hooks/useAuthHandshake';
 import { useNativeAndroid } from '@/hooks/useNativeAndroid';
 import { useSystemScale } from '@/hooks/useSystemScale';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -81,7 +80,6 @@ export default function ClientLayout({
   // Hooks
   // =========================================
 
-  useAuthHandshake();
 
   useNativeAndroid();
 
