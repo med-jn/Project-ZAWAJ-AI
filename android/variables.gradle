@@ -1,22 +1,22 @@
 ext {
-    // إصدارات الأندرويد (يفضل استخدام 34 أو 35 حالياً لضمان الاستقرار)
-    minSdkVersion = 24
-    compileSdkVersion = 35
-    targetSdkVersion = 35
+// إصدارات الأندرويد (يفضل استخدام 34 أو 35 حالياً لضمان الاستقرار)
+minSdkVersion = 24
+compileSdkVersion = 35
+targetSdkVersion = 35
 
-    // هذا هو السطر "السحري" الذي يفتقده مشروعك لحل مشكلة AdMob و Kotlin
-    kotlin_version = '1.9.20'
+// هذا هو السطر "السحري" الذي يفتقده مشروعك لحل مشكلة AdMob و Kotlin
+kotlin_version = '1.9.20'
 
-    // بقية الإصدارات كما هي
-    androidxActivityVersion = '1.11.0'
-    androidxAppCompatVersion = '1.7.1'
-    androidxCoordinatorLayoutVersion = '1.3.0'
-    androidxCoreVersion = '1.17.0'
-    androidxFragmentVersion = '1.8.9'
-    coreSplashScreenVersion = '1.2.0'
-    androidxWebkitVersion = '1.14.0'
-    junitVersion = '4.13.2'
-    androidxJunitVersion = '1.3.0'
-    androidxEspressoCoreVersion = '3.7.0'
-    cordovaAndroidVersion = '14.0.1'
+// بقية الإصدارات كما هي
+androidxActivityVersion = '1.11.0'
+androidxAppCompatVersion = '1.7.1'
+androidxCoordinatorLayoutVersion = '1.3.0'
+androidxCoreVersion = '1.17.0'
+androidxFragmentVersion = '1.8.9'
+coreSplashScreenVersion = '1.2.0'
+androidxWebkitVersion = '1.14.0'
+junitVersion = '4.13.2'
+androidxJunitVersion = '1.3.0'
+androidxEspressoCoreVersion = '3.7.0'
+cordovaAndroidVersion = '14.0.1'
 }

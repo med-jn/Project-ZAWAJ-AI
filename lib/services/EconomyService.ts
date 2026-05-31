@@ -1,8 +1,7 @@
 /**
- * ⚙️ محرك الاقتصاد — ZAWAJ AI  v2.0
- * ✅ إصلاح: توقيع logTransaction (كان يستقبل 3 معاملات ويُستدعى بـ 4)
- * ✅ إضافة: balance_after في كل معاملة
- * ✅ إضافة: source + action في كل معاملة
+ * ⚙️ محرك الاقتصاد — ZAWAJ AI  v2.1
+ * ✅ addBonusPoints تكتب في gift_transactions (مكافآت مجانية)
+ * ✅ deductPoints تكتب في point_transactions (خصم نقاط)
  */
 import { supabase }         from '@/lib/supabase/client';
 import { ECONOMY_SETTINGS } from '@/constants/constants';
@@ -10,13 +9,10 @@ import { ECONOMY_RULES, type TransactionSource } from '@/constants/ecomomy';
 
 const { DATABASE, GENERAL_INTERFACE, MEDIATOR_SPACE, REWARDS, ALERTS, UI_LOGIC } = ECONOMY_SETTINGS;
 
-// ══════════════════════════════════════════
-//  نوع المحفظة — مطابق لجدول wallets
-// ══════════════════════════════════════════
 interface WalletRow {
   id:               string;
-  balance:          number;   // paid
-  balance_free:     number;   // bonus
+  balance:          number;
+  balance_free:     number;
   last_daily_login: string | null;
   last_active_at:   string | null;
 }
@@ -35,9 +31,6 @@ export async function getWallet(userId: string): Promise<WalletRow> {
   return data;
 }
 
-// ══════════════════════════════════════════
-//  التحقق من كفاية الرصيد
-// ══════════════════════════════════════════
 export function hasEnoughBalance(
   wallet: WalletRow,
   cost: number,
@@ -48,42 +41,65 @@ export function hasEnoughBalance(
 }
 
 // ══════════════════════════════════════════
-//  تسجيل معاملة في point_transactions
-//  ✅ إصلاح: 5 معاملات واضحة بدلاً من 3 غامضة
+//  تسجيل خصم في point_transactions
 // ══════════════════════════════════════════
-async function logTransaction(params: {
+async function logDeduction(params: {
   userId:       string;
-  amount:       number;          // موجب أو سالب
-  balanceAfter: number;          // إجمالي paid + free بعد العملية
+  amount:       number;
+  balanceAfter: number;
   source:       TransactionSource;
   action?:      string;
   notes?:       string;
   paymentId?:   string;
 }): Promise<void> {
   const { error } = await supabase
-    .from(DATABASE.TABLE_TRANSACTIONS)
+    .from(DATABASE.TABLE_TRANSACTIONS) // point_transactions
     .insert({
       user_id:       params.userId,
       amount:        params.amount,
       balance_after: params.balanceAfter,
       source:        params.source,
-      action:        params.action   ?? null,
-      notes:         params.notes    ?? null,
+      action:        params.action    ?? null,
+      notes:         params.notes     ?? null,
       payment_id:    params.paymentId ?? null,
     });
 
-  // نسجّل الخطأ لكن لا نوقف العملية الأصلية
-  if (error) console.error('[EconomyService] فشل تسجيل المعاملة:', error.message);
+  if (error) console.error('[EconomyService] فشل تسجيل الخصم:', error.message);
+}
+
+// ══════════════════════════════════════════
+//  تسجيل مكافأة في gift_transactions
+// ══════════════════════════════════════════
+async function logGift(params: {
+  userId:       string;
+  amount:       number;
+  balanceAfter: number;
+  source:       string;
+  action?:      string;
+  notes?:       string;
+}): Promise<void> {
+  const { error } = await supabase
+    .from('gift_transactions')
+    .insert({
+      user_id:       params.userId,
+      amount:        params.amount,
+      balance_after: params.balanceAfter,
+      source:        params.source,
+      action:        params.action ?? null,
+      notes:         params.notes  ?? null,
+    });
+
+  if (error) console.error('[EconomyService] فشل تسجيل المكافأة:', error.message);
 }
 
 // ══════════════════════════════════════════
 //  خصم نقاط (paid أولاً ثم bonus)
 // ══════════════════════════════════════════
 export async function deductPoints(
-  userId:   string,
-  cost:     number,
-  action:   string,
-  paidOnly  = false
+  userId:  string,
+  cost:    number,
+  action:  string,
+  paidOnly = false
 ): Promise<{ success: boolean; message: string }> {
 
   const wallet = await getWallet(userId);
@@ -97,9 +113,8 @@ export async function deductPoints(
 
   const paidDeduct  = paidOnly ? cost : Math.min(wallet.balance, cost);
   const bonusDeduct = paidOnly ? 0    : cost - paidDeduct;
-
-  const newPaid  = wallet.balance      - paidDeduct;
-  const newBonus = wallet.balance_free - bonusDeduct;
+  const newPaid     = wallet.balance      - paidDeduct;
+  const newBonus    = wallet.balance_free - bonusDeduct;
 
   const { error } = await supabase
     .from(DATABASE.TABLE_WALLETS)
@@ -112,13 +127,13 @@ export async function deductPoints(
 
   if (error) throw new Error(`فشل تحديث المحفظة: ${error.message}`);
 
-  await logTransaction({
+  await logDeduction({
     userId,
     amount:       -cost,
     balanceAfter: newPaid + newBonus,
     source:       ECONOMY_RULES.TRANSACTION_SOURCES.ACTION,
     action,
-    notes:        paidOnly ? 'paid_only' : undefined,
+    notes: paidOnly ? 'paid_only' : undefined,
   });
 
   return { success: true, message: 'تم الخصم بنجاح' };
@@ -126,6 +141,7 @@ export async function deductPoints(
 
 // ══════════════════════════════════════════
 //  إضافة نقاط مكافأة (bonus فقط)
+//  ✅ تكتب في gift_transactions + تحدّث wallets
 // ══════════════════════════════════════════
 export async function addBonusPoints(
   userId: string,
@@ -147,19 +163,20 @@ export async function addBonusPoints(
 
   if (error) throw new Error(`فشل إضافة النقاط: ${error.message}`);
 
-  await logTransaction({
+  // ✅ gift_transactions وليس point_transactions
+  await logGift({
     userId,
     amount,
     balanceAfter: wallet.balance + newBonus,
-    source,
+    source:       String(source),
+    action:       String(source), // نفس المصدر كـ action للفلترة
     notes,
   });
 }
 
 // ══════════════════════════════════════════
-//  عمليات الواجهة الرئيسية
+//  عمليات الواجهة
 // ══════════════════════════════════════════
-
 export const swipeRight = (userId: string) =>
   deductPoints(userId, GENERAL_INTERFACE.SWIPE_RIGHT_COST, ECONOMY_RULES.ACTIONS.BACK);
 
@@ -168,10 +185,6 @@ export const sendLike = (userId: string) =>
 
 export const sendMessage = (userId: string) =>
   deductPoints(userId, GENERAL_INTERFACE.MESSAGE_COST, ECONOMY_RULES.ACTIONS.CHAT);
-
-// ══════════════════════════════════════════
-//  خدمات الوسيط (paid فقط)
-// ══════════════════════════════════════════
 
 export const requestUrgentConsultation = (userId: string) =>
   deductPoints(userId, MEDIATOR_SPACE.SINGLE_SERVICES.URGENT_CONSULTATION, ECONOMY_RULES.ACTIONS.CONSULT, true);
@@ -191,9 +204,7 @@ export async function claimDailyBonus(
   const todayReset = new Date();
   todayReset.setUTCHours(UI_LOGIC.RESET_HOUR_UTC, 0, 0, 0);
 
-  const lastClaim = wallet.last_daily_login
-    ? new Date(wallet.last_daily_login)
-    : null;
+  const lastClaim = wallet.last_daily_login ? new Date(wallet.last_daily_login) : null;
 
   if (lastClaim && lastClaim >= todayReset) {
     return { success: false, message: 'استلمت مكافأتك اليوم بالفعل! 🎁' };
