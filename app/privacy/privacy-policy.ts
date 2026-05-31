@@ -8,8 +8,8 @@ export const PRIVACY_META = {
   contactEmail:  "contact@orcaup.com",
   supportEmail:  "support@orcaup.com",
   version:       "1.0.0",
-  effectiveDate: "2025-01-01",
-  lastUpdated:   "2025-01-01",
+  effectiveDate: "2026-05-26",
+  lastUpdated:   "2026-05-26",
 };
 
 export interface PolicySubsection {

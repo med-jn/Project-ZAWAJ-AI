@@ -1,28 +1,39 @@
 "use client";
 
 // HelpContent.tsx
-// صفحة المساعدة — ZAWAJ AI
 // المسار: app/help/HelpContent.tsx
-// ✅ 6 فئات بتبويبات | ✅ Accordion | ✅ روابط سياسات | ✅ تواصل | ✅ globals.css فقط
 
 import { useState, useCallback } from "react";
-import { ChevronDown, Mail, ChevronLeft } from "lucide-react";
+import {
+  ChevronDown, ChevronLeft, Mail,
+  UserCircle, Gift, Users, Lock, MessageCircle, Flag,
+} from "lucide-react";
 import Link from "next/link";
 import { FAQ_CATEGORIES, POLICY_LINKS, type FaqItem, type FaqCategory } from "./help-data";
 import { APP_INFO } from "../about/about-data";
 
-// ─────────────────────────────────────────────
-// سؤال accordion منفرد
-// ─────────────────────────────────────────────
-function FaqAccordionItem({
-  item,
-  isOpen,
-  onToggle,
-}: {
-  item: FaqItem;
-  isOpen: boolean;
-  onToggle: () => void;
-}) {
+// map id الفئة -> أيقونة Lucide
+const CATEGORY_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
+  account:  UserCircle,
+  points:   Gift,
+  mediator: Users,
+  privacy:  Lock,
+  messages: MessageCircle,
+  reports:  Flag,
+};
+
+function CategoryIcon({ id }: { id: string }) {
+  const Icon = CATEGORY_ICONS[id];
+  if (!Icon) return null;
+  return (
+    <Icon
+      style={{ width: "var(--icon-sm)", height: "var(--icon-sm)", flexShrink: 0 }}
+      strokeWidth={2}
+    />
+  );
+}
+
+function FaqAccordionItem({ item, isOpen, onToggle }: { item: FaqItem; isOpen: boolean; onToggle: () => void }) {
   return (
     <div style={{ borderBottom: "1px solid var(--border-soft)" }}>
       <button
@@ -40,17 +51,15 @@ function FaqAccordionItem({
           WebkitTapHighlightColor: "transparent",
         }}
       >
-        <span
-          style={{
-            flex: 1,
-            textAlign: "right",
-            fontSize: "var(--text-sm)",
-            fontWeight: 600,
-            color: isOpen ? "var(--color-primary)" : "var(--text-main)",
-            lineHeight: "var(--lh-snug)",
-            transition: "color 0.2s ease",
-          }}
-        >
+        <span style={{
+          flex: 1,
+          textAlign: "right",
+          fontSize: "var(--text-sm)",
+          fontWeight: 600,
+          color: isOpen ? "var(--color-primary)" : "var(--text-main)",
+          lineHeight: "var(--lh-snug)",
+          transition: "color 0.2s ease",
+        }}>
           {item.question}
         </span>
         <ChevronDown
@@ -65,25 +74,20 @@ function FaqAccordionItem({
           strokeWidth={2.5}
         />
       </button>
-
-      <div
-        style={{
-          maxHeight: isOpen ? "9999px" : "0",
-          overflow: "hidden",
-          transition: isOpen ? "max-height 0.45s ease" : "max-height 0.25s ease",
-        }}
-      >
+      <div style={{
+        maxHeight: isOpen ? "9999px" : "0",
+        overflow: "hidden",
+        transition: isOpen ? "max-height 0.45s ease" : "max-height 0.25s ease",
+      }}>
         <div style={{ padding: "0 var(--sp-5) var(--sp-5)" }}>
-          <p
-            style={{
-              margin: 0,
-              fontSize: "var(--text-sm)",
-              lineHeight: "var(--lh-relaxed)",
-              color: "var(--text-secondary)",
-              whiteSpace: "pre-line",
-              textAlign: "right",
-            }}
-          >
+          <p style={{
+            margin: 0,
+            fontSize: "var(--text-sm)",
+            lineHeight: "var(--lh-relaxed)",
+            color: "var(--text-secondary)",
+            whiteSpace: "pre-line",
+            textAlign: "right",
+          }}>
             {item.answer}
           </p>
         </div>
@@ -92,16 +96,11 @@ function FaqAccordionItem({
   );
 }
 
-// ─────────────────────────────────────────────
-// قائمة أسئلة الفئة النشطة
-// ─────────────────────────────────────────────
 function CategoryFaq({ category }: { category: FaqCategory }) {
   const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
-
   const toggleItem = useCallback((id: string) => {
     setOpenItems((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
-
   return (
     <div>
       {category.items.map((item) => (
@@ -116,61 +115,24 @@ function CategoryFaq({ category }: { category: FaqCategory }) {
   );
 }
 
-// ─────────────────────────────────────────────
-// المكوّن الرئيسي
-// ─────────────────────────────────────────────
 export default function HelpContent() {
   const [activeCategory, setActiveCategory] = useState<string>(FAQ_CATEGORIES[0].id);
   const currentCategory = FAQ_CATEGORIES.find((c) => c.id === activeCategory)!;
 
   return (
-    <div
-      dir="rtl"
-      style={{
-        minHeight: "100dvh",
-        background: "var(--bg-main)",
-        paddingBottom: "var(--sp-16)",
-      }}
-    >
+    <div dir="rtl" style={{ minHeight: "100dvh", background: "var(--bg-main)", paddingBottom: "var(--sp-16)" }}>
+
       {/* ══ هيدر ══ */}
-      <div
-        style={{
-          padding: "var(--sp-6) var(--sp-5) 0",
-          background: "var(--bg-surface)",
-        }}
-      >
-        <h1
-          style={{
-            fontSize: "var(--text-2xl)",
-            fontWeight: 800,
-            color: "var(--text-main)",
-            margin: "0 0 var(--sp-1) 0",
-            textAlign: "right",
-          }}
-        >
+      <div style={{ padding: "var(--sp-6) var(--sp-5) 0", background: "var(--bg-surface)" }}>
+        <h1 style={{ fontSize: "var(--text-2xl)", fontWeight: 800, color: "var(--text-main)", margin: "0 0 var(--sp-1) 0", textAlign: "right" }}>
           المساعدة
         </h1>
-        <p
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "var(--text-tertiary)",
-            margin: "0 0 var(--sp-4) 0",
-            textAlign: "right",
-          }}
-        >
+        <p style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", margin: "0 0 var(--sp-4) 0", textAlign: "right" }}>
           الأسئلة الشائعة والإجابات
         </p>
 
-        {/* ── تبويبات الفئات ── */}
-        <div
-          style={{
-            display: "flex",
-            gap: "var(--sp-1)",
-            overflowX: "auto",
-            paddingBottom: "0",
-          }}
-          className="no-scrollbar"
-        >
+        {/* تبويبات الفئات */}
+        <div style={{ display: "flex", gap: "var(--sp-1)", overflowX: "auto" }} className="no-scrollbar">
           {FAQ_CATEGORIES.map((cat) => {
             const isActive = cat.id === activeCategory;
             return (
@@ -185,15 +147,9 @@ export default function HelpContent() {
                   padding: "var(--sp-2) var(--sp-3)",
                   borderRadius: "var(--radius-full) var(--radius-full) 0 0",
                   border: "none",
-                  borderBottom: isActive
-                    ? "2px solid var(--color-primary)"
-                    : "2px solid transparent",
-                  background: isActive
-                    ? "var(--color-primary-soft)"
-                    : "transparent",
-                  color: isActive
-                    ? "var(--color-primary)"
-                    : "var(--text-tertiary)",
+                  borderBottom: isActive ? "2px solid var(--color-primary)" : "2px solid transparent",
+                  background: isActive ? "var(--color-primary-soft)" : "transparent",
+                  color: isActive ? "var(--color-primary)" : "var(--text-tertiary)",
                   fontSize: "var(--text-2xs)",
                   fontWeight: isActive ? 700 : 500,
                   cursor: "pointer",
@@ -203,7 +159,7 @@ export default function HelpContent() {
                   whiteSpace: "nowrap",
                 }}
               >
-                <span>{cat.icon}</span>
+                <CategoryIcon id={cat.id} />
                 <span>{cat.label}</span>
               </button>
             );
@@ -212,65 +168,28 @@ export default function HelpContent() {
       </div>
 
       {/* ══ أسئلة الفئة النشطة ══ */}
-      <div
-        style={{
-          background: "var(--bg-surface)",
-          marginTop: "var(--sp-2)",
-        }}
-      >
-        {/* عنوان الفئة */}
-        <div
-          style={{
-            padding: "var(--sp-4) var(--sp-5)",
-            borderBottom: "1px solid var(--border-soft)",
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--sp-2)",
-          }}
-        >
-          <span style={{ fontSize: "var(--text-lg)" }}>{currentCategory.icon}</span>
-          <h2
-            style={{
-              margin: 0,
-              fontSize: "var(--text-md)",
-              fontWeight: 700,
-              color: "var(--text-main)",
-            }}
-          >
+      <div style={{ background: "var(--bg-surface)", marginTop: "var(--sp-2)" }}>
+        <div style={{
+          padding: "var(--sp-4) var(--sp-5)",
+          borderBottom: "1px solid var(--border-soft)",
+          display: "flex",
+          alignItems: "center",
+          gap: "var(--sp-2)",
+        }}>
+          <CategoryIcon id={currentCategory.id} />
+          <h2 style={{ margin: 0, fontSize: "var(--text-md)", fontWeight: 700, color: "var(--text-main)" }}>
             {currentCategory.label}
           </h2>
         </div>
-
         <CategoryFaq key={activeCategory} category={currentCategory} />
       </div>
 
       {/* ══ روابط السياسات ══ */}
-      <div
-        style={{
-          padding: "var(--sp-6) var(--sp-5) var(--sp-4)",
-          background: "var(--bg-surface)",
-          marginTop: "var(--sp-2)",
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 var(--sp-3) 0",
-            fontSize: "var(--text-sm)",
-            fontWeight: 700,
-            color: "var(--text-main)",
-            textAlign: "right",
-          }}
-        >
+      <div style={{ padding: "var(--sp-6) var(--sp-5) var(--sp-4)", background: "var(--bg-surface)", marginTop: "var(--sp-2)" }}>
+        <h3 style={{ margin: "0 0 var(--sp-3) 0", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-main)", textAlign: "right" }}>
           الشروط والسياسات
         </h3>
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: "var(--sp-2)",
-          }}
-        >
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
           {POLICY_LINKS.map((link) => (
             <Link
               key={link.id}
@@ -286,32 +205,12 @@ export default function HelpContent() {
                 border: "1px solid var(--border-soft)",
               }}
             >
-              <ChevronLeft
-                style={{
-                  width: "var(--icon-sm)",
-                  height: "var(--icon-sm)",
-                  color: "var(--text-tertiary)",
-                  flexShrink: 0,
-                }}
-              />
+              <ChevronLeft style={{ width: "var(--icon-sm)", height: "var(--icon-sm)", color: "var(--text-tertiary)", flexShrink: 0 }} />
               <div style={{ flex: 1, textAlign: "right", marginRight: "var(--sp-2)" }}>
-                <p
-                  style={{
-                    margin: "0 0 2px 0",
-                    fontSize: "var(--text-sm)",
-                    fontWeight: 600,
-                    color: "var(--text-main)",
-                  }}
-                >
+                <p style={{ margin: "0 0 2px 0", fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-main)" }}>
                   {link.label}
                 </p>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: "var(--text-2xs)",
-                    color: "var(--text-tertiary)",
-                  }}
-                >
+                <p style={{ margin: 0, fontSize: "var(--text-2xs)", color: "var(--text-tertiary)" }}>
                   {link.desc}
                 </p>
               </div>
@@ -320,24 +219,9 @@ export default function HelpContent() {
         </div>
       </div>
 
-      {/* ══ تواصل معنا ══ */}
-      <div
-        style={{
-          padding: "var(--sp-5)",
-          background: "var(--bg-surface)",
-          marginTop: "var(--sp-2)",
-          borderTop: "1px solid var(--border-soft)",
-        }}
-      >
-        <h3
-          style={{
-            margin: "0 0 var(--sp-3) 0",
-            fontSize: "var(--text-sm)",
-            fontWeight: 700,
-            color: "var(--text-main)",
-            textAlign: "right",
-          }}
-        >
+      {/* ══ تواصل ══ */}
+      <div style={{ padding: "var(--sp-5)", background: "var(--bg-surface)", marginTop: "var(--sp-2)", borderTop: "1px solid var(--border-soft)" }}>
+        <h3 style={{ margin: "0 0 var(--sp-3) 0", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--text-main)", textAlign: "right" }}>
           لم تجد إجابتك؟
         </h3>
         <a
@@ -353,32 +237,12 @@ export default function HelpContent() {
             border: "1px solid var(--border-soft)",
           }}
         >
-          <Mail
-            style={{
-              width: "var(--icon-md)",
-              height: "var(--icon-md)",
-              color: "var(--color-primary)",
-              flexShrink: 0,
-            }}
-          />
+          <Mail style={{ width: "var(--icon-md)", height: "var(--icon-md)", color: "var(--color-primary)", flexShrink: 0 }} />
           <div style={{ flex: 1, textAlign: "right", marginRight: "var(--sp-3)" }}>
-            <p
-              style={{
-                margin: "0 0 2px 0",
-                fontSize: "var(--text-sm)",
-                fontWeight: 700,
-                color: "var(--color-primary)",
-              }}
-            >
+            <p style={{ margin: "0 0 2px 0", fontSize: "var(--text-sm)", fontWeight: 700, color: "var(--color-primary)" }}>
               تواصل مع الدعم
             </p>
-            <p
-              style={{
-                margin: 0,
-                fontSize: "var(--text-xs)",
-                color: "var(--text-secondary)",
-              }}
-            >
+            <p style={{ margin: 0, fontSize: "var(--text-xs)", color: "var(--text-secondary)" }}>
               {APP_INFO.supportEmail}
             </p>
           </div>
