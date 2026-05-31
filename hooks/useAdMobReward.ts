@@ -1,10 +1,9 @@
 'use client';
 /**
- * 📁 hooks/useAdMobReward.ts — ZAWAJ AI
- * ✅ يستخدم @capacitor-community/admob (الأكثر استقراراً)
- * ✅ يحمّل إعلانَين مسبقاً ويحافظ على وجود 2 جاهزَين دائماً
- * ✅ المكافأة تُمنح فور انتهاء الإعلان عبر rewardReceived
- * ✅ يعمل على Web بمحاكاة فورية
+ * 📁 hooks/useAdMobReward.ts — ZAWAJ AI (FIXED)
+ * ✅ مكتبة واحدة فقط: @capacitor-community/admob
+ * ✅ المستمعات تُسجَّل مرة واحدة عبر useRef
+ * ✅ loadOne مُعرَّفة قبل initListeners لتجنب مشكلة الـ closure
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -14,45 +13,84 @@ import { toast }          from 'sonner';
 
 const IS_NATIVE = Capacitor.isNativePlatform();
 
-// ── معرّف الوحدة الإعلانية ───────────────────────────────────
-// استبدل بمعرّفك الحقيقي عند الرفع للإنتاج
-const AD_UNIT_ID = IS_NATIVE
-  ? (process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID ?? 'ca-app-pub-3940256099942544/5224354917')
-  : 'ca-app-pub-3940256099942544/5224354917'; // test ID
+const AD_UNIT_ID = process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID
+  ?? 'ca-app-pub-3940256099942544/5224354917';
 
-// عدد الإعلانات الجاهزة المطلوب الحفاظ عليها
 const POOL_SIZE = 2;
-
-// ── نوع حالة الإعلان ─────────────────────────────────────────
 type AdStatus = 'idle' | 'loading' | 'ready' | 'showing';
 
 export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5) {
   const [pool,    setPool]    = useState<AdStatus[]>(['idle', 'idle']);
   const [showing, setShowing] = useState(false);
-  const listenersRef = useRef<boolean>(false);
 
-  // عدد الإعلانات الجاهزة فعلاً
+  // نستخدم ref لتجنب إعادة تسجيل المستمعات عند تغيّر الدوال
+  const listenersRef  = useRef(false);
+  const grantedRef    = useRef(false); // منع المكافأة المزدوجة
+  const userIdRef     = useRef(userId);
+  const rewardAmtRef  = useRef(rewardAmount);
+
+  useEffect(() => { userIdRef.current  = userId;       }, [userId]);
+  useEffect(() => { rewardAmtRef.current = rewardAmount; }, [rewardAmount]);
+
   const readyCount = pool.filter(s => s === 'ready').length;
   const isAdReady  = readyCount > 0;
   const isLoadingAd = pool.some(s => s === 'loading');
 
-  // ── منح المكافأة ──────────────────────────────────────────
+  // ── منح المكافأة ─────────────────────────────────────────
   const grantReward = useCallback(async () => {
-    if (!userId) return;
+    const uid = userIdRef.current;
+    const amt = rewardAmtRef.current;
+    if (!uid) return;
     try {
       await addBonusPoints(
-        userId,
-        rewardAmount,
+        uid, amt,
         ECONOMY_RULES.TRANSACTION_SOURCES.ADMOB,
-        `مكافأة مشاهدة إعلان — +${rewardAmount} نقطة`
+        `مكافأة مشاهدة إعلان — +${amt} نقطة`
       );
-      toast.success(`🎁 تم إضافة ${rewardAmount} نقطة مكافأة!`);
+      toast.success(`🎁 تم إضافة ${amt} نقطة مكافأة!`);
     } catch {
       toast.error('فشل تسجيل المكافأة، حاول لاحقاً.');
     }
-  }, [userId, rewardAmount]);
+  }, []); // لا dependencies — يقرأ من refs
 
-  // ── تهيئة AdMob وتسجيل المستمعات (مرة واحدة فقط) ──────────
+  // ── تحميل إعلان واحد ────────────────────────────────────
+  const loadOne = useCallback(async () => {
+    if (!IS_NATIVE) return;
+
+    setPool(prev => {
+      if (prev.filter(s => s === 'idle').length === 0) return prev;
+      const next = [...prev];
+      const idx  = next.findIndex(s => s === 'idle');
+      next[idx]  = 'loading';
+      return next;
+    });
+
+    try {
+      const { AdMob } = await import('@capacitor-community/admob');
+      await AdMob.prepareRewardVideoAd({
+        adId: AD_UNIT_ID,
+        isTesting: !process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID,
+      });
+      setPool(prev => {
+        const idx = prev.findIndex(s => s === 'loading');
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx]  = 'ready';
+        return next;
+      });
+    } catch (e) {
+      console.error('[AdMob] load failed:', e);
+      setPool(prev => {
+        const idx = prev.findIndex(s => s === 'loading');
+        if (idx === -1) return prev;
+        const next = [...prev];
+        next[idx]  = 'idle';
+        return next;
+      });
+    }
+  }, []);
+
+  // ── تسجيل المستمعات (مرة واحدة) ─────────────────────────
   const initListeners = useCallback(async () => {
     if (!IS_NATIVE || listenersRef.current) return;
     listenersRef.current = true;
@@ -60,101 +98,72 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
     try {
       const { AdMob } = await import('@capacitor-community/admob');
 
-      // تهيئة SDK
       await AdMob.initialize({
         requestTrackingAuthorization: false,
-        testingDevices: [], // أضف device ID جهازك هنا للاختبار
         initializeForTesting: !process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID,
       });
 
-      // ✅ المكافأة — يُطلق قبل إغلاق الإعلان
+      // ✅ المكافأة — الحدث الصحيح لـ @capacitor-community/admob
       await AdMob.addListener('onRewardedVideoAdRewarded', () => {
+        if (grantedRef.current) return; // منع التكرار
+        grantedRef.current = true;
         grantReward();
       });
 
-      // إعادة تحميل بعد الإغلاق
+      // إعادة تعيين الـ flag وتحميل إعلان جديد بعد الإغلاق
       await AdMob.addListener('onRewardedVideoAdClosed', () => {
         setShowing(false);
-        // أعد تحميل واحد لاستعادة الـ pool
-        loadOne();
+        grantedRef.current = false;
+        // أعد slot واحد للـ pool
+        setPool(prev => {
+          const hasIdle = prev.some(s => s === 'idle');
+          if (!hasIdle) return prev;
+          return prev; // loadOne ستُعيّن الـ slot
+        });
+        setTimeout(() => loadOne(), 500);
+      });
+
+      // معالجة فشل تحميل الإعلان
+      await AdMob.addListener('onRewardedVideoAdFailedToLoad', (info) => {
+        console.error('[AdMob] failed to load:', info);
+        setPool(prev => {
+          const idx = prev.findIndex(s => s === 'loading');
+          if (idx === -1) return prev;
+          const next = [...prev];
+          next[idx]  = 'idle';
+          return next;
+        });
       });
 
     } catch (e) {
       console.error('[AdMob] init failed:', e);
+      listenersRef.current = false; // اسمح بإعادة المحاولة
     }
-  }, [grantReward]); // eslint-disable-line
+  }, [grantReward, loadOne]);
 
-  // ── تحميل إعلان واحد ─────────────────────────────────────
-  const loadOne = useCallback(async () => {
-    if (!IS_NATIVE) return;
-
-    // أضف slot loading في أول فراغ
-    setPool(prev => {
-      const idx = prev.findIndex(s => s === 'idle');
-      if (idx === -1) return prev;
-      const next = [...prev];
-      next[idx] = 'loading';
-      return next;
-    });
-
-    try {
-      const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
-
-      await AdMob.prepareRewardVideoAd({
-        adId: AD_UNIT_ID,
-        isTesting: !process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID,
-      });
-
-      // نجح التحميل
-      setPool(prev => {
-        const idx = prev.findIndex(s => s === 'loading');
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = 'ready';
-        return next;
-      });
-    } catch (e) {
-      console.error('[AdMob] load failed:', e);
-      // إعادة الـ slot لـ idle
-      setPool(prev => {
-        const idx = prev.findIndex(s => s === 'loading');
-        if (idx === -1) return prev;
-        const next = [...prev];
-        next[idx] = 'idle';
-        return next;
-      });
-    }
-  }, []);
-
-  // ── تحميل الـ pool الكامل ────────────────────────────────
+  // ── ملء الـ pool ─────────────────────────────────────────
   const fillPool = useCallback(async () => {
-    if (!IS_NATIVE || !userId) return;
+    if (!IS_NATIVE || !userIdRef.current) return;
     await initListeners();
 
-    // احسب كم إعلان ينقص
-    setPool(prev => {
-      const needed = POOL_SIZE - prev.filter(s => s === 'ready' || s === 'loading').length;
-      if (needed <= 0) return prev;
-      // ابدأ التحميل بعدد الناقص
-      for (let i = 0; i < needed; i++) setTimeout(() => loadOne(), i * 300);
-      return prev;
-    });
-  }, [userId, initListeners, loadOne]);
+    const needed = POOL_SIZE - pool.filter(s => s === 'ready' || s === 'loading').length;
+    for (let i = 0; i < needed; i++) {
+      setTimeout(() => loadOne(), i * 400);
+    }
+  }, [pool, initListeners, loadOne]);
 
-  // ── تحميل فور توفر userId ────────────────────────────────
+  // ── تهيئة عند توفر userId ───────────────────────────────
   useEffect(() => {
     if (!userId) return;
-
     if (!IS_NATIVE) {
-      // وضع الويب — نعتبر الإعلانَين جاهزَين فوراً
       setPool(['ready', 'ready']);
       return;
     }
-
     fillPool();
-  }, [userId]); // eslint-disable-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
 
-  // ── عرض الإعلان ──────────────────────────────────────────
+  // ── عرض الإعلان ─────────────────────────────────────────
   const showAd = useCallback(async () => {
     if (!userId) {
       toast.error('يجب تسجيل الدخول أولاً.');
@@ -175,21 +184,19 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
 
     try {
       setShowing(true);
+      grantedRef.current = false;
 
-      // استهلك slot واحد من الـ pool
+      // استهلك slot من الـ pool
       setPool(prev => {
         const idx = prev.findIndex(s => s === 'ready');
         if (idx === -1) return prev;
         const next = [...prev];
-        next[idx] = 'idle';
+        next[idx]  = 'idle';
         return next;
       });
 
       const { AdMob } = await import('@capacitor-community/admob');
       await AdMob.showRewardVideoAd();
-
-      // ابدأ تحميل بديل فوراً لاستعادة الـ pool
-      setTimeout(() => loadOne(), 500);
 
     } catch (e) {
       console.error('[AdMob] show failed:', e);
@@ -199,11 +206,5 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
     }
   }, [userId, isAdReady, grantReward, fillPool, loadOne]);
 
-  return {
-    showAd,
-    isAdReady,
-    isLoadingAd,
-    readyCount,
-    showing,
-  };
+  return { showAd, isAdReady, isLoadingAd, readyCount, showing };
 }
