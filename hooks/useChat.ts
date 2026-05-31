@@ -1,23 +1,34 @@
 /**
- * 📁 hooks/useChat.ts
- * ZAWAJ AI — hook الدردشة
- * ✅ insert بدون .select() لتجنب خطأ RLS 400
- * ✅ بدون crypto.randomUUID (يكسر على الهاتف بـ IP)
- * ✅ setTyping مُصدَّرة صراحةً
+ * 📁 hooks/useChat.ts — ZAWAJ AI v2
+ *
+ * ✅ دعم الرسائل الصوتية (message_type + audio_url)
+ * ✅ نظام فتح المحادثة (is_unlocked)
+ * ✅ التحقق من الإعجاب قبل خصم النقاط
+ * ✅ sendVoiceMessage مُصدَّرة
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
+import { uploadVoiceMessage } from '@/lib/supabase/chatStorage';
 
+// ──────────────────────────────────────────────────────────────
 export interface ChatMessage {
-  id: string;
+  id:              string;
   conversation_id: string;
-  sender_id: string;
-  content: string;
-  is_read: boolean;
-  created_at: string;
-  is_optimistic?: boolean;
-  failed?: boolean;
+  sender_id:       string;
+  content:         string;
+  message_type:    'text' | 'voice';
+  audio_url?:      string | null;
+  is_read:         boolean;
+  created_at:      string;
+  is_optimistic?:  boolean;
+  failed?:         boolean;
+}
+
+export interface ConversationStatus {
+  is_unlocked:   boolean;   // هل المحادثة مفتوحة؟
+  is_free:       boolean;   // هل الرسالة الأولى مجانية؟
+  pending_unlock: boolean;  // انتظار رد/قبول الطرف الآخر
 }
 
 function makeTempId(): string {
@@ -25,32 +36,103 @@ function makeTempId(): string {
 }
 
 // ──────────────────────────────────────────────────────────────
-export function useChat(conversationId: string | null, userId: string) {
-
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading,  setLoading]  = useState(true);
+export function useChat(
+  conversationId: string | null,
+  userId:         string,
+  recipientId:    string
+) {
+  const [messages, setMessages]             = useState<ChatMessage[]>([]);
+  const [loading,  setLoading]              = useState(true);
+  const [convStatus, setConvStatus]         = useState<ConversationStatus>({
+    is_unlocked:    false,
+    is_free:        false,
+    pending_unlock: false,
+  });
 
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
-  // ── جلب الرسائل ──────────────────────────────────────────
+  // ── جلب حالة المحادثة + الإعجابات ──────────────────────────
+  const fetchConvStatus = async () => {
+    if (!conversationId || !userId || !recipientId) return;
+
+    // 1. هل المحادثة مفتوحة مسبقاً؟
+    const { data: conv } = await supabase
+      .from('conversations')
+      .select('is_unlocked')
+      .eq('id', conversationId)
+      .single();
+
+    if (conv?.is_unlocked) {
+      setConvStatus({ is_unlocked: true, is_free: true, pending_unlock: false });
+      return;
+    }
+
+    // 2. هل الطرف الآخر أعجب بي؟ (يجعل أول رسالة مجانية)
+    const { data: theyLikedMe } = await supabase
+      .from('likes')
+      .select('id')
+      .eq('from_user', recipientId)
+      .eq('to_user', userId)
+      .in('action', ['like', 'super_like'])
+      .maybeSingle();
+
+    // 3. هل هناك تطابق؟
+    const { data: isMatch } = await supabase
+      .from('likes')
+      .select('is_match')
+      .eq('from_user', userId)
+      .eq('to_user', recipientId)
+      .eq('is_match', true)
+      .maybeSingle();
+
+    const isFree = !!(theyLikedMe || isMatch);
+
+    // 4. هل أرسلت رسالة قبل ولم يردوا؟
+    const { data: myMessages } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('sender_id', userId)
+      .limit(1);
+
+    const { data: theirMessages } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('conversation_id', conversationId)
+      .eq('sender_id', recipientId)
+      .limit(1);
+
+    const iSentFirst   = (myMessages?.length ?? 0) > 0;
+    const theyReplied  = (theirMessages?.length ?? 0) > 0;
+    const pendingUnlock = iSentFirst && !theyReplied && !isFree;
+
+    setConvStatus({
+      is_unlocked:    isFree || theyReplied,
+      is_free:        isFree,
+      pending_unlock: pendingUnlock,
+    });
+  };
+
+  // ── جلب الرسائل ──────────────────────────────────────────────
   const fetchMessages = async () => {
     if (!conversationId) return;
     setLoading(true);
     const { data, error } = await supabase
       .from('messages')
-      .select('id, conversation_id, sender_id, content, is_read, created_at')
+      .select('id, conversation_id, sender_id, content, message_type, audio_url, is_read, created_at')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
       .limit(80);
-    if (!error && data) setMessages(data);
+    if (!error && data) setMessages(data as ChatMessage[]);
     setLoading(false);
   };
 
-  // ── Realtime ─────────────────────────────────────────────
+  // ── Realtime ─────────────────────────────────────────────────
   useEffect(() => {
     if (!conversationId) return;
 
     fetchMessages();
+    fetchConvStatus();
 
     const channel = supabase
       .channel(`chat_${conversationId}`)
@@ -61,9 +143,7 @@ export function useChat(conversationId: string | null, userId: string) {
         payload => {
           const newMsg = payload.new as ChatMessage;
           setMessages(prev => {
-            // إذا الـ ID موجود فعلاً، تجاهل
             if (prev.some(m => m.id === newMsg.id)) return prev;
-            // إذا رسالة مؤقتة بنفس المحتوى والمُرسِل خلال آخر 10 ثوانٍ، استبدلها
             const tempIdx = prev.findIndex(m =>
               m.is_optimistic &&
               m.sender_id === newMsg.sender_id &&
@@ -77,6 +157,11 @@ export function useChat(conversationId: string | null, userId: string) {
             }
             return [...prev, newMsg];
           });
+          // إذا ردّ الطرف الآخر → افتح المحادثة
+          if (newMsg.sender_id === recipientId) {
+            setConvStatus(prev => ({ ...prev, is_unlocked: true, pending_unlock: false }));
+            unlockConversation();
+          }
           if (newMsg.sender_id !== userId) markConversationRead();
         }
       )
@@ -88,15 +173,41 @@ export function useChat(conversationId: string | null, userId: string) {
           setMessages(prev => prev.filter(m => m.id !== payload.old.id));
         }
       )
+      // مراقبة تغيير is_unlocked في conversations
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'conversations',
+          filter: `id=eq.${conversationId}` },
+        payload => {
+          if (payload.new?.is_unlocked) {
+            setConvStatus(prev => ({ ...prev, is_unlocked: true, pending_unlock: false }));
+          }
+        }
+      )
       .subscribe();
 
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
-  }, [conversationId]);
+  }, [conversationId, userId, recipientId]);
 
-  // ── إرسال (Optimistic بدون .select() لتجنب RLS) ──────────
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || !conversationId || !userId) return;
+  // ── فتح المحادثة في DB ────────────────────────────────────────
+  const unlockConversation = async () => {
+    if (!conversationId) return;
+    await supabase
+      .from('conversations')
+      .update({ is_unlocked: true })
+      .eq('id', conversationId);
+  };
+
+  // ── قبول المحادثة (زر "قبول" للمستقبل) ──────────────────────
+  const acceptConversation = async () => {
+    await unlockConversation();
+    setConvStatus(prev => ({ ...prev, is_unlocked: true, pending_unlock: false }));
+  };
+
+  // ── إرسال نص ─────────────────────────────────────────────────
+  const sendMessage = async (content: string): Promise<boolean> => {
+    if (!content.trim() || !conversationId || !userId) return false;
 
     const tid = makeTempId();
     const optimistic: ChatMessage = {
@@ -104,6 +215,7 @@ export function useChat(conversationId: string | null, userId: string) {
       conversation_id: conversationId,
       sender_id:       userId,
       content,
+      message_type:    'text',
       is_read:         false,
       created_at:      new Date().toISOString(),
       is_optimistic:   true,
@@ -113,37 +225,86 @@ export function useChat(conversationId: string | null, userId: string) {
 
     const { error } = await supabase
       .from('messages')
-      .insert({ conversation_id: conversationId, sender_id: userId, content });
+      .insert({ conversation_id: conversationId, sender_id: userId, content, message_type: 'text' });
 
     if (error) {
-      console.error('[useChat] insert error:', error.message);
       setMessages(prev =>
         prev.map(m => m.id === tid ? { ...m, failed: true, is_optimistic: false } : m)
       );
-      return;
+      return false;
     }
 
-    // تحديث آخر رسالة
     await supabase
       .from('conversations')
       .update({ last_message: content, last_message_time: new Date().toISOString() })
       .eq('id', conversationId);
-    // Realtime سيستبدل الرسالة المؤقتة بالحقيقية تلقائياً
+
+    return true;
   };
 
-  // ── مؤشر الكتابة ─────────────────────────────────────────
+  // ── إرسال صوتي ───────────────────────────────────────────────
+  const sendVoiceMessage = async (audioBlob: Blob): Promise<boolean> => {
+    if (!conversationId || !userId) return false;
+
+    const tid = makeTempId();
+    const optimistic: ChatMessage = {
+      id:              tid,
+      conversation_id: conversationId,
+      sender_id:       userId,
+      content:         '🎤 رسالة صوتية',
+      message_type:    'voice',
+      audio_url:       null,
+      is_read:         false,
+      created_at:      new Date().toISOString(),
+      is_optimistic:   true,
+    };
+
+    setMessages(prev => [...prev, optimistic]);
+
+    try {
+      const audioUrl = await uploadVoiceMessage(audioBlob, userId, conversationId);
+
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          conversation_id: conversationId,
+          sender_id:       userId,
+          content:         '🎤 رسالة صوتية',
+          message_type:    'voice',
+          audio_url:       audioUrl,
+        });
+
+      if (error) throw error;
+
+      await supabase
+        .from('conversations')
+        .update({ last_message: '🎤 رسالة صوتية', last_message_time: new Date().toISOString() })
+        .eq('id', conversationId);
+
+      return true;
+
+    } catch (err) {
+      console.error('[useChat] voice send error:', err);
+      setMessages(prev =>
+        prev.map(m => m.id === tid ? { ...m, failed: true, is_optimistic: false } : m)
+      );
+      return false;
+    }
+  };
+
+  // ── مؤشر الكتابة ─────────────────────────────────────────────
   const setTyping = (isTyping: boolean) => {
     channelRef.current?.track({ user_id: userId, typing: isTyping });
   };
 
-  // ── حذف رسالة ────────────────────────────────────────────
+  // ── حذف رسالة ────────────────────────────────────────────────
   const deleteMessage = async (messageId: string) => {
     setMessages(prev => prev.filter(m => m.id !== messageId));
     await supabase.from('messages').delete()
       .eq('id', messageId).eq('sender_id', userId);
   };
 
-  // ── تحديد كمقروء ─────────────────────────────────────────
+  // ── تحديد كمقروء ─────────────────────────────────────────────
   const markConversationRead = async () => {
     if (!conversationId || !userId) return;
     await supabase.from('messages')
@@ -156,5 +317,16 @@ export function useChat(conversationId: string | null, userId: string) {
     );
   };
 
-  return { messages, loading, sendMessage, setTyping, deleteMessage, markConversationRead };
+  return {
+    messages,
+    loading,
+    convStatus,
+    sendMessage,
+    sendVoiceMessage,
+    setTyping,
+    deleteMessage,
+    markConversationRead,
+    acceptConversation,
+    refetchStatus: fetchConvStatus,
+  };
 }

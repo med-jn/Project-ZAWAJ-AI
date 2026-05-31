@@ -2,28 +2,21 @@
 /**
  * 📁 hooks/useGiftCoins.ts — ZAWAJ AI
  *
- * Hook مركزي لخصم نقاط الهدايا عبر Edge Function.
- * يستخدم في:
- *   - usercard.tsx   (like, pass, view)
- *   - view/page.tsx  (view, message)
- *   - ProfileActions عبر view/page.tsx (like)
- *
- * الاستخدام:
- *   const { deduct, balance, loading } = useGiftCoins();
- *   const ok = await deduct({ action: 'like', target_id: '...' });
- *   if (!ok) return; // نقاط غير كافية — Sonner ظهر تلقائياً
+ * ✅ مراقبة realtime للرصيد — دائماً محدّث في الذاكرة
+ * ✅ canAfford() للتحقق المحلي الفوري قبل أي تفاعل
+ * ✅ deduct() optimistic — يحدّث الواجهة فوراً ويتراجع عند الفشل
+ * ✅ deductBackground() للخلفية (view) — لا يوقف التنفيذ
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
 
-// ── رسائل الخطأ للمستخدم ──────────────────────────────────────
-const ERROR_MESSAGES: Record<string, string> = {
-  like:    'نقاطك لا تكفي للإعجاب — اكسب المزيد من المكافآت!',
-  pass:    'نقاطك لا تكفي للتخطي — اكسب المزيد من المكافآت!',
-  view:    'نقاطك لا تكفي لفتح الملف — اكسب المزيد من المكافآت!',
-  message: 'نقاطك لا تكفي لإرسال رسالة — اكسب المزيد من المكافآت!',
+const COSTS: Record<string, number> = {
+  like:    5,
+  pass:    1,
+  view:    1,
+  message: 10,
 };
 
 export interface DeductParams {
@@ -32,39 +25,75 @@ export interface DeductParams {
   notes?:     string;
 }
 
-export interface DeductResult {
-  success:      boolean;
-  balance_free?: number;
-  error?:       string;
-}
-
 export function useGiftCoins() {
   const [balance, setBalance] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
+  const balanceRef = useRef<number | null>(null);
 
-  // ── جلب الرصيد الأولي ────────────────────────────────────
   useEffect(() => {
+    balanceRef.current = balance;
+  }, [balance]);
+
+  // ── جلب الرصيد الأولي + مراقبة realtime ──────────────────
+  useEffect(() => {
+    let channel: ReturnType<typeof supabase.channel> | null = null;
     let mounted = true;
+
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user || !mounted) return;
+
       const { data } = await supabase
         .from('wallets')
         .select('balance_free')
         .eq('id', user.id)
         .single();
+
       if (mounted && data) setBalance(data.balance_free ?? 0);
+
+      // مراقبة realtime على جدول wallets
+      channel = supabase
+        .channel(`wallet_${user.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event:  'UPDATE',
+            schema: 'public',
+            table:  'wallets',
+            filter: `id=eq.${user.id}`,
+          },
+          (payload) => {
+            const newBal = payload.new?.balance_free ?? 0;
+            if (mounted) setBalance(newBal);
+          }
+        )
+        .subscribe();
     })();
-    return () => { mounted = false; };
+
+    return () => {
+      mounted = false;
+      if (channel) supabase.removeChannel(channel);
+    };
   }, []);
 
-  // ── الدالة الرئيسية: خصم النقاط ──────────────────────────
+  // ── تحقق محلي فوري ────────────────────────────────────────
+  const canAfford = useCallback((action: DeductParams['action']): boolean => {
+    const cost = COSTS[action] ?? 0;
+    const bal  = balanceRef.current;
+    if (bal === null) return true; // لم يُحمَّل بعد → نسمح والخادم يقرر
+    return bal >= cost;
+  }, []);
+
+  // ── خصم optimistic ────────────────────────────────────────
   const deduct = useCallback(async (params: DeductParams): Promise<boolean> => {
-    setLoading(true);
+    const cost = COSTS[params.action] ?? 0;
+
+    // تحديث محلي فوري
+    setBalance(prev => (prev !== null ? prev - cost : null));
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error('يجب تسجيل الدخول أولاً');
+        setBalance(prev => (prev !== null ? prev + cost : null));
         return false;
       }
 
@@ -80,50 +109,51 @@ export function useGiftCoins() {
         }
       );
 
-      const result: DeductResult = await res.json();
+      const result = await res.json();
 
       if (!result.success) {
+        // تراجع عن التحديث المحلي
+        setBalance(prev => (prev !== null ? prev + cost : null));
         if (result.error === 'insufficient_balance') {
-          // رسالة Sonner مخصصة لكل نوع تفاعل
-          toast.error(ERROR_MESSAGES[params.action] ?? 'نقاطك غير كافية', {
-            description: `تحتاج ${getCost(params.action)} نقاط — رصيدك الحالي: ${result.balance_free ?? 0}`,
-            action: {
-              label: 'اكسب نقاط',
-              onClick: () => {
-                // الانتقال لصفحة النقاط
-                window.location.href = '/points';
-              },
-            },
-            duration: 4000,
-          });
-        } else {
-          console.error('[useGiftCoins] error:', result.error);
+          showInsufficientToast(params.action, result.balance_free ?? 0, cost);
         }
         return false;
       }
 
-      // تحديث الرصيد المحلي فوراً بعد النجاح
-      if (result.balance_free !== undefined) {
-        setBalance(result.balance_free);
-      }
-
+      // تأكيد الرصيد الحقيقي
+      setBalance(result.balance_free);
       return true;
 
     } catch (err) {
-      console.error('[useGiftCoins] fetch error:', err);
+      setBalance(prev => (prev !== null ? prev + cost : null));
+      console.error('[useGiftCoins]', err);
       return false;
-    } finally {
-      setLoading(false);
     }
   }, []);
 
-  return { deduct, balance, loading };
+  // ── خصم في الخلفية بدون انتظار (للـ view) ────────────────
+  const deductBackground = useCallback((params: DeductParams) => {
+    deduct(params).catch(() => {});
+  }, [deduct]);
+
+  return { deduct, deductBackground, canAfford, balance };
 }
 
-// ── helper: تكلفة كل action ──────────────────────────────────
-function getCost(action: string): number {
-  const costs: Record<string, number> = {
-    like: 5, pass: 1, view: 1, message: 10,
-  };
-  return costs[action] ?? 0;
+// ── رسائل Sonner ──────────────────────────────────────────────
+const MESSAGES: Record<string, string> = {
+  like:    'نقاطك لا تكفي للإعجاب',
+  pass:    'نقاطك لا تكفي للتخطي',
+  view:    'نقاطك لا تكفي لفتح الملف',
+  message: 'نقاطك لا تكفي لإرسال رسالة',
+};
+
+function showInsufficientToast(action: string, balance: number, cost: number) {
+  toast.error(MESSAGES[action] ?? 'رصيد غير كافٍ', {
+    description: `تحتاج ${cost} نقاط — رصيدك: ${balance}`,
+    action: {
+      label:   'اكسب نقاط',
+      onClick: () => { window.location.href = '/points'; },
+    },
+    duration: 4000,
+  });
 }
