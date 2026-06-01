@@ -1,10 +1,10 @@
 'use client';
 /**
  * 📁 app/view/page.tsx — ZAWAJ AI
- * ✅ خصم نقاط الهدايا:
- *    view    → 1 نقطة عند كل زيارة
- *    like    → 5 نقاط عند كل إعجاب
- *    message → 10 نقاط عند أول رسالة جديدة فقط
+ * ✅ تحقق من الرصيد قبل فتح الصفحة (view)
+ * ✅ خصم view في الخلفية فور الفتح
+ * ✅ خصم like محلي فوري ثم خادم في الخلفية
+ * ✅ خصم message عند أول محادثة فقط
  */
 
 import { useState, useEffect, Suspense } from 'react';
@@ -15,19 +15,19 @@ import {
   Users, Activity, Flame, Moon, Star, Globe, Smile, Ruler,
   HandHeart, ShieldCheck,
 } from 'lucide-react';
-import { supabase }      from '@/lib/supabase/client';
-import ProfileActions    from '@/components/profile/ProfileActions';
-import OnlineDot         from '@/components/profile/OnlineDot';
+import { supabase }         from '@/lib/supabase/client';
+import ProfileActions       from '@/components/profile/ProfileActions';
+import OnlineDot            from '@/components/profile/OnlineDot';
 import {
   COMMITTED_LEVELS, getNationality,
   getMaritalLabel, getEducationLabel,
   getReligiousLabel, getHousingLabel,
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
-import ChatWindow        from '@/components/chat/ChatWindow';
-import { useGiftCoins }  from '@/hooks/useGiftCoins'; // ← جديد
+import ChatWindow           from '@/components/chat/ChatWindow';
+import { useGiftCoins }     from '@/hooks/useGiftCoins';
 
-// ── صف معلومة ────────────────────────────────────────────────
+// ── مكونات العرض ──────────────────────────────────────────────
 function Row({ icon, label, value }: {
   icon: React.ReactNode; label: string; value?: string | number | null;
 }) {
@@ -88,7 +88,7 @@ function ViewContent() {
   const router       = useRouter();
   const userId       = searchParams.get('id') ?? '';
 
-  const { deduct } = useGiftCoins(); // ← جديد
+  const { deduct, deductBackground, canAfford } = useGiftCoins();
 
   const [profile,   setProfile]   = useState<any>(null);
   const [myProfile, setMyProfile] = useState<any>(null);
@@ -103,7 +103,7 @@ function ViewContent() {
   const [msgFlash,  setMsgFlash]  = useState(false);
   const [lightbox,  setLightbox]  = useState(false);
 
-  // ── جلب المستخدم الحالي + ملفه ──────────────────────────────
+  // ── جلب المستخدم الحالي ───────────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
@@ -114,7 +114,7 @@ function ViewContent() {
     });
   }, []);
 
-  // ── جلب بيانات الملف المستهدف ────────────────────────────────
+  // ── جلب بيانات الملف ─────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
     (async () => {
@@ -125,7 +125,7 @@ function ViewContent() {
     })();
   }, [userId]);
 
-  // ── حالة الإعجاب + خصم view عند كل زيارة ────────────────────
+  // ── حالة الإعجاب + خصم view عند الفتح ───────────────────
   useEffect(() => {
     if (!me || !userId || me.id === userId) return;
 
@@ -134,41 +134,51 @@ function ViewContent() {
       .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like').maybeSingle()
       .then(({ data }) => { if (data) setLiked(true); });
 
-    // ① خصم نقطة view
-    deduct({ action: 'view', target_id: userId, notes: 'فتح الملف الشخصي' })
-      .then((ok) => {
-        if (ok) {
-          // ② تسجيل view في likes (بعد نجاح الخصم فقط)
-          supabase.from('likes').upsert(
-            { from_user: me.id, to_user: userId, action: 'view' },
-            { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
-          );
-        }
-        // إذا فشل الخصم (رصيد غير كافٍ) ظهرت رسالة Sonner تلقائياً
-        // المستخدم يرى الملف لكن النقاط تُخصم عند كل محاولة
+    // ① تحقق محلي من رصيد view قبل الفتح
+    if (!canAfford('view')) {
+      import('sonner').then(({ toast }) => {
+        toast.error('نقاطك لا تكفي لفتح الملف', {
+          description: 'تحتاج 1 نقطة',
+          action: { label: 'اكسب نقاط', onClick: () => { window.location.href = '/points'; } },
+          duration: 4000,
+        });
       });
+      router.back();
+      return;
+    }
+
+    // ② خصم في الخلفية فوراً + تسجيل في likes
+    deductBackground({ action: 'view', target_id: userId, notes: 'فتح الملف الشخصي' });
+    supabase.from('likes').upsert(
+      { from_user: me.id, to_user: userId, action: 'view' },
+      { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
+    );
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.id, userId]);
 
-  // ── إعجاب ────────────────────────────────────────────────────
+  // ── إعجاب ─────────────────────────────────────────────────
   const handleLike = async () => {
     if (!me || liking) return;
     setLiking(true);
 
     if (liked) {
-      // إلغاء الإعجاب — لا خصم عند الإلغاء
+      // إلغاء — بدون خصم
       setLiked(false);
       await supabase.from('likes').delete()
         .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like');
     } else {
-      // إعجاب جديد → خصم 5 نقاط أولاً
-      const ok = await deduct({ action: 'like', target_id: userId, notes: 'إعجاب بملف شخصي' });
-      if (!ok) {
+      // تحقق محلي أولاً
+      if (!canAfford('like')) {
         setLiking(false);
-        return; // Sonner ظهر تلقائياً
+        return; // Sonner يظهر من deduct نفسه
       }
+      // optimistic: أظهر الإعجاب فوراً
       setLiked(true);
-      await supabase.from('likes').upsert(
+      // الخصم + التسجيل في الخلفية
+      deduct({ action: 'like', target_id: userId, notes: 'إعجاب بملف شخصي' })
+        .then(ok => { if (!ok) setLiked(false); }); // تراجع إن فشل
+      supabase.from('likes').upsert(
         { from_user: me.id, to_user: userId, action: 'like' },
         { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
       );
@@ -176,27 +186,29 @@ function ViewContent() {
     setLiking(false);
   };
 
-  // ── رسالة ────────────────────────────────────────────────────
+  // ── رسالة ─────────────────────────────────────────────────
   const handleMessage = async () => {
     if (!me) return;
     setMsgFlash(true);
     setTimeout(() => setMsgFlash(false), 500);
 
-    // البحث عن محادثة موجودة
     const { data: ex } = await supabase.from('conversations').select('id')
       .or(`and(user_1.eq.${me.id},user_2.eq.${userId}),and(user_1.eq.${userId},user_2.eq.${me.id})`)
       .maybeSingle();
 
     if (ex) {
-      // محادثة موجودة → فتح مباشرة بدون خصم
+      // محادثة موجودة — فتح مباشرة بدون خصم
       setConvId(ex.id);
       setChatOpen(true);
       return;
     }
 
-    // محادثة جديدة → خصم 10 نقاط أولاً
+    // محادثة جديدة — تحقق محلي
+    if (!canAfford('message')) return; // Sonner يظهر من deduct
+
+    // optimistic: افتح نافذة الدردشة فوراً بعد إنشاء المحادثة
     const ok = await deduct({ action: 'message', target_id: userId, notes: 'بدء محادثة جديدة' });
-    if (!ok) return; // Sonner ظهر تلقائياً
+    if (!ok) return;
 
     const { data: nc } = await supabase.from('conversations')
       .insert({ user_1: me.id, user_2: userId }).select('id').single();
@@ -204,11 +216,11 @@ function ViewContent() {
     setChatOpen(true);
   };
 
-  // ── مشاركة ───────────────────────────────────────────────────
+  // ── مشاركة ────────────────────────────────────────────────
   const handleShare = async () => {
     const url = `${window.location.origin}/view?id=${userId}`;
     if (navigator.share) {
-      try { await navigator.share({ title: profile?.full_name ?? 'ZAWAJ AI', text: 'شاهد هذا الملف على ZAWAJ AI', url }); }
+      try { await navigator.share({ title: profile?.full_name ?? 'ZAWAJ AI', url }); }
       catch (_) { await navigator.clipboard.writeText(url); }
     } else {
       await navigator.clipboard.writeText(url);
@@ -217,7 +229,7 @@ function ViewContent() {
     setTimeout(() => setShared(false), 2200);
   };
 
-  // ── حظر ──────────────────────────────────────────────────────
+  // ── حظر ───────────────────────────────────────────────────
   const handleBlock = async () => {
     if (!me) return;
     await supabase.from('blocks').upsert(
@@ -228,7 +240,6 @@ function ViewContent() {
     setTimeout(() => router.back(), 1200);
   };
 
-  // ── Loading ───────────────────────────────────────────────────
   if (!userId || loading || !profile) return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
@@ -236,7 +247,6 @@ function ViewContent() {
     </div>
   );
 
-  // ── بيانات مشتقة ─────────────────────────────────────────────
   const isMale      = profile.gender === 'male';
   const gender      = isMale ? 'male' : 'female';
   const committed   = COMMITTED_LEVELS.includes(profile.religious_commitment ?? -1);
@@ -259,22 +269,19 @@ function ViewContent() {
         transition={{ duration: 0.26 }}
         style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: isOwn ? 24 : 110 }}>
 
-        {/* ── Hero ────────────────────────────────────────────── */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '28px 20px 20px', gap: 10 }} dir="rtl">
-
           <motion.div whileTap={{ scale: 0.94 }}
             onClick={() => !photoBlurred && setLightbox(true)}
             style={{ position: 'relative', cursor: photoBlurred ? 'default' : 'pointer' }}>
-            <img
-              src={profile.avatar_url || '/default-avatar.png'}
-              alt={name}
-              style={{ width: 108, height: 108, borderRadius: '50%', objectFit: 'cover', border: '2.5px solid var(--glass-border)', filter: photoBlurred ? 'blur(14px)' : 'none', display: 'block' }}
-            />
+            <img src={profile.avatar_url || '/default-avatar.png'} alt={name}
+              style={{ width: 108, height: 108, borderRadius: '50%', objectFit: 'cover',
+                border: '2.5px solid var(--glass-border)',
+                filter: photoBlurred ? 'blur(14px)' : 'none', display: 'block' }} />
             <OnlineDot userId={userId} initialLastActive={profile.last_active_at} size={16} />
           </motion.div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
-            <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.3)', textAlign: 'center', letterSpacing: '-0.01em' }}>
+            <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'calc(var(--base-font-size) * 1.3)', textAlign: 'center' }}>
               {name}
             </span>
           </div>
@@ -311,7 +318,6 @@ function ViewContent() {
 
         <div style={{ height: 1, background: 'var(--glass-border)', margin: '0 16px 16px' }} />
 
-        {/* ── المحتوى ──────────────────────────────────────────── */}
         <div style={{ padding: '0 16px' }}>
           <Block title="البيانات الأساسية" icon={<Users size={13}/>}>
             <Row icon={<Users size={13}/>}    label="الحالة المدنية"  value={maritalLabel} />
@@ -396,7 +402,6 @@ function ViewContent() {
         </div>
       </motion.div>
 
-      {/* Lightbox */}
       <AnimatePresence>
         {lightbox && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -411,7 +416,6 @@ function ViewContent() {
         )}
       </AnimatePresence>
 
-      {/* ChatWindow */}
       <AnimatePresence>
         {chatOpen && convId && profile && (
           <ChatWindow
@@ -433,7 +437,6 @@ function ViewContent() {
   );
 }
 
-// ══════════════════════════════════════════════════════════════
 export default function ViewPage() {
   return (
     <Suspense fallback={

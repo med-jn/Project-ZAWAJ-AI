@@ -133,7 +133,7 @@ export default function PointsPage() {
                 <Gift size={16} color="#4ade80" />
               </div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)', fontWeight: 700 }}>
-                رصيد النقاط
+                عملاتك المجانية
               </p>
             </div>
 
@@ -182,7 +182,7 @@ export default function PointsPage() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-sm)', margin: 0 }}>
-                أحصل على المزيد من النقاط
+                اكسب عملات مجانية
               </p>
               <p style={{ color: isAdReady ? 'rgba(74,222,128,0.9)' : 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', margin: 0, marginTop: 3, transition: 'color 0.3s' }}>
                 {isLoadingAd && !isAdReady ? 'جارٍ تحضير الفيديو…' : `شاهد فيديو قصير واربح ${AD_REWARD} عملات`}
