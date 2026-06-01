@@ -14,8 +14,8 @@ android {
         applicationId "com.zawaj.ai"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 238
-        versionName "0.2.147"
+        versionCode 239
+        versionName "0.2.148"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
@@ -58,6 +58,9 @@ dependencies {
     implementation project(':capacitor-cordova-android-plugins')
     implementation platform('com.google.firebase:firebase-bom:33.5.1')
     implementation 'com.google.firebase:firebase-messaging'
+
+    // ✅ AdMob SDK صريح لمنع استخدام الإصدار القديم
+    implementation "com.google.android.gms:play-services-ads:$playServicesAdsVersion"
 }
 
 apply from: 'capacitor.build.gradle'

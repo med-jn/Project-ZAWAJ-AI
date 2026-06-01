@@ -331,22 +331,27 @@ Project ZAWAJ AI
 │  │     │  │     │  ├─ __next._index.txt
 │  │     │  │     │  └─ __next._tree.txt
 │  │     │  │     ├─ _next
-│  │     │  │     │  ├─ fCDJaxSMp77mMlfMkCjLk
+│  │     │  │     │  ├─ m_NPsdwgklHPbKDXo-_GN
 │  │     │  │     │  └─ static
 │  │     │  │     │     ├─ chunks
+│  │     │  │     │     │  ├─ 0-w6tsj6-v.97.js
 │  │     │  │     │     │  ├─ 0-xb-w1xf9o0s.js
+│  │     │  │     │     │  ├─ 00f_65n995ped.css
 │  │     │  │     │     │  ├─ 00m-r6u57~izd.js
 │  │     │  │     │     │  ├─ 01xlw8hd842-c.js
 │  │     │  │     │     │  ├─ 02e1o~p2mc17v.js
 │  │     │  │     │     │  ├─ 02jgtj8zs239j.js
+│  │     │  │     │     │  ├─ 02q_8l82dqe7x.js
+│  │     │  │     │     │  ├─ 02zimpyhdyohb.js
 │  │     │  │     │     │  ├─ 03s9ebu3scxy9.js
+│  │     │  │     │     │  ├─ 03~dzbd2_gw81.js
 │  │     │  │     │     │  ├─ 03~yq9q893hmn.js
 │  │     │  │     │     │  ├─ 04-s~lm_t_gqr.js
+│  │     │  │     │     │  ├─ 04fcxvuuyduto.js
+│  │     │  │     │     │  ├─ 04s6ikj4qkgu..js
 │  │     │  │     │     │  ├─ 062zphreodbq0.js
-│  │     │  │     │     │  ├─ 07zwbmz82x5kr.js
 │  │     │  │     │     │  ├─ 08~mdtbzo3wns.js
 │  │     │  │     │     │  ├─ 09bqac6e2jhiy.js
-│  │     │  │     │     │  ├─ 0degi7fz7wl.g.js
 │  │     │  │     │     │  ├─ 0dzu8by9u9zlz.js
 │  │     │  │     │     │  ├─ 0etcy~m_gkcp7.js
 │  │     │  │     │     │  ├─ 0f4xo7q1ecveq.js
@@ -354,43 +359,39 @@ Project ZAWAJ AI
 │  │     │  │     │     │  ├─ 0fleuznf3c3pe.js
 │  │     │  │     │     │  ├─ 0gvcmprpndrsl.js
 │  │     │  │     │     │  ├─ 0h00yefshhgod.js
+│  │     │  │     │     │  ├─ 0h2lv3b4.0m2o.js
 │  │     │  │     │     │  ├─ 0jbv6rmm4--c..js
+│  │     │  │     │     │  ├─ 0lv1~dl.pqd3_.js
 │  │     │  │     │     │  ├─ 0mu.pjnfomrxa.js
-│  │     │  │     │     │  ├─ 0n0xv9s4ntfpe.js
 │  │     │  │     │     │  ├─ 0q70ygtwk5eb9.js
-│  │     │  │     │     │  ├─ 0sgx1cva54bwl.js
 │  │     │  │     │     │  ├─ 0t0w60jxqgqiy.js
 │  │     │  │     │     │  ├─ 0unlcwcinqmph.js
 │  │     │  │     │     │  ├─ 0vxb-tdy7kkzb.js
-│  │     │  │     │     │  ├─ 0xslq3xdmal9p.js
 │  │     │  │     │     │  ├─ 0yyqbm2-lba3l.js
-│  │     │  │     │     │  ├─ 0zwcj5h5vz_ld.js
+│  │     │  │     │     │  ├─ 0_b69c.aw7ndz.js
 │  │     │  │     │     │  ├─ 0_ixcikzc6l9l.js
-│  │     │  │     │     │  ├─ 0_reeu_wchdt..js
-│  │     │  │     │     │  ├─ 0_v2-xwxr0y90.js
-│  │     │  │     │     │  ├─ 0~b8gtqlybeq_.js
 │  │     │  │     │     │  ├─ 0~qh~c6sa011n.js
 │  │     │  │     │     │  ├─ 10615h2r7_kt8.js
-│  │     │  │     │     │  ├─ 11n1~b25zuhcs.js
 │  │     │  │     │     │  ├─ 12kb.se6_2y61.js
+│  │     │  │     │     │  ├─ 12nhbynrugfhp.js
+│  │     │  │     │     │  ├─ 13~ona3aphvw5.js
 │  │     │  │     │     │  ├─ 148ntr~b9u22s.js
 │  │     │  │     │     │  ├─ 14dc2pwwe_gfh.js
-│  │     │  │     │     │  ├─ 15dzq.ctmb_vd.css
 │  │     │  │     │     │  ├─ 15_2clo.upeyp.js
-│  │     │  │     │     │  ├─ 16e-8kvywf01d.js
+│  │     │  │     │     │  ├─ 16d3ha.2os8yn.js
 │  │     │  │     │     │  ├─ 17outbuw6zjdr.js
 │  │     │  │     │     │  ├─ 184yfm.a2pzzm.js
 │  │     │  │     │     │  ├─ 18azu9tm8hajt.js
 │  │     │  │     │     │  └─ turbopack-15l9yj631jwxz.js
-│  │     │  │     │     ├─ fCDJaxSMp77mMlfMkCjLk
-│  │     │  │     │     │  ├─ _buildManifest.js
-│  │     │  │     │     │  ├─ _clientMiddlewareManifest.js
-│  │     │  │     │     │  └─ _ssgManifest.js
-│  │     │  │     │     └─ media
-│  │     │  │     │        ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
-│  │     │  │     │        ├─ a5b03b231ce290a0-s.079wdgm0e~ep~.woff2
-│  │     │  │     │        ├─ d41831e24743a3c1-s.p.02r-fjhi~6g_a.woff2
-│  │     │  │     │        └─ favicon.0q8sg4sjh1m04.ico
+│  │     │  │     │     ├─ media
+│  │     │  │     │     │  ├─ 9ff27b8a0a8f3dc0-s.p.170gfl_1xpie6.woff2
+│  │     │  │     │     │  ├─ a5b03b231ce290a0-s.079wdgm0e~ep~.woff2
+│  │     │  │     │     │  ├─ d41831e24743a3c1-s.p.02r-fjhi~6g_a.woff2
+│  │     │  │     │     │  └─ favicon.0q8sg4sjh1m04.ico
+│  │     │  │     │     └─ m_NPsdwgklHPbKDXo-_GN
+│  │     │  │     │        ├─ _buildManifest.js
+│  │     │  │     │        ├─ _clientMiddlewareManifest.js
+│  │     │  │     │        └─ _ssgManifest.js
 │  │     │  │     ├─ _not-found
 │  │     │  │     │  ├─ index.html
 │  │     │  │     │  ├─ index.txt
@@ -577,7 +578,9 @@ Project ZAWAJ AI
 │  │  ├─ ChatList.tsx
 │  │  ├─ ChatPage.tsx
 │  │  ├─ ChatTab.tsx
-│  │  └─ ChatWindow.tsx
+│  │  ├─ ChatWindow.tsx
+│  │  ├─ VoiceMessageBubble.tsx
+│  │  └─ VoiceRecorder.tsx
 │  ├─ gems
 │  │  ├─ GemDefinitions.tsx
 │  │  ├─ GemMotion.tsx
@@ -643,11 +646,11 @@ Project ZAWAJ AI
 │  │  ├─ notification-route.ts
 │  │  └─ notification-text.ts
 │  ├─ services
-│  │  ├─ admob.ts
 │  │  ├─ EconomyService.ts
 │  │  ├─ locationService.ts
 │  │  └─ MatchingEngine.ts
 │  └─ supabase
+│     ├─ chatStorage.ts
 │     └─ client.ts
 ├─ next-env.d.ts
 ├─ next.config.js
@@ -679,7 +682,13 @@ Project ZAWAJ AI
 │  └─ vercel.svg
 ├─ releases
 │  ├─ zawaj-ai-v0.2.144.aab
-│  └─ zawaj-ai-v0.2.144.apk
+│  ├─ zawaj-ai-v0.2.144.apk
+│  ├─ zawaj-ai-v0.2.145.aab
+│  ├─ zawaj-ai-v0.2.145.apk
+│  ├─ zawaj-ai-v0.2.146.aab
+│  ├─ zawaj-ai-v0.2.146.apk
+│  ├─ zawaj-ai-v0.2.147.aab
+│  └─ zawaj-ai-v0.2.147.apk
 ├─ supabase
 │  ├─ .temp
 │  │  └─ cli-latest
