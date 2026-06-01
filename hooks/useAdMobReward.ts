@@ -1,9 +1,10 @@
 'use client';
 /**
- * 📁 hooks/useAdMobReward.ts — ZAWAJ AI (FIXED)
- * ✅ مكتبة واحدة فقط: @capacitor-community/admob
- * ✅ المستمعات تُسجَّل مرة واحدة عبر useRef
- * ✅ loadOne مُعرَّفة قبل initListeners لتجنب مشكلة الـ closure
+ * 📁 hooks/useAdMobReward.ts — ZAWAJ AI
+ * ✅ أسماء أحداث صحيحة لـ @capacitor-community/admob v8:
+ *    onRewardedVideoAdReward     (وليس onRewardedVideoAdRewarded)
+ *    onRewardedVideoAdDismissed  (وليس onRewardedVideoAdClosed)
+ *    onRewardedVideoAdFailedToLoad ← نفسه
  */
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
@@ -23,17 +24,16 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
   const [pool,    setPool]    = useState<AdStatus[]>(['idle', 'idle']);
   const [showing, setShowing] = useState(false);
 
-  // نستخدم ref لتجنب إعادة تسجيل المستمعات عند تغيّر الدوال
-  const listenersRef  = useRef(false);
-  const grantedRef    = useRef(false); // منع المكافأة المزدوجة
-  const userIdRef     = useRef(userId);
-  const rewardAmtRef  = useRef(rewardAmount);
+  const listenersRef = useRef(false);
+  const grantedRef   = useRef(false);
+  const userIdRef    = useRef(userId);
+  const rewardAmtRef = useRef(rewardAmount);
 
-  useEffect(() => { userIdRef.current  = userId;       }, [userId]);
+  useEffect(() => { userIdRef.current   = userId;       }, [userId]);
   useEffect(() => { rewardAmtRef.current = rewardAmount; }, [rewardAmount]);
 
-  const readyCount = pool.filter(s => s === 'ready').length;
-  const isAdReady  = readyCount > 0;
+  const readyCount  = pool.filter(s => s === 'ready').length;
+  const isAdReady   = readyCount > 0;
   const isLoadingAd = pool.some(s => s === 'loading');
 
   // ── منح المكافأة ─────────────────────────────────────────
@@ -47,18 +47,19 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
         ECONOMY_RULES.TRANSACTION_SOURCES.ADMOB,
         `مكافأة مشاهدة إعلان — +${amt} نقطة`
       );
-      toast.success(`🎁 تم إضافة ${amt} نقطة مكافأة!`);
-    } catch {
+      toast.success(`تم إضافة ${amt} نقطة مكافأة!`);
+    } catch (e) {
+      console.error('[AdMob] grantReward error:', e);
       toast.error('فشل تسجيل المكافأة، حاول لاحقاً.');
     }
-  }, []); // لا dependencies — يقرأ من refs
+  }, []);
 
   // ── تحميل إعلان واحد ────────────────────────────────────
   const loadOne = useCallback(async () => {
     if (!IS_NATIVE) return;
 
     setPool(prev => {
-      if (prev.filter(s => s === 'idle').length === 0) return prev;
+      if (!prev.some(s => s === 'idle')) return prev;
       const next = [...prev];
       const idx  = next.findIndex(s => s === 'idle');
       next[idx]  = 'loading';
@@ -68,7 +69,7 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
     try {
       const { AdMob } = await import('@capacitor-community/admob');
       await AdMob.prepareRewardVideoAd({
-        adId: AD_UNIT_ID,
+        adId:      AD_UNIT_ID,
         isTesting: !process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID,
       });
       setPool(prev => {
@@ -90,7 +91,7 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
     }
   }, []);
 
-  // ── تسجيل المستمعات (مرة واحدة) ─────────────────────────
+  // ── تسجيل المستمعات مرة واحدة ───────────────────────────
   const initListeners = useCallback(async () => {
     if (!IS_NATIVE || listenersRef.current) return;
     listenersRef.current = true;
@@ -103,28 +104,21 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
         initializeForTesting: !process.env.NEXT_PUBLIC_ADMOB_REWARDED_ID,
       });
 
-      // ✅ المكافأة — الحدث الصحيح لـ @capacitor-community/admob
-      await AdMob.addListener('onRewardedVideoAdRewarded', () => {
-        if (grantedRef.current) return; // منع التكرار
+      // ✅ الاسم الصحيح في v8: onRewardedVideoAdReward (بدون 'ed')
+      await AdMob.addListener('onRewardedVideoAdReward', () => {
+        if (grantedRef.current) return;
         grantedRef.current = true;
         grantReward();
       });
 
-      // إعادة تعيين الـ flag وتحميل إعلان جديد بعد الإغلاق
-      await AdMob.addListener('onRewardedVideoAdClosed', () => {
+      // ✅ الاسم الصحيح في v8: onRewardedVideoAdDismissed (بدون 'Closed')
+      await AdMob.addListener('onRewardedVideoAdDismissed', () => {
         setShowing(false);
         grantedRef.current = false;
-        // أعد slot واحد للـ pool
-        setPool(prev => {
-          const hasIdle = prev.some(s => s === 'idle');
-          if (!hasIdle) return prev;
-          return prev; // loadOne ستُعيّن الـ slot
-        });
         setTimeout(() => loadOne(), 500);
       });
 
-      // معالجة فشل تحميل الإعلان
-      await AdMob.addListener('onRewardedVideoAdFailedToLoad', (info) => {
+      await AdMob.addListener('onRewardedVideoAdFailedToLoad', (info: any) => {
         console.error('[AdMob] failed to load:', info);
         setPool(prev => {
           const idx = prev.findIndex(s => s === 'loading');
@@ -137,7 +131,7 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
 
     } catch (e) {
       console.error('[AdMob] init failed:', e);
-      listenersRef.current = false; // اسمح بإعادة المحاولة
+      listenersRef.current = false;
     }
   }, [grantReward, loadOne]);
 
@@ -145,7 +139,6 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
   const fillPool = useCallback(async () => {
     if (!IS_NATIVE || !userIdRef.current) return;
     await initListeners();
-
     const needed = POOL_SIZE - pool.filter(s => s === 'ready' || s === 'loading').length;
     for (let i = 0; i < needed; i++) {
       setTimeout(() => loadOne(), i * 400);
@@ -170,7 +163,6 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
       return;
     }
 
-    // وضع الويب — محاكاة فورية
     if (!IS_NATIVE) {
       await grantReward();
       return;
@@ -186,7 +178,6 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
       setShowing(true);
       grantedRef.current = false;
 
-      // استهلك slot من الـ pool
       setPool(prev => {
         const idx = prev.findIndex(s => s === 'ready');
         if (idx === -1) return prev;
