@@ -2,10 +2,10 @@
 /**
  * 📁 app/points/page.tsx — ZAWAJ AI
  * ✅ AD_REWARD = 3 نقاط
- * ✅ السجل يعرض balance_free فقط (لا يُظهر balance المشتراة)
  * ✅ الرصيد realtime عبر useWallet
+ * ✅ سجل العمليات يتحدث تلقائياً عبر realtime على gift_transactions
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { PlayCircle, Zap, TrendingUp, TrendingDown, Inbox, Gift } from 'lucide-react';
 
 import { supabase }            from '@/lib/supabase/client';
@@ -14,7 +14,7 @@ import { useSmartAdMobReward } from '@/hooks/useAdMobReward';
 import { CoinBalance }         from '@/components/ui/CoinBalance';
 import { LoveCoin }            from '@/components/ui/LoveCoin';
 
-const AD_REWARD = 3; // ← 3 نقاط بدل 5
+const AD_REWARD = 3;
 const PAGE_SIZE = 20;
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
@@ -53,7 +53,7 @@ function fmtDate(iso: string) {
 interface GiftTx {
   id:            string;
   amount:        number;
-  balance_after: number; // balance_free فقط
+  balance_after: number;
   source:        string;
   action:        string | null;
   notes:         string | null;
@@ -62,7 +62,6 @@ interface GiftTx {
 
 export default function PointsPage() {
 
-  // ✅ useWallet عنده realtime — الرصيد يتحدث فوراً
   const { balance_free, loading: walletLoading } = useWallet();
 
   const [userId, setUserId] = useState('');
@@ -77,12 +76,13 @@ export default function PointsPage() {
   const [txList,  setTxList]  = useState<GiftTx[]>([]);
   const [txLoad,  setTxLoad]  = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [offset,  setOffset]  = useState(0);
+  const offsetRef = useRef(0); // ref بدل state لتجنب re-render loops
 
+  // ── تحميل السجل ───────────────────────────────────────────
   const loadTx = useCallback(async (reset = false) => {
     if (!userId) return;
     setTxLoad(true);
-    const from = reset ? 0 : offset;
+    const from = reset ? 0 : offsetRef.current;
     const to   = from + PAGE_SIZE - 1;
 
     const { data, error } = await supabase
@@ -93,18 +93,54 @@ export default function PointsPage() {
       .range(from, to);
 
     if (!error && data) {
-      setTxList(prev => reset ? data : [...prev, ...data]);
+      if (reset) {
+        setTxList(data);
+        offsetRef.current = data.length;
+      } else {
+        setTxList(prev => [...prev, ...data]);
+        offsetRef.current += data.length;
+      }
       setHasMore(data.length === PAGE_SIZE);
-      setOffset(from + data.length);
     }
     setTxLoad(false);
-  }, [userId, offset]);
+  }, [userId]);
 
+  // ── تحميل أولي ────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
-    setOffset(0);
+    offsetRef.current = 0;
     loadTx(true);
-  }, [userId]); // eslint-disable-line
+  }, [userId, loadTx]);
+
+  // ── realtime على gift_transactions ────────────────────────
+  // يُضيف العملية الجديدة في أعلى السجل فوراً بدون إعادة تحميل كامل
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`gift_tx:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event:  'INSERT',
+          schema: 'public',
+          table:  'gift_transactions',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          const newTx = payload.new as GiftTx;
+          setTxList(prev => {
+            // تجنب التكرار إذا كانت موجودة
+            if (prev.some(t => t.id === newTx.id)) return prev;
+            offsetRef.current += 1;
+            return [newTx, ...prev];
+          });
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [userId]);
 
   const adDots = [0, 1].map(i => i < readyCount);
 
@@ -129,7 +165,7 @@ export default function PointsPage() {
                 <Gift size={16} color="#4ade80" />
               </div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)', fontWeight: 700 }}>
-                الرصيد الحالي
+                عملاتك المجانية
               </p>
             </div>
 
@@ -178,7 +214,7 @@ export default function PointsPage() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-sm)', margin: 0 }}>
-                احصل على نقاط مجانية
+                اكسب عملات مجانية
               </p>
               <p style={{ color: isAdReady ? 'rgba(74,222,128,0.9)' : 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', margin: 0, marginTop: 3, transition: 'color 0.3s' }}>
                 {isLoadingAd && !isAdReady ? 'جارٍ تحضير الفيديو…' : `شاهد فيديو قصير واربح ${AD_REWARD} عملات`}
@@ -222,7 +258,7 @@ export default function PointsPage() {
           {txList.map((tx, idx) => {
             const isCredit = tx.amount > 0;
             const { date, time } = fmtDate(tx.created_at);
-            const label = getLabel(tx.source, tx.action);
+            const label    = getLabel(tx.source, tx.action);
             const showDate = idx === 0 || fmtDate(txList[idx - 1].created_at).date !== date;
 
             return (
@@ -262,14 +298,12 @@ export default function PointsPage() {
                   </div>
 
                   <div style={{ textAlign: 'left', flexShrink: 0 }}>
-                    {/* المبلغ */}
                     <div className="flex items-center gap-1 justify-end">
                       <span style={{ color: isCredit ? '#4ade80' : 'var(--color-primary)', fontWeight: 900, fontSize: 'var(--text-base)' }}>
                         {isCredit ? '+' : ''}{fmt(tx.amount)}
                       </span>
                       <LoveCoin size={11} />
                     </div>
-                    {/* الرصيد بعد العملية — balance_free فقط */}
                     <p style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--text-2xs)*0.8)', textAlign: 'left', marginTop: 2 }}>
                       رصيد: {fmt(tx.balance_after)}
                     </p>
