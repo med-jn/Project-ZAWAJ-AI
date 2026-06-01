@@ -1,9 +1,9 @@
 'use client';
 /**
  * 📁 app/points/page.tsx — ZAWAJ AI
- * ✅ يعرض رصيد الهدايا فقط (balance_free)
- * ✅ السجل يُقرأ من gift_transactions (منفصل عن الشراء)
- * ✅ AdMob للمكافآت المجانية
+ * ✅ AD_REWARD = 3 نقاط
+ * ✅ السجل يعرض balance_free فقط (لا يُظهر balance المشتراة)
+ * ✅ الرصيد realtime عبر useWallet
  */
 import { useState, useEffect, useCallback } from 'react';
 import { PlayCircle, Zap, TrendingUp, TrendingDown, Inbox, Gift } from 'lucide-react';
@@ -14,12 +14,10 @@ import { useSmartAdMobReward } from '@/hooks/useAdMobReward';
 import { CoinBalance }         from '@/components/ui/CoinBalance';
 import { LoveCoin }            from '@/components/ui/LoveCoin';
 
-// ── ثوابت ────────────────────────────────────────────────────
-const AD_REWARD = 5;
+const AD_REWARD = 3; // ← 3 نقاط بدل 5
 const PAGE_SIZE = 20;
 const fmt = (n: number) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-// ── تسميات الـ action ──────────────────────────────────────────
 const ACTION_LABEL: Record<string, string> = {
   like:        'إرسال إعجاب',
   pass:        'تخطي بطاقة',
@@ -31,7 +29,6 @@ const ACTION_LABEL: Record<string, string> = {
   admin:       'منحة إدارية',
 };
 
-// ── تسميات المصدر (source) ────────────────────────────────────
 const SOURCE_LABEL: Record<string, string> = {
   action:      'تفاعل',
   admob:       'مكافأة إعلان',
@@ -56,16 +53,16 @@ function fmtDate(iso: string) {
 interface GiftTx {
   id:            string;
   amount:        number;
-  balance_after: number;
+  balance_after: number; // balance_free فقط
   source:        string;
   action:        string | null;
   notes:         string | null;
   created_at:    string;
 }
 
-// ════════════════════════════════════════════════════════════
 export default function PointsPage() {
 
+  // ✅ useWallet عنده realtime — الرصيد يتحدث فوراً
   const { balance_free, loading: walletLoading } = useWallet();
 
   const [userId, setUserId] = useState('');
@@ -77,7 +74,6 @@ export default function PointsPage() {
 
   const { showAd, isAdReady, isLoadingAd, readyCount } = useSmartAdMobReward(userId, AD_REWARD);
 
-  // ── سجل المعاملات من gift_transactions ──────────────────────
   const [txList,  setTxList]  = useState<GiftTx[]>([]);
   const [txLoad,  setTxLoad]  = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -90,7 +86,7 @@ export default function PointsPage() {
     const to   = from + PAGE_SIZE - 1;
 
     const { data, error } = await supabase
-      .from('gift_transactions')          // ← gift_transactions وليس point_transactions
+      .from('gift_transactions')
       .select('id,amount,balance_after,source,action,notes,created_at')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
@@ -133,7 +129,7 @@ export default function PointsPage() {
                 <Gift size={16} color="#4ade80" />
               </div>
               <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)', fontWeight: 700 }}>
-                عملاتك المجانية
+                الرصيد الحالي
               </p>
             </div>
 
@@ -182,7 +178,7 @@ export default function PointsPage() {
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-sm)', margin: 0 }}>
-                اكسب عملات مجانية
+                احصل على نقاط مجانية
               </p>
               <p style={{ color: isAdReady ? 'rgba(74,222,128,0.9)' : 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', margin: 0, marginTop: 3, transition: 'color 0.3s' }}>
                 {isLoadingAd && !isAdReady ? 'جارٍ تحضير الفيديو…' : `شاهد فيديو قصير واربح ${AD_REWARD} عملات`}
@@ -205,12 +201,10 @@ export default function PointsPage() {
             </div>
           </div>
         </button>
-
       </div>
 
       {/* ══ سجل العمليات ════════════════════════════════════════ */}
       <div className="px-4">
-
         <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-sm)', marginBottom: 12 }}>
           سجل العمليات
         </p>
@@ -229,9 +223,7 @@ export default function PointsPage() {
             const isCredit = tx.amount > 0;
             const { date, time } = fmtDate(tx.created_at);
             const label = getLabel(tx.source, tx.action);
-            const isFirst = idx === 0;
-            const prevDate = idx > 0 ? fmtDate(txList[idx - 1].created_at).date : '';
-            const showDate = isFirst || date !== prevDate;
+            const showDate = idx === 0 || fmtDate(txList[idx - 1].created_at).date !== date;
 
             return (
               <div key={tx.id}>
@@ -245,10 +237,12 @@ export default function PointsPage() {
                   </div>
                 )}
 
-                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+
                   <div style={{ width: 38, height: 38, borderRadius: '50%', flexShrink: 0, background: isCredit ? 'rgba(34,197,94,0.12)' : 'rgba(179,51,75,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {isCredit
-                      ? <TrendingUp size={17} color="#4ade80" />
+                      ? <TrendingUp   size={17} color="#4ade80" />
                       : <TrendingDown size={17} color="var(--color-primary)" />
                     }
                   </div>
@@ -268,12 +262,14 @@ export default function PointsPage() {
                   </div>
 
                   <div style={{ textAlign: 'left', flexShrink: 0 }}>
+                    {/* المبلغ */}
                     <div className="flex items-center gap-1 justify-end">
                       <span style={{ color: isCredit ? '#4ade80' : 'var(--color-primary)', fontWeight: 900, fontSize: 'var(--text-base)' }}>
                         {isCredit ? '+' : ''}{fmt(tx.amount)}
                       </span>
                       <LoveCoin size={11} />
                     </div>
+                    {/* الرصيد بعد العملية — balance_free فقط */}
                     <p style={{ color: 'var(--text-tertiary)', fontSize: 'calc(var(--text-2xs)*0.8)', textAlign: 'left', marginTop: 2 }}>
                       رصيد: {fmt(tx.balance_after)}
                     </p>
