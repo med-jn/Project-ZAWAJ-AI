@@ -1,7 +1,7 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.2.148",
+  "version": "0.2.149",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
@@ -33,6 +33,7 @@
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "autoprefixer": "10.4.15",
+    "capacitor-voice-recorder": "^7.0.6",
     "date-fns": "^4.1.0",
     "firebase": "^12.13.0",
     "framer-motion": "^12.34.3",

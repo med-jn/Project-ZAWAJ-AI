@@ -8,10 +8,10 @@ import PageHeader  from '@/components/layout/PageHeader';
 import TopBar      from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
 
-import { useNativeAndroid }      from '@/hooks/useNativeAndroid';
-import { useSystemScale }        from '@/hooks/useSystemScale';
-import { usePushNotifications }  from '@/hooks/usePushNotifications';
-import { supabase }              from '@/lib/supabase/client';
+import { useNativeAndroid }     from '@/hooks/useNativeAndroid';
+import { useSystemScale }       from '@/hooks/useSystemScale';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { supabase }             from '@/lib/supabase/client';
 
 const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
 
@@ -41,32 +41,52 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router   = useRouter();
 
+  // =========================================
+  // userId
+  // =========================================
+
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user?.id) setUserId(data.user.id);
     });
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUserId(session?.user?.id ?? undefined);
     });
+
     return () => subscription.unsubscribe();
   }, []);
+
+  // =========================================
+  // Hooks
+  // =========================================
 
   useNativeAndroid();
   useSystemScale();
   usePushNotifications(userId);
 
-  const path = pathname.endsWith('/') && pathname !== '/'
-    ? pathname.slice(0, -1)
-    : pathname;
+  // =========================================
+  // Current Path
+  // =========================================
 
-  const isAuth  = AUTH_PAGES.includes(path);
-  const isHome  = path === '/home';
-  // ✅ صفحة الشات تدير هيدرها وشريطها السفلي بنفسها
-  const isChat  = path === '/chat' || path.startsWith('/chat');
+  const path =
+    pathname.endsWith('/') && pathname !== '/'
+      ? pathname.slice(0, -1)
+      : pathname;
+
+  const isAuth = AUTH_PAGES.includes(path);
+  const isHome = path === '/home';
+
+  // ✅ صفحة الشات تدير هيدرها وشريطها بنفسها — لا تدخّل من ClientLayout
+  const isChat = path === '/chat' || path.startsWith('/chat');
 
   const title = getTitle(path);
+
+  // =========================================
+  // Active Tab
+  // =========================================
 
   const getActiveTab = () => {
     if (path.startsWith('/home'))          return 'home';
@@ -78,6 +98,10 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     if (path.startsWith('/mediators'))     return 'mediator';
     return 'home';
   };
+
+  // =========================================
+  // Navbar visibility
+  // =========================================
 
   const showNavbar =
     path.startsWith('/home')          ||
@@ -93,10 +117,13 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     <>
       {!isAuth && <MatchListener />}
 
-      {/* الشات يدير هيدره بنفسه — لا TopBar ولا PageHeader */}
+      {/* ✅ الشات يدير هيدره بنفسه — لا TopBar ولا PageHeader */}
       {!isAuth && !isChat && isHome  && <TopBar />}
       {!isAuth && !isChat && !isHome && (
-        <PageHeader title={title} onBack={() => router.back()} />
+        <PageHeader
+          title={title}
+          onBack={() => router.back()}
+        />
       )}
 
       <main
