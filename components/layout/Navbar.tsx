@@ -2,18 +2,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, useAnimation } from 'framer-motion';
-import { Crown } from 'lucide-react';
-import {
-  Bell,
-  House,
-  Layout,
-  Heart,
-  Users,
-  User,
-} from '@phosphor-icons/react';
 import { supabase } from '@/lib/supabase/client';
 
-// ── نغمة الإشعار من ملف mp3 ───────────────────────────────────
+// ── نغمة الإشعار ──────────────────────────────────────────────
 function playNotifSound() {
   try {
     const audio = new Audio('/sounds/bell.mp3');
@@ -22,7 +13,116 @@ function playNotifSound() {
   } catch (_) {}
 }
 
-// ── جرس راقص ─────────────────────────────────────────────────
+// ── SVG مباشر — يتجاوز globals.css تماماً ────────────────────
+// globals.css: svg { fill:none; stroke:currentColor; stroke-width:2px }
+// inline style على SVG نفسه يتفوق عليه دائماً في CSS cascade
+
+type IconProps = { active: boolean; size?: string };
+
+// الرئيسية — House with heart (HouseHeart مرسومة يدوياً)
+function IconHome({ active, size = 'var(--icon-md)' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" style={{
+      width: size, height: size,
+      fill: active ? 'var(--color-secondary)' : 'none',
+      stroke: 'var(--color-secondary)',
+      strokeWidth: active ? 1.2 : 1.6,
+      strokeLinecap: 'round', strokeLinejoin: 'round',
+      opacity: active ? 1 : 0.45,
+      transition: 'fill .15s ease, opacity .15s ease',
+      display: 'block',
+    }}>
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+      <path
+        fill={active ? 'var(--bg-main)' : 'none'}
+        stroke={active ? 'var(--bg-main)' : 'var(--color-secondary)'}
+        strokeWidth={active ? 1 : 1.4}
+        d="M12 16.5c0 0-3.5-2-3.5-4.2a2 2 0 0 1 3.5-1.3 2 2 0 0 1 3.5 1.3c0 2.2-3.5 4.2-3.5 4.2z"
+      />
+    </svg>
+  );
+}
+
+// قلب — Likes
+function IconHeart({ active, size = 'var(--icon-md)' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" style={{
+      width: size, height: size,
+      fill: active ? 'var(--color-secondary)' : 'none',
+      stroke: 'var(--color-secondary)',
+      strokeWidth: active ? 1.2 : 1.6,
+      strokeLinecap: 'round', strokeLinejoin: 'round',
+      opacity: active ? 1 : 0.45,
+      transition: 'fill .15s ease, opacity .15s ease',
+      display: 'block',
+    }}>
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  );
+}
+
+// مستخدم — Profile
+function IconUser({ active, size = 'var(--icon-md)' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" style={{
+      width: size, height: size,
+      fill: active ? 'var(--color-secondary)' : 'none',
+      stroke: 'var(--color-secondary)',
+      strokeWidth: active ? 1.2 : 1.6,
+      strokeLinecap: 'round', strokeLinejoin: 'round',
+      opacity: active ? 1 : 0.45,
+      transition: 'fill .15s ease, opacity .15s ease',
+      display: 'block',
+    }}>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4" fill={active ? 'var(--color-secondary)' : 'none'}/>
+    </svg>
+  );
+}
+
+// داشبورد — Mediator profile
+function IconDashboard({ active, size = 'var(--icon-md)' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" style={{
+      width: size, height: size,
+      fill: 'none',
+      stroke: 'var(--color-secondary)',
+      strokeWidth: active ? 1.4 : 1.6,
+      strokeLinecap: 'round', strokeLinejoin: 'round',
+      opacity: active ? 1 : 0.45,
+      transition: 'opacity .15s ease',
+      display: 'block',
+    }}>
+      <rect x="3" y="3" width="7" height="7" fill={active ? 'var(--color-secondary)' : 'none'}/>
+      <rect x="14" y="3" width="7" height="7" fill={active ? 'var(--color-secondary)' : 'none'}/>
+      <rect x="3" y="14" width="7" height="7" fill={active ? 'var(--color-secondary)' : 'none'}/>
+      <rect x="14" y="14" width="7" height="7" fill={active ? 'var(--color-secondary)' : 'none'}/>
+    </svg>
+  );
+}
+
+// مجموعة — Subscribers
+function IconUsers({ active, size = 'var(--icon-md)' }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" style={{
+      width: size, height: size,
+      fill: active ? 'var(--color-secondary)' : 'none',
+      stroke: 'var(--color-secondary)',
+      strokeWidth: active ? 1.2 : 1.6,
+      strokeLinecap: 'round', strokeLinejoin: 'round',
+      opacity: active ? 1 : 0.45,
+      transition: 'fill .15s ease, opacity .15s ease',
+      display: 'block',
+    }}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4" fill={active ? 'var(--color-secondary)' : 'none'}/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  );
+}
+
+// جرس — Notifications (مع الرقاص)
 function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
   const controls = useAnimation();
 
@@ -39,54 +139,24 @@ function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
       animate={controls}
       style={{ originX: '50%', originY: '10%', display: 'inline-flex' }}
     >
-      {/*
-        color="currentColor" — يرث اللون من الـ wrapper span
-        الـ wrapper span يحمل style={{ color: 'var(--color-secondary)' }}
-        هكذا تعمل CSS variables بشكل صحيح مع Phosphor
-      */}
-      <span
-        className="ph-icon"
-        style={{
-          display: 'inline-flex',
-          color:   'var(--color-secondary)',
-          opacity: active ? 1 : 0.4,
-          transition: 'opacity 0.15s ease',
-        }}
-      >
-        <Bell
-          size="var(--icon-lg)"
-          weight={active ? 'fill' : 'regular'}
-          color="currentColor"
+      <svg viewBox="0 0 24 24" style={{
+        width: 'var(--icon-md)', height: 'var(--icon-md)',
+        fill: active ? 'var(--color-secondary)' : 'none',
+        stroke: 'var(--color-secondary)',
+        strokeWidth: active ? 1.2 : 1.6,
+        strokeLinecap: 'round', strokeLinejoin: 'round',
+        opacity: active ? 1 : 0.45,
+        transition: 'fill .15s ease, opacity .15s ease',
+        display: 'block',
+      }}>
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+        <path
+          fill="none"
+          stroke={active ? 'var(--bg-main)' : 'var(--color-secondary)'}
+          d="M13.73 21a2 2 0 0 1-3.46 0"
         />
-      </span>
+      </svg>
     </motion.div>
-  );
-}
-
-// ── أيقونة تبويب عامة ─────────────────────────────────────────
-function NavIcon({
-  active,
-  icon: Icon,
-}: {
-  active: boolean;
-  icon: React.ElementType;
-}) {
-  return (
-    <span
-      className="ph-icon"
-      style={{
-        display:    'inline-flex',
-        color:      'var(--color-secondary)',
-        opacity:    active ? 1 : 0.4,
-        transition: 'opacity 0.15s ease',
-      }}
-    >
-      <Icon
-        size="var(--icon-lg)"
-        weight={active ? 'fill' : 'regular'}
-        color="currentColor"
-      />
-    </span>
   );
 }
 
@@ -100,6 +170,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   const [unread,  setUnread]  = useState(0);
   const [role,    setRole]    = useState<'user' | 'mediator'>('user');
   const [ringing, setRinging] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -109,8 +180,6 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
       if (data?.role === 'mediator') setRole('mediator');
     });
   }, []);
-
-  const pathname = usePathname();
 
   const loadUnread = useCallback(async (userId: string) => {
     const { count } = await supabase
@@ -143,9 +212,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
         .on('postgres_changes', {
           event: 'UPDATE', schema: 'public', table: 'notifications',
           filter: `id=eq.${user.id}`,
-        }, () => {
-          loadUnread(user.id);
-        })
+        }, () => { loadUnread(user.id); })
         .subscribe();
       cleanup = () => { supabase.removeChannel(ch); };
     };
@@ -161,23 +228,28 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   }, [pathname, loadUnread]);
 
   const go = (route: string) => {
-    if (route === 'notifications' && unread > 0) {
-      window.navigator?.vibrate?.([30, 20, 30]);
-    } else {
-      window.navigator?.vibrate?.(25);
-    }
+    window.navigator?.vibrate?.(route === 'notifications' && unread > 0 ? [30, 20, 30] : 25);
     onTabClick(route);
   };
 
   const isMediator = role === 'mediator';
 
   const tabs = [
-    { tabKey: 'profile',       route: isMediator ? 'dash'        : 'profile',       icon: isMediator ? Layout : User  },
-    { tabKey: 'notifications', route: 'notifications',                               isBell: true                      },
-    { tabKey: 'mediator',      route: 'mediators',                                   isCenter: true                    },
-    { tabKey: 'likes',         route: isMediator ? 'subscribers' : 'likes',          icon: isMediator ? Users : Heart  },
-    { tabKey: 'home',          route: 'home',                                        icon: House                       },
+    { tabKey: 'profile',       route: isMediator ? 'dash'        : 'profile'  },
+    { tabKey: 'notifications', route: 'notifications'                          },
+    { tabKey: 'mediator',      route: 'mediators',   isCenter: true            },
+    { tabKey: 'likes',         route: isMediator ? 'subscribers' : 'likes'    },
+    { tabKey: 'home',          route: 'home'                                   },
   ];
+
+  // أيقونة حسب tabKey و role
+  const renderIcon = (tabKey: string, active: boolean) => {
+    if (tabKey === 'notifications') return <BellIcon ringing={ringing} active={active} />;
+    if (tabKey === 'home')          return <IconHome      active={active} />;
+    if (tabKey === 'likes')         return isMediator ? <IconUsers  active={active} /> : <IconHeart active={active} />;
+    if (tabKey === 'profile')       return isMediator ? <IconDashboard active={active} /> : <IconUser active={active} />;
+    return null;
+  };
 
   return (
     <nav
@@ -218,69 +290,53 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
               }}
             >
               <div style={{
-                position: 'absolute', top: 4, left: 8, right: 8,
-                height: '34%',
+                position: 'absolute', top: 4, left: 8, right: 8, height: '34%',
                 background: 'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
                 borderRadius: '50%', filter: 'blur(1.5px)', pointerEvents: 'none',
               }} />
-              <Crown
-                style={{
-                  width:          'var(--icon-lg)',
-                  height:         'var(--icon-lg)',
-                  fill:           'none',
-                  stroke:         '#FFFFFF',
-                  strokeWidth:    1.8,
-                  strokeLinecap:  'round',
-                  strokeLinejoin: 'round',
-                  position:       'relative',
-                  zIndex:         1,
-                }}
-              />
+              {/* Crown — Lucide، inline style يتجاوز globals.css */}
+              <svg viewBox="0 0 24 24" style={{
+                width: 'var(--icon-lg)', height: 'var(--icon-lg)',
+                fill: 'none', stroke: '#FFFFFF',
+                strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round',
+                position: 'relative', zIndex: 1,
+              }}>
+                <path d="M2 20h20M5 20l-1-9 5 4 3-7 3 7 5-4-1 9"/>
+              </svg>
             </motion.button>
           </div>
         );
 
-        // ── التبويبات العادية — بدون نص، أيقونة فقط ──────
+        // ── التبويبات العادية — أيقونة فقط بدون نص ────────
         return (
           <button
             key={tab.tabKey}
             onClick={() => go(tab.route)}
             className="flex items-center justify-center flex-1 h-full"
           >
-            <div className="relative">
-              <motion.div
-                animate={{ scale: active ? 1.15 : 1 }}
-                transition={{ type: 'spring', stiffness: 420, damping: 18 }}
-                style={{ display: 'inline-flex' }}
-              >
-                {tab.isBell ? (
-                  <BellIcon ringing={ringing} active={active} />
-                ) : (
-                  <NavIcon active={active} icon={tab.icon!} />
-                )}
-              </motion.div>
+            <div className="relative" style={{ display: 'inline-flex' }}>
+              {renderIcon(tab.tabKey, active)}
 
               {/* بادج الإشعارات */}
               {tab.tabKey === 'notifications' && unread > 0 && (
                 <motion.span
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                  initial={{ scale: 0 }} animate={{ scale: 1 }}
                   style={{
-                    position:       'absolute',
-                    top:            'calc(var(--icon-lg) * -0.3)',
-                    left:           'calc(var(--icon-lg) * -0.3)',
-                    minWidth:       'calc(var(--text-xs) * 1.4)',
-                    height:         'calc(var(--text-xs) * 1.4)',
-                    borderRadius:   '999px',
-                    background:     'var(--color-accent)',
-                    color:          '#fff',
-                    fontSize:       'calc(var(--text-2xs) * 0.85)',
-                    fontWeight:     900,
-                    display:        'flex',
-                    alignItems:     'center',
+                    position: 'absolute',
+                    top: 'calc(var(--icon-md) * -0.3)',
+                    left: 'calc(var(--icon-md) * -0.3)',
+                    minWidth: 'calc(var(--text-xs) * 1.4)',
+                    height: 'calc(var(--text-xs) * 1.4)',
+                    borderRadius: '999px',
+                    background: 'var(--color-accent)',
+                    color: '#fff',
+                    fontSize: 'calc(var(--text-2xs) * 0.85)',
+                    fontWeight: 900,
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
-                    border:         '1.5px solid var(--bg-main)',
-                    paddingInline:  2,
+                    border: '1.5px solid var(--bg-main)',
+                    paddingInline: 2,
                   }}
                 >
                   {unread > 9 ? '9+' : unread}

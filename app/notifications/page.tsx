@@ -359,9 +359,7 @@ export default function NotificationsPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: 'var(--text-xl)', fontWeight: 900 }}>
-            الإشعارات
-          </h1>
+          
           {unreadTotal > 0 && (
             <p style={{ margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * .72)' }}>
               {unreadTotal} إشعار غير مقروء

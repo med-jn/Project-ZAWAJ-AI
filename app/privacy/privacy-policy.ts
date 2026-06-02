@@ -7,7 +7,7 @@ export const PRIVACY_META = {
   devTeam:       "ORCAUP",
   contactEmail:  "contact@orcaup.com",
   supportEmail:  "support@orcaup.com",
-  version:       "1.0.0",
+  version:       "0.2.161",
   effectiveDate: "2026-05-26",
   lastUpdated:   "2026-05-26",
 };

@@ -93,8 +93,8 @@ export default function MediatorsPage() {
       {/* Top bar — بدون رصيد */}
       {currentUser && (
         <div className="flex items-center justify-between mb-4 px-1">
-          <h1 className="font-black" style={{ fontSize: 'var(--text-lg)', color: 'var(--text-main)' }}>
-            الوسطاء
+          <h1 className="font-black" style={{ fontSize: 'var(--text-md)', color: 'var(--text-main)' }}>
+            اختار وسيطك المناسب
           </h1>
         </div>
       )}
