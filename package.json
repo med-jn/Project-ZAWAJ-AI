@@ -1,7 +1,7 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.2.153",
+  "version": "0.2.155",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
@@ -30,6 +30,7 @@
     "@capacitor/status-bar": "^8.0.2",
     "@google/generative-ai": "^0.24.1",
     "@headlessui/react": "^2.2.9",
+    "@phosphor-icons/react": "^2.1.10",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.97.0",
     "autoprefixer": "10.4.15",

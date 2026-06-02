@@ -52,7 +52,7 @@ export default function Footer() {
           letterSpacing: '0.1em', 
           textTransform: 'none' 
         }}>
-          ZAWAJ AI by orcaPROD © 2026
+          ZAWAJ AI by ORCAUP © 2026
         </p>
       </div>
     </footer>
