@@ -554,3 +554,29 @@ html.light .bubble-theirs {
 html.light .chat-bg {
   background: #F5F0F5;  /* فاتح مع لمسة وردية خفيفة */
 }
+
+/* ══════════════════════════════════════════════════════════════
+   PHOSPHOR ICONS — تجاوز قاعدة globals.css العامة
+   أضف هذا في نهاية globals.css بعد كل @layer
+   ══════════════════════════════════════════════════════════════
+
+   globals.css يُطبّق هذا على كل SVG في الصفحة:
+     svg { fill: none; stroke: currentColor; stroke-width: 2px; }
+
+   هذا يكسر Phosphor لأنها تتحكم بـ fill/stroke داخلياً حسب weight.
+   الحل: .ph-icon يُعيد التحكم الكامل لـ Phosphor بأعلى أولوية.
+══════════════════════════════════════════════════════════════ */
+
+.ph-icon,
+.ph-icon svg,
+.ph-icon svg path,
+.ph-icon svg circle,
+.ph-icon svg rect,
+.ph-icon svg polygon,
+.ph-icon svg line,
+.ph-icon svg polyline,
+.ph-icon svg ellipse {
+  fill:         unset !important;
+  stroke:       unset !important;
+  stroke-width: unset !important;
+}

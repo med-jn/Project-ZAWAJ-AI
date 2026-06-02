@@ -22,18 +22,6 @@ function playNotifSound() {
   } catch (_) {}
 }
 
-// ── Wrapper يبطل تأثير globals.css على Phosphor ───────────────
-// globals.css يطبق: fill:none; stroke:currentColor; stroke-width:2px على كل SVG
-// هذا wrapper يُعيد التحكم الكامل لـ Phosphor عبر inline style مباشرة
-const iconWrapStyle: React.CSSProperties = {
-  display:     'inline-flex',
-  lineHeight:  0,
-  // نُعيد fill و stroke لـ unset حتى يتحكم Phosphor بهما بنفسه
-  fill:        'unset',
-  stroke:      'unset',
-  strokeWidth: 'unset',
-};
-
 // ── جرس راقص (رقاص ساعة من نقطة الأعلى) ─────────────────────
 function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
   const controls = useAnimation();
@@ -49,19 +37,25 @@ function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
   return (
     <motion.div
       animate={controls}
-      style={{ originX: '50%', originY: '10%', ...iconWrapStyle }}
+      style={{ originX: '50%', originY: '10%', display: 'inline-flex' }}
     >
-      <Bell
-        size="var(--icon-md)"
-        weight={active ? 'fill' : 'regular'}
-        color="var(--color-secondary)"
-        style={{ opacity: active ? 1 : 0.45, transition: 'opacity 0.15s ease' }}
-      />
+      {/*
+        .ph-icon يُبطل: fill:none; stroke:currentColor; stroke-width:2px
+        التي يُطبّقها globals.css على كل SVG
+      */}
+      <span className="ph-icon" style={{ display: 'inline-flex' }}>
+        <Bell
+          size="var(--icon-md)"
+          weight={active ? 'fill' : 'regular'}
+          color="var(--color-secondary)"
+          style={{ opacity: active ? 1 : 0.45, transition: 'opacity 0.15s ease' }}
+        />
+      </span>
     </motion.div>
   );
 }
 
-// ── أيقونة تبويب عامة — Phosphor مع تجاوز globals ────────────
+// ── أيقونة تبويب عامة ─────────────────────────────────────────
 function NavIcon({
   active,
   icon: Icon,
@@ -70,7 +64,7 @@ function NavIcon({
   icon: React.ElementType;
 }) {
   return (
-    <span style={iconWrapStyle}>
+    <span className="ph-icon" style={{ display: 'inline-flex' }}>
       <Icon
         size="var(--icon-md)"
         weight={active ? 'fill' : 'regular'}
@@ -170,34 +164,29 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
 
   // ── تعريف التبويبات ───────────────────────────────────────
   const tabs = [
-    // ── يسار: حسابي ──
     {
       tabKey: 'profile',
       route:  isMediator ? 'dash' : 'profile',
       label:  'حسابي',
       icon:   isMediator ? Layout : User,
     },
-    // ── إشعارات ──
     {
       tabKey: 'notifications',
       route:  'notifications',
       label:  'إشعارات',
       isBell: true,
     },
-    // ── مركز (mediator center) ──
     {
       tabKey:   'mediator',
       route:    'mediators',
       isCenter: true,
     },
-    // ── إعجابات / مشتركون ──
     {
       tabKey: 'likes',
       route:  isMediator ? 'subscribers' : 'likes',
       label:  isMediator ? 'المشتركون' : 'إعجابات',
       icon:   isMediator ? Users : Heart,
     },
-    // ── الرئيسية ──
     {
       tabKey: 'home',
       route:  'home',
@@ -247,9 +236,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
               {/* بريق زجاجي */}
               <div style={{
                 position:      'absolute',
-                top:           4,
-                left:          8,
-                right:         8,
+                top:           4, left: 8, right: 8,
                 height:        '34%',
                 background:    'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
                 borderRadius:  '50%',
@@ -258,8 +245,8 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
               }} />
 
               {/*
-                Crown من Lucide — أبيض دائماً، بدون fill، بصرف النظر عن الثيم أو الحالة
-                نستخدم style مباشرة لتجاوز globals.css (fill:none + stroke:white)
+                Crown من Lucide — أبيض دائماً بدون fill
+                inline style يتجاوز globals.css مباشرة على عناصر Lucide
               */}
               <Crown
                 style={{
