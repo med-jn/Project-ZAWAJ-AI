@@ -10,6 +10,7 @@ import {
   Mail,
 } from "lucide-react";
 import { APP_INFO, CORE_VALUES, MAIN_FEATURES } from "./about-data";
+import Footer                  from '@/components/layout/Footer';
 
 const LAST_UPDATED = "2026-05-26";
 
@@ -221,14 +222,7 @@ export default function AboutContent() {
       </div>
 
       {/* ══ فوتر ══ */}
-      <div style={{ marginTop: "var(--sp-6)", padding: "var(--sp-4) var(--sp-5)", textAlign: "center" }}>
-        <p style={{ margin: "0 0 var(--sp-1) 0", fontSize: "var(--text-2xs)", color: "var(--text-tertiary)" }}>
-          © {APP_INFO.year} {APP_INFO.name} by {APP_INFO.devTeam} · جميع الحقوق محفوظة
-        </p>
-        <p style={{ margin: 0, fontSize: "var(--text-2xs)", color: "var(--text-tertiary)" }}>
-          آخر تحديث: {LAST_UPDATED} · v{version}
-        </p>
-      </div>
+      <Footer />
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { FAQ_CATEGORIES, POLICY_LINKS, type FaqItem, type FaqCategory } from "./help-data";
 import { APP_INFO } from "../about/about-data";
+import Footer                  from '@/components/layout/Footer';
 
 // map id الفئة -> أيقونة Lucide
 const CATEGORY_ICONS: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
@@ -248,6 +249,7 @@ export default function HelpContent() {
           </div>
         </a>
       </div>
+      <Footer />
     </div>
   );
 }

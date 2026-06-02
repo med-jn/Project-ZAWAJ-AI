@@ -9,6 +9,7 @@ import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { TERMS_DOCUMENTS, type TermsDocument, type TermsSection } from "./terms-of-use";
 import { PRIVACY_META } from "../privacy/privacy-policy";
+import Footer                  from '@/components/layout/Footer';
 
 // ─────────────────────────────────────────────
 // قسم accordion منفرد
@@ -302,15 +303,7 @@ export default function TermsContent() {
           textAlign: "center",
         }}
       >
-        <p
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "var(--text-tertiary)",
-            margin: "0 0 var(--sp-2) 0",
-          }}
-        >
-          © {new Date().getFullYear()} ZAWAJ AI by ORCAUP · جميع الحقوق محفوظة
-        </p>
+        
         <a
           href={`mailto:${PRIVACY_META.contactEmail}`}
           style={{
@@ -323,6 +316,7 @@ export default function TermsContent() {
           {PRIVACY_META.contactEmail}
         </a>
       </div>
+      <Footer />
     </div>
   );
 }

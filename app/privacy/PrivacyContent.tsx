@@ -8,6 +8,7 @@
 import { useState, useCallback } from "react";
 import { ChevronDown, Mail } from "lucide-react";
 import { PRIVACY_SECTIONS, PRIVACY_META, type PolicySection } from "./privacy-policy";
+import Footer                  from '@/components/layout/Footer';
 
 // ─────────────────────────────────────────────
 // مكوّن قسم accordion منفرد
@@ -284,15 +285,7 @@ export default function PrivacyContent() {
           textAlign: "center",
         }}
       >
-        <p
-          style={{
-            fontSize: "var(--text-xs)",
-            color: "var(--text-tertiary)",
-            margin: 0,
-          }}
-        >
-          © {new Date().getFullYear()} ZAWAJ AI by ORCAUP · جميع الحقوق محفوظة
-        </p>
+        
 
         {/* إيميل الدعم */}
         <a
@@ -316,6 +309,7 @@ export default function PrivacyContent() {
           {PRIVACY_META.supportEmail}
         </a>
       </div>
+      <Footer />
     </div>
   );
 }

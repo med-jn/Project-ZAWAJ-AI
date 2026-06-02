@@ -2,9 +2,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { motion, useAnimation } from 'framer-motion';
+import { Crown } from 'lucide-react';
 import {
   Bell,
-  Crown,
   House,
   Layout,
   Heart,
@@ -22,6 +22,18 @@ function playNotifSound() {
   } catch (_) {}
 }
 
+// ── Wrapper يبطل تأثير globals.css على Phosphor ───────────────
+// globals.css يطبق: fill:none; stroke:currentColor; stroke-width:2px على كل SVG
+// هذا wrapper يُعيد التحكم الكامل لـ Phosphor عبر inline style مباشرة
+const iconWrapStyle: React.CSSProperties = {
+  display:     'inline-flex',
+  lineHeight:  0,
+  // نُعيد fill و stroke لـ unset حتى يتحكم Phosphor بهما بنفسه
+  fill:        'unset',
+  stroke:      'unset',
+  strokeWidth: 'unset',
+};
+
 // ── جرس راقص (رقاص ساعة من نقطة الأعلى) ─────────────────────
 function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
   const controls = useAnimation();
@@ -37,22 +49,19 @@ function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
   return (
     <motion.div
       animate={controls}
-      style={{ originX: '50%', originY: '10%', display: 'inline-flex' }}
+      style={{ originX: '50%', originY: '10%', ...iconWrapStyle }}
     >
       <Bell
         size="var(--icon-md)"
         weight={active ? 'fill' : 'regular'}
-        color={active ? 'var(--color-secondary)' : 'var(--color-secondary)'}
-        style={{
-          opacity: active ? 1 : 0.45,
-          transition: 'all 0.15s ease',
-        }}
+        color="var(--color-secondary)"
+        style={{ opacity: active ? 1 : 0.45, transition: 'opacity 0.15s ease' }}
       />
     </motion.div>
   );
 }
 
-// ── أيقونة تبويب عامة بـ Phosphor ────────────────────────────
+// ── أيقونة تبويب عامة — Phosphor مع تجاوز globals ────────────
 function NavIcon({
   active,
   icon: Icon,
@@ -61,15 +70,14 @@ function NavIcon({
   icon: React.ElementType;
 }) {
   return (
-    <Icon
-      size="var(--icon-md)"
-      weight={active ? 'fill' : 'regular'}
-      color="var(--color-secondary)"
-      style={{
-        opacity: active ? 1 : 0.45,
-        transition: 'all 0.15s ease',
-      }}
-    />
+    <span style={iconWrapStyle}>
+      <Icon
+        size="var(--icon-md)"
+        weight={active ? 'fill' : 'regular'}
+        color="var(--color-secondary)"
+        style={{ opacity: active ? 1 : 0.45, transition: 'opacity 0.15s ease' }}
+      />
+    </span>
   );
 }
 
@@ -164,17 +172,17 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   const tabs = [
     // ── يسار: حسابي ──
     {
-      tabKey:  'profile',
-      route:   isMediator ? 'dash' : 'profile',
-      label:   'حسابي',
-      icon:    isMediator ? Layout : User,
+      tabKey: 'profile',
+      route:  isMediator ? 'dash' : 'profile',
+      label:  'حسابي',
+      icon:   isMediator ? Layout : User,
     },
     // ── إشعارات ──
     {
-      tabKey:  'notifications',
-      route:   'notifications',
-      label:   'إشعارات',
-      isBell:  true,
+      tabKey: 'notifications',
+      route:  'notifications',
+      label:  'إشعارات',
+      isBell: true,
     },
     // ── مركز (mediator center) ──
     {
@@ -184,17 +192,17 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     },
     // ── إعجابات / مشتركون ──
     {
-      tabKey:  'likes',
-      route:   isMediator ? 'subscribers' : 'likes',
-      label:   isMediator ? 'المشتركون' : 'إعجابات',
-      icon:    isMediator ? Users : Heart,
+      tabKey: 'likes',
+      route:  isMediator ? 'subscribers' : 'likes',
+      label:  isMediator ? 'المشتركون' : 'إعجابات',
+      icon:   isMediator ? Users : Heart,
     },
     // ── الرئيسية ──
     {
-      tabKey:  'home',
-      route:   'home',
-      label:   'الرئيسية',
-      icon:    House,
+      tabKey: 'home',
+      route:  'home',
+      label:  'الرئيسية',
+      icon:   House,
     },
   ];
 
@@ -238,22 +246,33 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
             >
               {/* بريق زجاجي */}
               <div style={{
-                position:     'absolute',
-                top:          4,
-                left:         8,
-                right:        8,
-                height:       '34%',
-                background:   'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
-                borderRadius: '50%',
-                filter:       'blur(1.5px)',
-                pointerEvents:'none',
+                position:      'absolute',
+                top:           4,
+                left:          8,
+                right:         8,
+                height:        '34%',
+                background:    'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
+                borderRadius:  '50%',
+                filter:        'blur(1.5px)',
+                pointerEvents: 'none',
               }} />
 
-              {/* Crown — أبيض دائماً */}
+              {/*
+                Crown من Lucide — أبيض دائماً، بدون fill، بصرف النظر عن الثيم أو الحالة
+                نستخدم style مباشرة لتجاوز globals.css (fill:none + stroke:white)
+              */}
               <Crown
-                size="var(--icon-lg)"
-                weight={active ? 'fill' : 'bold'}
-                color="#FFFFFF"
+                style={{
+                  width:          'var(--icon-lg)',
+                  height:         'var(--icon-lg)',
+                  fill:           'none',
+                  stroke:         '#FFFFFF',
+                  strokeWidth:    1.8,
+                  strokeLinecap:  'round',
+                  strokeLinejoin: 'round',
+                  position:       'relative',
+                  zIndex:         1,
+                }}
               />
             </motion.button>
           </div>
