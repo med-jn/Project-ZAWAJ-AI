@@ -1,14 +1,12 @@
 'use client';
 /**
- * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.2
+ * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.3
  *
- * ✅ position:fixed للهيدر — zIndex:1000 (فوق ClientLayout دائماً)
- * ✅ RTL صريح: السهم يسار ← avatar+اسم وسط ← نقاط يمين
- * ✅ OnlineDot على حافة الأفاتار بالضبط (مركز النقطة على الحافة)
- * ✅ "يكتب الآن" عند الحاجة فقط
- * ✅ ألوان فقاعات صلبة
- * ✅ بانر قبول + بانر انتظار
- * ✅ ReportSheet الكامل
+ * ✅ HEADER RTL صريح: سهم يسار | avatar+اسم وسط | نقاط يمين
+ * ✅ OnlineDot مركزها على حافة الأفاتار بالضبط
+ * ✅ zIndex: 1000 فوق ClientLayout
+ * ✅ الرسائل الصوتية تعرض VoiceMessageBubble (لا ايموجي)
+ * ✅ لا تغيير في useChat أو VoiceRecorder
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -17,6 +15,7 @@ import {
   ArrowLeft, Send, CheckCheck,
   MoreVertical, ShieldOff,
   Clock, MessageCircle, Trash2,
+  Mic,
 } from 'lucide-react';
 
 import { supabase }       from '@/lib/supabase/client';
@@ -27,7 +26,6 @@ import VoiceRecorder      from './VoiceRecorder';
 import VoiceMessageBubble from './VoiceMessageBubble';
 import ReportSheet        from '@/components/security/ReportSheet';
 
-// ── helpers ───────────────────────────────────────────────────
 function msgTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const s    = Math.floor(diff / 1000);
@@ -39,7 +37,6 @@ function msgTime(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
 }
 
-// ── Types ──────────────────────────────────────────────────────
 interface Recipient {
   id:                string;
   name:              string;
@@ -59,7 +56,6 @@ interface Props {
   onBlock?:        () => void;
 }
 
-// ──────────────────────────────────────────────────────────────
 export default function ChatWindow({
   conversationId, currentUserId, recipient,
   onBack, onOpenProfile, onBlock,
@@ -87,7 +83,7 @@ export default function ChatWindow({
 
   const isFemale = recipient.gender === 'female';
 
-  // ── Presence ──────────────────────────────────────────────────
+  // Presence
   useEffect(() => {
     const ch = supabase.channel(`presence_${conversationId}`, {
       config: { presence: { key: currentUserId } },
@@ -114,7 +110,6 @@ export default function ChatWindow({
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── إرسال نص ──────────────────────────────────────────────────
   const handleSend = async () => {
     const text = inputText.trim();
     if (!text) return;
@@ -128,7 +123,6 @@ export default function ChatWindow({
     if (sent) { setInputText(''); setTyping(false); inputRef.current?.blur(); }
   };
 
-  // ── إرسال صوت ─────────────────────────────────────────────────
   const handleVoiceSend = useCallback(async (blob: Blob) => {
     setSendingVoice(true);
     const needsCoins = !convStatus.is_free && !convStatus.is_unlocked;
@@ -170,56 +164,37 @@ export default function ChatWindow({
 
   const showWaitBanner = convStatus.pending_unlock;
 
-  // ── حجم الأفاتار والنقطة ──────────────────────────────────────
-  // النقطة مركزها يقع على حافة دائرة الأفاتار
-  // أفاتار: 40px ← نصف القطر = 20px
-  // نقطة: 13px ← نصف = 6.5px
-  // bottom = نصف_القطر_أفاتار - نصف_النقطة = 20 - 6.5 = 13.5 ≈ 14 (من أسفل wrapper)
-  // ← لكن OnlineDot يستخدم position:absolute بـ bottom/right محسوبة بـ size*0.45
-  // size=13 → bottom = 13*0.45 = 5.85 ← هذا بعيد عن الحافة
-  // الحل: نضع OnlineDot خارج دائرة الأفاتار مع top/left صريح
-
-  const AVATAR_SIZE = 40;
-  const DOT_SIZE    = 13;
-  // مركز النقطة يقع على حافة الدائرة (نقطة الساعة 4:30)
-  // right = -(DOT_SIZE/2) → مركز النقطة عند حافة اليمين
-  // bottom = -(DOT_SIZE/2) → مركز النقطة عند حافة الأسفل
-  const DOT_OFFSET  = -(DOT_SIZE / 2); // -6.5px
+  // ── ثوابت الأفاتار والنقطة ─────────────────────────────────
+  const AVATAR = 40;
+  const DOT    = 13;
 
   return (
     <div style={{
       position: 'fixed', inset: 0,
       background: 'var(--bg-main)',
       display: 'flex', flexDirection: 'column',
-      // ✅ zIndex 1000 يضمن الظهور فوق أي layout
       zIndex: 1000,
     }}>
 
-      {/* ══════════════════════════════
-          HEADER — RTL صريح بدون dir="rtl"
-          ترتيب DOM = يسار←وسط←يمين
-          السهم (يسار) | Avatar+اسم (يمسط) | نقاط (يمين)
+      {/* ══════════ HEADER ══════════
+          DOM order = سهم | وسط | نقاط
+          لا dir="rtl" هنا — الترتيب صريح
       ══════════════════════════════ */}
-      <div
-        style={{
-          paddingTop: 'var(--safe-top, env(safe-area-inset-top, 0px))',
-          height: 'calc(64px + var(--safe-top, env(safe-area-inset-top, 0px)))',
-          display: 'flex',
-          flexDirection: 'row',          // LTR في DOM
-          alignItems: 'center',
-          paddingLeft: 4,
-          paddingRight: 4,
-          gap: 4,
-          background: 'var(--bg-surface)',
-          borderBottom: '1px solid var(--glass-border)',
-          flexShrink: 0,
-          // ✅ position sticky بدل fixed منفصل — يبقى مع الـ flex column
-          position: 'sticky',
-          top: 0,
-          zIndex: 10,
-        }}
-      >
-        {/* ── يسار: سهم رجوع ← ─────────────────────────────── */}
+      <div style={{
+        paddingTop:   'var(--safe-top, env(safe-area-inset-top, 0px))',
+        height:       'calc(60px + var(--safe-top, env(safe-area-inset-top, 0px)))',
+        display:      'flex',
+        flexDirection: 'row',
+        alignItems:   'center',
+        paddingLeft:  4,
+        paddingRight: 4,
+        gap:          4,
+        background:   'var(--bg-surface)',
+        borderBottom: '1px solid var(--glass-border)',
+        flexShrink:   0,
+      }}>
+
+        {/* يسار: سهم رجوع */}
         <button
           onClick={onBack}
           style={{
@@ -232,27 +207,22 @@ export default function ChatWindow({
           <ArrowLeft size={22} />
         </button>
 
-        {/* ── وسط: Avatar + اسم ────────────────────────────── */}
+        {/* وسط: أفاتار + اسم — flex-row-reverse يضع الأفاتار يمين الاسم */}
         <button
           onClick={() => onOpenProfile?.(recipient.id)}
           style={{
+            flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'center',
-            flexDirection: 'row-reverse',  // أفاتار يمين الاسم (RTL visual)
+            flexDirection: 'row-reverse',
             gap: 10,
             background: 'transparent', border: 'none', cursor: 'pointer',
-            flex: 1, minWidth: 0,
-            textAlign: 'right', padding: '0 4px',
+            padding: '0 4px',
           }}
         >
-          {/* الأفاتار مع OnlineDot */}
-          <div style={{
-            position: 'relative',
-            width:  AVATAR_SIZE,
-            height: AVATAR_SIZE,
-            flexShrink: 0,
-          }}>
+          {/* الأفاتار */}
+          <div style={{ position: 'relative', width: AVATAR, height: AVATAR, flexShrink: 0 }}>
             <div style={{
-              width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: '50%',
+              width: AVATAR, height: AVATAR, borderRadius: '50%',
               overflow: 'hidden',
               border: '1.5px solid var(--glass-border)',
               background: 'var(--glass-bg)',
@@ -268,46 +238,31 @@ export default function ChatWindow({
                 }}
               />
             </div>
-
             {/*
-              ✅ OnlineDot: مركز النقطة يقع على حافة الدائرة تماماً
-              wrapper = 40×40 → OnlineDot يضع نفسه:
-                bottom = size*0.45 = 13*0.45 = 5.85 من أسفل الـ wrapper
-                right  = size*0.45 = 5.85 من يمين الـ wrapper
-              لكننا نريد مركز النقطة عند الحافة، إذن نحتاج:
-                bottom = -(DOT_SIZE/2) = -6.5 من أسفل الـ wrapper
-                right  = -(DOT_SIZE/2) = -6.5 من يمين الـ wrapper
-              OnlineDot الحالي يحسب موضعه بـ size*0.45 بداخله
-              لذا نضع wrapper بـ overflow:visible ونمرر size صحيح
-            -->
+              OnlineDot: position:absolute داخل wrapper بحجم DOT×DOT
+              يُوضع بحيث مركز النقطة = حافة الأفاتار
+              bottom = AVATAR/2 - DOT/2 = 20 - 6.5 = 13.5 → لكن
+              OnlineDot داخلياً يحسب bottom: size*0.45
+              إذن wrapper يُوضع absolute بـ bottom/right = -(DOT/2)
+              وداخله OnlineDot بـ size=DOT
             */}
             <div style={{
               position: 'absolute',
-              // مركز النقطة (DOT_SIZE/2) على حافة الدائرة (AVATAR_SIZE/2 من المركز)
-              // bottom من أسفل wrapper = AVATAR_SIZE - (AVATAR_SIZE/2 + DOT_SIZE/2)
-              //   = AVATAR_SIZE/2 - DOT_SIZE/2 = 20 - 6.5 = 13.5
-              // لكن OnlineDot يضيف bottom: size*0.45 داخلياً
-              // إذن نضع الـ wrapper بحيث يكون bottom النقطة الفعلي صحيحاً
-              // الأبسط: نتجاهل OnlineDot الداخلي ونعيد تموضعه بـ wrapper
-              bottom: DOT_OFFSET,
-              right:  DOT_OFFSET,
-              // OnlineDot يضع نفسه absolute داخل هذا الـ div
-              // لكنه يستخدم bottom:size*0.45 و right:size*0.45
-              // نحتاج أن يكون top:0,left:0,bottom:0,right:0 فعلياً
-              // الحل الأنظف: نعطي wrapper حجم النقطة بالضبط
-              width:  DOT_SIZE,
-              height: DOT_SIZE,
+              bottom: -(DOT / 2),
+              right:  -(DOT / 2),
+              width:  DOT,
+              height: DOT,
             }}>
               <OnlineDot
                 userId={recipient.id}
                 initialLastActive={recipient.last_seen}
-                size={DOT_SIZE}
+                size={DOT}
               />
             </div>
           </div>
 
-          {/* الاسم + "يكتب الآن" */}
-          <div style={{ minWidth: 0, textAlign: 'right' }}>
+          {/* الاسم + يكتب الآن */}
+          <div style={{ minWidth: 0, textAlign: 'right', flex: 1 }}>
             <span style={{
               color: 'var(--text-main)', fontWeight: 700, fontSize: 15,
               display: 'block', overflow: 'hidden',
@@ -331,7 +286,7 @@ export default function ChatWindow({
           </div>
         </button>
 
-        {/* ── يمين: ثلاث نقاط ──────────────────────────────── */}
+        {/* يمين: ثلاث نقاط */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button
             onClick={() => setShowMenu(v => !v)}
@@ -348,8 +303,10 @@ export default function ChatWindow({
           <AnimatePresence>
             {showMenu && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }}
-                  onClick={() => setShowMenu(false)} />
+                <div
+                  style={{ position: 'fixed', inset: 0, zIndex: 10 }}
+                  onClick={() => setShowMenu(false)}
+                />
                 <motion.div
                   initial={{ opacity: 0, scale: 0.88, y: -8 }}
                   animate={{ opacity: 1, scale: 1,    y: 0  }}
@@ -388,9 +345,7 @@ export default function ChatWindow({
         </div>
       </div>
 
-      {/* ══════════════════════════════
-          بانر قبول المحادثة
-      ══════════════════════════════ */}
+      {/* بانر قبول */}
       <AnimatePresence>
         {showAcceptBanner && (
           <motion.div
@@ -424,9 +379,7 @@ export default function ChatWindow({
         )}
       </AnimatePresence>
 
-      {/* ══════════════════════════════
-          بانر انتظار الرد
-      ══════════════════════════════ */}
+      {/* بانر انتظار */}
       <AnimatePresence>
         {showWaitBanner && (
           <motion.div
@@ -449,9 +402,7 @@ export default function ChatWindow({
         )}
       </AnimatePresence>
 
-      {/* ══════════════════════════════
-          MESSAGES
-      ══════════════════════════════ */}
+      {/* الرسائل */}
       <div style={{
         flex: 1, overflowY: 'auto',
         padding: '12px 12px 8px',
@@ -484,10 +435,11 @@ export default function ChatWindow({
                 opacity: msg.is_optimistic ? 0.7 : 1,
                 transition: 'opacity 0.2s',
               }}>
+                {/* رسالة صوتية مع URL */}
                 {msg.message_type === 'voice' && msg.audio_url ? (
                   <VoiceMessageBubble audioUrl={msg.audio_url} isMine={isMine} />
                 ) : msg.message_type === 'voice' && !msg.audio_url ? (
-                  /* متفائلة صوتية لم يُحمَّل الـ URL بعد */
+                  /* رسالة صوتية optimistic — جاري الرفع */
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     minWidth: 120, opacity: 0.7,
@@ -497,19 +449,16 @@ export default function ChatWindow({
                       background: 'rgba(255,255,255,0.15)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
-                      <span style={{ fontSize: 14 }}>🎤</span>
+                      <Mic size={14} color="rgba(255,255,255,0.7)" />
                     </div>
-                    <div style={{
-                      width: 60, height: 4, borderRadius: 2,
-                      background: 'rgba(255,255,255,0.2)',
-                      overflow: 'hidden',
-                    }}>
-                      <motion.div
-                        animate={{ x: ['−100%', '100%'] }}
-                        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-                        style={{ width: '50%', height: '100%', background: 'rgba(255,255,255,0.5)' }}
-                      />
-                    </div>
+                    <motion.div
+                      animate={{ opacity: [0.4, 1, 0.4] }}
+                      transition={{ repeat: Infinity, duration: 1.2 }}
+                      style={{
+                        width: 60, height: 3, borderRadius: 2,
+                        background: 'rgba(255,255,255,0.3)',
+                      }}
+                    />
                   </div>
                 ) : (
                   <p style={{
@@ -524,8 +473,7 @@ export default function ChatWindow({
                 {/* وقت + قُرئ */}
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 3,
-                  marginTop: 3, opacity: 0.6,
-                  justifyContent: 'flex-end',
+                  marginTop: 3, opacity: 0.6, justifyContent: 'flex-end',
                 }}>
                   {isMine && (
                     <CheckCheck size={11} style={{
@@ -538,9 +486,7 @@ export default function ChatWindow({
                   }}>
                     {msgTime(msg.created_at)}
                   </span>
-                  {msg.failed && (
-                    <span style={{ fontSize: 9, color: '#f87171' }}>!</span>
-                  )}
+                  {msg.failed && <span style={{ fontSize: 9, color: '#f87171' }}>!</span>}
                 </div>
 
                 {/* حذف بعد long press */}
@@ -569,9 +515,7 @@ export default function ChatWindow({
         <div ref={scrollRef} />
       </div>
 
-      {/* ══════════════════════════════
-          FOOTER
-      ══════════════════════════════ */}
+      {/* شريط الإدخال */}
       <div
         dir="rtl"
         style={{
@@ -639,7 +583,6 @@ export default function ChatWindow({
         )}
       </div>
 
-      {/* ReportSheet */}
       <ReportSheet
         open={showReport}
         onClose={() => setShowReport(false)}

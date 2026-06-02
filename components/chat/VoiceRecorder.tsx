@@ -1,13 +1,9 @@
 'use client';
 /**
  * 📁 components/chat/VoiceRecorder.tsx — ZAWAJ AI
- *
- * يستخدم capacitor-voice-recorder للتسجيل على Android/iOS
- * بالنسبة للويب يرجع لـ MediaRecorder كـ fallback
- *
- * اضغط مطولاً للتسجيل — ارفع إصبعك لإرسال
+ * ضغط مطوّل = تسجيل / رفع الإصبع = إرسال / سحب لأعلى = إلغاء
+ * ✅ FIX: guard ضد ALREADY_RECORDING
  * ✅ حد 10 ثوانٍ مع حلقة زمنية
- * ✅ سحب للأعلى للإلغاء
  */
 
 import { useRef, useState, useEffect, useCallback } from 'react';
@@ -17,7 +13,6 @@ import { Capacitor } from '@capacitor/core';
 
 const MAX_SECONDS = 10;
 
-// ── استيراد شرطي لـ capacitor-voice-recorder (native فقط) ──
 let VoiceRecorderPlugin: any = null;
 
 async function loadNativeRecorder() {
@@ -26,12 +21,11 @@ async function loadNativeRecorder() {
       const mod = await import('capacitor-voice-recorder');
       VoiceRecorderPlugin = mod.VoiceRecorder;
     } catch (e) {
-      console.warn('[VoiceRecorder] capacitor-voice-recorder not available:', e);
+      console.warn('[VoiceRecorder] not available:', e);
     }
   }
 }
 
-// ── تحويل base64 → Blob ────────────────────────────────────
 function base64ToBlob(base64: string, mimeType: string): Blob {
   const byteChars   = atob(base64);
   const byteNumbers = new Array(byteChars.length).fill(0).map((_, i) => byteChars.charCodeAt(i));
@@ -43,26 +37,24 @@ interface Props {
   disabled?: boolean;
 }
 
-type RecordState = 'idle' | 'recording' | 'cancelled';
+type RecordState = 'idle' | 'recording';
 
 export default function VoiceRecorder({ onSend, disabled }: Props) {
   const [state,   setState]   = useState<RecordState>('idle');
   const [elapsed, setElapsed] = useState(0);
 
-  const timerRef   = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cancelRef  = useRef(false);
-  const startYRef  = useRef(0);
-
-  // ── MediaRecorder fallback (web) ──────────────────────────
-  const mediaRef  = useRef<MediaRecorder | null>(null);
-  const chunksRef = useRef<Blob[]>([]);
+  const timerRef      = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelRef     = useRef(false);
+  const isRecordingRef = useRef(false); // ✅ guard ضد ALREADY_RECORDING
+  const startYRef     = useRef(0);
+  const mediaRef      = useRef<MediaRecorder | null>(null);
+  const chunksRef     = useRef<Blob[]>([]);
 
   useEffect(() => {
     loadNativeRecorder();
     return () => stopTimer();
   }, []);
 
-  // ── مؤقت مشترك ───────────────────────────────────────────
   const startTimer = () => {
     setElapsed(0);
     timerRef.current = setInterval(() => {
@@ -80,22 +72,35 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
     if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   };
 
-  // ── بدء التسجيل ───────────────────────────────────────────
   const startRecording = useCallback(async () => {
     if (disabled) return;
-    cancelRef.current = false;
+    // ✅ منع الاستدعاء المزدوج
+    if (isRecordingRef.current) return;
 
-    // ── Native (Android/iOS) ─────────────────────────────
+    cancelRef.current     = false;
+    isRecordingRef.current = true;
+
+    // ── Native ──────────────────────────────────────────
     if (Capacitor.isNativePlatform() && VoiceRecorderPlugin) {
       try {
-        const perm = await VoiceRecorderPlugin.requestAudioRecordingPermission();
-        if (!perm?.value) return;
+        // تأكد من الإذن أولاً
+        const { value: hasPerm } =
+          await VoiceRecorderPlugin.hasAudioRecordingPermission();
+        if (!hasPerm) {
+          const { value: granted } =
+            await VoiceRecorderPlugin.requestAudioRecordingPermission();
+          if (!granted) { isRecordingRef.current = false; return; }
+        }
+
+        // توقف أي تسجيل سابق قبل البدء
+        try { await VoiceRecorderPlugin.stopRecording(); } catch (_) {}
 
         await VoiceRecorderPlugin.startRecording();
         setState('recording');
         startTimer();
       } catch (e) {
         console.error('[VoiceRecorder] native start error:', e);
+        isRecordingRef.current = false;
       }
       return;
     }
@@ -104,13 +109,14 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
     try {
       const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-        ? 'audio/webm;codecs=opus'
-        : 'audio/webm';
+        ? 'audio/webm;codecs=opus' : 'audio/webm';
 
       const recorder    = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
 
-      recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+      recorder.ondataavailable = e => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
       recorder.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
         if (!cancelRef.current && chunksRef.current.length > 0) {
@@ -118,6 +124,7 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
         }
         setState('idle');
         setElapsed(0);
+        isRecordingRef.current = false;
       };
 
       recorder.start(100);
@@ -126,48 +133,47 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
       startTimer();
     } catch (e) {
       console.error('[VoiceRecorder] web start error:', e);
+      isRecordingRef.current = false;
     }
   }, [disabled, onSend]);
 
-  // ── إيقاف التسجيل ─────────────────────────────────────────
   const stopRecording = useCallback(async (cancel: boolean) => {
+    if (!isRecordingRef.current) return;
     stopTimer();
     cancelRef.current = cancel;
 
-    // ── Native ────────────────────────────────────────────
+    // ── Native ───────────────────────────────────────────
     if (Capacitor.isNativePlatform() && VoiceRecorderPlugin) {
       try {
-        if (cancel) {
-          await VoiceRecorderPlugin.stopRecording().catch(() => {});
-          setState('idle');
-          setElapsed(0);
-          return;
-        }
-
         const result = await VoiceRecorderPlugin.stopRecording();
-        const { recordDataBase64, mimeType } = result?.value ?? {};
-
-        if (recordDataBase64) {
-          const blob = base64ToBlob(recordDataBase64, mimeType || 'audio/aac');
-          onSend(blob);
+        if (!cancel) {
+          const { recordDataBase64, mimeType } = result?.value ?? {};
+          if (recordDataBase64) {
+            const blob = base64ToBlob(recordDataBase64, mimeType || 'audio/aac');
+            onSend(blob);
+          }
         }
       } catch (e) {
         console.error('[VoiceRecorder] native stop error:', e);
       }
       setState('idle');
       setElapsed(0);
+      isRecordingRef.current = false;
       return;
     }
 
     // ── Web fallback ──────────────────────────────────────
     if (mediaRef.current?.state === 'recording') {
-      mediaRef.current.stop();
+      mediaRef.current.stop(); // onstop يتولى الباقي
+    } else {
+      isRecordingRef.current = false;
     }
     if (cancel) { setState('idle'); setElapsed(0); }
   }, [onSend]);
 
-  // ── لمس ───────────────────────────────────────────────────
+  // ── أحداث اللمس ───────────────────────────────────────────
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     startYRef.current = e.touches[0].clientY;
     startRecording();
   };
@@ -175,11 +181,20 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
     if (state !== 'recording') return;
     if (startYRef.current - e.touches[0].clientY > 60) stopRecording(true);
   };
-  const handleTouchEnd  = () => { if (state === 'recording') stopRecording(false); };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (state === 'recording') stopRecording(false);
+  };
 
-  // ── ماوس (للتيستينج على الويب) ────────────────────────────
-  const handleMouseDown = () => startRecording();
-  const handleMouseUp   = () => { if (state === 'recording') stopRecording(false); };
+  // ── ماوس (ويب) ────────────────────────────────────────────
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    startRecording();
+  };
+  const handleMouseUp = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (state === 'recording') stopRecording(false);
+  };
 
   const progress  = (elapsed / MAX_SECONDS) * 100;
   const timeLeft  = MAX_SECONDS - elapsed;
@@ -188,7 +203,7 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
 
-      {/* ── مؤشر الوقت فوق الزر ─────────────────────────── */}
+      {/* مؤشر الوقت */}
       <AnimatePresence>
         {state === 'recording' && (
           <motion.div
@@ -203,7 +218,6 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
               pointerEvents: 'none',
             }}
           >
-            {/* حلقة زمنية */}
             <div style={{ position: 'relative', width: 44, height: 44 }}>
               <svg width="44" height="44" style={{ transform: 'rotate(-90deg)' }}>
                 <circle cx="22" cy="22" r="18" fill="none"
@@ -233,7 +247,7 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
         )}
       </AnimatePresence>
 
-      {/* ── موجات خلف الزر ───────────────────────────────── */}
+      {/* موجات */}
       <AnimatePresence>
         {state === 'recording' && [1, 2, 3].map(i => (
           <motion.div
@@ -249,7 +263,7 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
         ))}
       </AnimatePresence>
 
-      {/* ── الزر الرئيسي ──────────────────────────────────── */}
+      {/* الزر */}
       <motion.button
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
