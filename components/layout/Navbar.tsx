@@ -22,7 +22,7 @@ function playNotifSound() {
   } catch (_) {}
 }
 
-// ── جرس راقص (رقاص ساعة من نقطة الأعلى) ─────────────────────
+// ── جرس راقص ─────────────────────────────────────────────────
 function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
   const controls = useAnimation();
 
@@ -40,15 +40,23 @@ function BellIcon({ ringing, active }: { ringing: boolean; active: boolean }) {
       style={{ originX: '50%', originY: '10%', display: 'inline-flex' }}
     >
       {/*
-        .ph-icon يُبطل: fill:none; stroke:currentColor; stroke-width:2px
-        التي يُطبّقها globals.css على كل SVG
+        color="currentColor" — يرث اللون من الـ wrapper span
+        الـ wrapper span يحمل style={{ color: 'var(--color-secondary)' }}
+        هكذا تعمل CSS variables بشكل صحيح مع Phosphor
       */}
-      <span className="ph-icon" style={{ display: 'inline-flex' }}>
+      <span
+        className="ph-icon"
+        style={{
+          display: 'inline-flex',
+          color:   'var(--color-secondary)',
+          opacity: active ? 1 : 0.4,
+          transition: 'opacity 0.15s ease',
+        }}
+      >
         <Bell
-          size="var(--icon-md)"
+          size="var(--icon-lg)"
           weight={active ? 'fill' : 'regular'}
-          color="var(--color-secondary)"
-          style={{ opacity: active ? 1 : 0.45, transition: 'opacity 0.15s ease' }}
+          color="currentColor"
         />
       </span>
     </motion.div>
@@ -64,12 +72,19 @@ function NavIcon({
   icon: React.ElementType;
 }) {
   return (
-    <span className="ph-icon" style={{ display: 'inline-flex' }}>
+    <span
+      className="ph-icon"
+      style={{
+        display:    'inline-flex',
+        color:      'var(--color-secondary)',
+        opacity:    active ? 1 : 0.4,
+        transition: 'opacity 0.15s ease',
+      }}
+    >
       <Icon
-        size="var(--icon-md)"
+        size="var(--icon-lg)"
         weight={active ? 'fill' : 'regular'}
-        color="var(--color-secondary)"
-        style={{ opacity: active ? 1 : 0.45, transition: 'opacity 0.15s ease' }}
+        color="currentColor"
       />
     </span>
   );
@@ -86,7 +101,6 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   const [role,    setRole]    = useState<'user' | 'mediator'>('user');
   const [ringing, setRinging] = useState(false);
 
-  // ── جلب role مرة واحدة ───────────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
@@ -96,7 +110,6 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     });
   }, []);
 
-  // ── إشعارات real-time ────────────────────────────────────
   const pathname = usePathname();
 
   const loadUnread = useCallback(async (userId: string) => {
@@ -113,9 +126,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     const init = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       loadUnread(user.id);
-
       const ch = supabase.channel('navbar_notifs')
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'notifications',
@@ -136,14 +147,12 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
           loadUnread(user.id);
         })
         .subscribe();
-
       cleanup = () => { supabase.removeChannel(ch); };
     };
     init();
     return () => { cleanup?.(); };
   }, [loadUnread]);
 
-  // ── إعادة جلب العداد عند الانتقال لصفحة الإشعارات ──────────
   useEffect(() => {
     if (!pathname.startsWith('/notifications')) return;
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -162,37 +171,12 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
 
   const isMediator = role === 'mediator';
 
-  // ── تعريف التبويبات ───────────────────────────────────────
   const tabs = [
-    {
-      tabKey: 'profile',
-      route:  isMediator ? 'dash' : 'profile',
-      label:  'حسابي',
-      icon:   isMediator ? Layout : User,
-    },
-    {
-      tabKey: 'notifications',
-      route:  'notifications',
-      label:  'إشعارات',
-      isBell: true,
-    },
-    {
-      tabKey:   'mediator',
-      route:    'mediators',
-      isCenter: true,
-    },
-    {
-      tabKey: 'likes',
-      route:  isMediator ? 'subscribers' : 'likes',
-      label:  isMediator ? 'المشتركون' : 'إعجابات',
-      icon:   isMediator ? Users : Heart,
-    },
-    {
-      tabKey: 'home',
-      route:  'home',
-      label:  'الرئيسية',
-      icon:   House,
-    },
+    { tabKey: 'profile',       route: isMediator ? 'dash'        : 'profile',       icon: isMediator ? Layout : User  },
+    { tabKey: 'notifications', route: 'notifications',                               isBell: true                      },
+    { tabKey: 'mediator',      route: 'mediators',                                   isCenter: true                    },
+    { tabKey: 'likes',         route: isMediator ? 'subscribers' : 'likes',          icon: isMediator ? Users : Heart  },
+    { tabKey: 'home',          route: 'home',                                        icon: House                       },
   ];
 
   return (
@@ -210,7 +194,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
 
         // ── الزر المركزي ──────────────────────────────────
         if (tab.isCenter) return (
-          <div key="center" style={{ marginTop: -16, flexShrink: 0 }}>
+          <div key="center" style={{ flexShrink: 0, marginTop: -14 }}>
             <motion.button
               whileTap={{ scale: 0.86 }}
               onClick={() => go(tab.route)}
@@ -233,21 +217,12 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
                 overflow:       'hidden',
               }}
             >
-              {/* بريق زجاجي */}
               <div style={{
-                position:      'absolute',
-                top:           4, left: 8, right: 8,
-                height:        '34%',
-                background:    'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
-                borderRadius:  '50%',
-                filter:        'blur(1.5px)',
-                pointerEvents: 'none',
+                position: 'absolute', top: 4, left: 8, right: 8,
+                height: '34%',
+                background: 'linear-gradient(to bottom, rgba(255,255,255,0.22), transparent)',
+                borderRadius: '50%', filter: 'blur(1.5px)', pointerEvents: 'none',
               }} />
-
-              {/*
-                Crown من Lucide — أبيض دائماً بدون fill
-                inline style يتجاوز globals.css مباشرة على عناصر Lucide
-              */}
               <Crown
                 style={{
                   width:          'var(--icon-lg)',
@@ -265,18 +240,18 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
           </div>
         );
 
-        // ── التبويبات العادية ──────────────────────────────
+        // ── التبويبات العادية — بدون نص، أيقونة فقط ──────
         return (
           <button
             key={tab.tabKey}
             onClick={() => go(tab.route)}
-            className="flex flex-col items-center justify-center flex-1 h-full"
-            style={{ gap: '3px' }}
+            className="flex items-center justify-center flex-1 h-full"
           >
             <div className="relative">
               <motion.div
-                animate={{ scale: active ? 1.12 : 1 }}
+                animate={{ scale: active ? 1.15 : 1 }}
                 transition={{ type: 'spring', stiffness: 420, damping: 18 }}
+                style={{ display: 'inline-flex' }}
               >
                 {tab.isBell ? (
                   <BellIcon ringing={ringing} active={active} />
@@ -292,8 +267,8 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
                   animate={{ scale: 1 }}
                   style={{
                     position:       'absolute',
-                    top:            'calc(var(--icon-md) * -0.3)',
-                    left:           'calc(var(--icon-md) * -0.3)',
+                    top:            'calc(var(--icon-lg) * -0.3)',
+                    left:           'calc(var(--icon-lg) * -0.3)',
                     minWidth:       'calc(var(--text-xs) * 1.4)',
                     height:         'calc(var(--text-xs) * 1.4)',
                     borderRadius:   '999px',
@@ -312,16 +287,6 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
                 </motion.span>
               )}
             </div>
-
-            <span style={{
-              fontSize:   'calc(var(--text-2xs) * 0.88)',
-              fontWeight: active ? 800 : 500,
-              color:      'var(--color-secondary)',
-              opacity:    active ? 1 : 0.45,
-              lineHeight: 1,
-            }}>
-              {tab.label}
-            </span>
           </button>
         );
       })}
