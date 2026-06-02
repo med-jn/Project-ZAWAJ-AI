@@ -1,42 +1,25 @@
 'use client';
-
 /**
- * 📁 app/notifications/page.tsx
- * ZAWAJ AI — ELITE Notifications System
- *
- * ✅ Smart routing per notification
- * ✅ Gender-aware Arabic grammar
- * ✅ Premium notification cards
- * ✅ Timeline grouping
+ * 📁 app/notifications/page.tsx — ZAWAJ AI
+ * ✅ NotificationTabs مع شريط مقسم
+ * ✅ تجميع: آخر إشعار لكل (from_user + type) فقط
+ * ✅ مسارات صحيحة: view?id= | chat?id=
+ * ✅ زر الجرس يقرأ كل الإشعارات
  * ✅ Realtime
- * ✅ Filters
- * ✅ Deep-link architecture
- * ✅ Zero fake columns / zero guessed routes
  */
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import {
   Bell, Heart, Eye, MessageCircle,
-  Sparkles, Handshake, Crown, ChevronLeft,
+  Sparkles, Handshake, Crown, ChevronLeft, CheckCheck,
 } from 'lucide-react';
-
 import { supabase } from '@/lib/supabase/client';
+import NotificationTabs, { type NotificationFilter } from '@/components/notifications/NotificationTabs';
 
-// ═══════════════════════════════════════════════════════════════
-// TYPES
-// ═══════════════════════════════════════════════════════════════
-
-type NotifType =
-  | 'like'
-  | 'view'
-  | 'message'
-  | 'match'
-  | 'mediator'
-  | 'subscription'   // ✅ مضاف
-  | 'system';
+// ── أنواع ─────────────────────────────────────────────────────
+type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system';
 
 interface Sender {
   id: string;
@@ -44,6 +27,7 @@ interface Sender {
   avatar_url: string | null;
   gender?: 'male' | 'female' | null;
   is_photos_blurred?: boolean | null;
+  role?: string | null;
 }
 
 interface NotificationItem {
@@ -56,26 +40,24 @@ interface NotificationItem {
   from_user: string | null;
   conversation_id?: string | null;
   sender?: Sender | null;
+  // مفتاح التجميع: from_user + type
+  _groupKey?: string;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ROUTES — مسارات حقيقية فقط
-// ═══════════════════════════════════════════════════════════════
-
-const ROUTES = {
-  CHAT:          '/chat',
-  LIKES:         '/likes',
-  SUBSCRIBERS:   '/subscribers',
-  NOTIFICATIONS: '/notifications',
+// ── تكوين الأنواع ──────────────────────────────────────────────
+const CONFIG: Record<string, { icon: any; color: string; bg: string; glow: string }> = {
+  like:         { icon: Heart,         color: '#ef4444', bg: 'rgba(239,68,68,0.12)',    glow: 'rgba(239,68,68,0.45)'    },
+  view:         { icon: Eye,           color: '#d4af37', bg: 'rgba(212,175,55,0.12)',   glow: 'rgba(212,175,55,0.45)'   },
+  message:      { icon: MessageCircle, color: '#38bdf8', bg: 'rgba(56,189,248,0.12)',   glow: 'rgba(56,189,248,0.45)'   },
+  match:        { icon: Sparkles,      color: '#c084fc', bg: 'rgba(192,132,252,0.12)',  glow: 'rgba(192,132,252,0.45)'  },
+  mediator:     { icon: Handshake,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
+  subscription: { icon: Crown,         color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
+  system:       { icon: Bell,          color: '#ffffff', bg: 'rgba(255,255,255,0.08)',  glow: 'rgba(255,255,255,0.18)'  },
 };
 
-// ═══════════════════════════════════════════════════════════════
-// TIME
-// ═══════════════════════════════════════════════════════════════
-
+// ── وقت نسبي ──────────────────────────────────────────────────
 function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const s = Math.floor(diff / 1000);
+  const s = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (s < 15)  return 'الآن';
   if (s < 60)  return 'منذ لحظات';
   const m = Math.floor(s / 60);
@@ -85,280 +67,181 @@ function timeAgo(dateStr: string): string {
   const h = Math.floor(m / 60);
   if (h === 1) return 'منذ ساعة';
   if (h === 2) return 'منذ ساعتين';
-  if (h < 24)  return `منذ ${h} ساعات`;
+  if (h < 24)  return `منذ ${h} ساعة`;
   const d = Math.floor(h / 24);
   if (d === 1) return 'أمس';
   if (d < 7)   return `منذ ${d} أيام`;
-  if (d < 30)  return 'هذا الشهر';
   return 'منذ مدة';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TEXT ENGINE
-// ═══════════════════════════════════════════════════════════════
-
-function buildNotificationText(n: NotificationItem) {
+// ── نص الإشعار ────────────────────────────────────────────────
+function buildText(n: NotificationItem): string {
   if (n.message) return n.message;
   const name   = n.sender?.full_name || 'مستخدم';
   const female = n.sender?.gender === 'female';
-
   switch (n.type) {
-    case 'like':
-      return female
-        ? `${name} معجبة بملفك الشخصي`
-        : `${name} معجب بملفك الشخصي`;
-    case 'view':
-      return female
-        ? `${name} زارت ملفك الشخصي`
-        : `${name} زار ملفك الشخصي`;
+    case 'like':    return female ? `${name} معجبة بملفك` : `${name} معجب بملفك`;
+    case 'view':    return female ? `${name} زارت ملفك`   : `${name} زار ملفك`;
+    case 'message': return female ? `${name} أرسلت لك رسالة` : `${name} أرسل لك رسالة`;
+    case 'match':   return `يوجد انسجام بينك وبين ${name}`;
+    case 'mediator':return female ? `الوسيطة ${name} تريد التواصل` : `الوسيط ${name} يريد التواصل`;
+    default:        return n.title || 'إشعار جديد';
+  }
+}
+
+// ── التجميع: آخر إشعار لكل (from_user + type) ───────────────
+function deduplicateNotifications(list: NotificationItem[]): NotificationItem[] {
+  const seen = new Map<string, NotificationItem>();
+  for (const n of list) {
+    // الإشعارات بدون from_user (system) لا تُجمَّع
+    const key = n.from_user ? `${n.from_user}::${n.type}` : n.notification_id;
+    if (!seen.has(key)) {
+      seen.set(key, { ...n, _groupKey: key });
+    }
+    // نبقي الأحدث فقط (القائمة مرتبة تنازلياً)
+  }
+  return Array.from(seen.values());
+}
+
+// ── المسار الصحيح ─────────────────────────────────────────────
+function resolveRoute(n: NotificationItem): string | null {
+  switch (n.type) {
     case 'message':
-      return female
-        ? `${name} أرسلت لك رسالة جديدة`
-        : `${name} أرسل لك رسالة جديدة`;
-    case 'match':
-      return `يوجد انسجام بينك وبين ${name}`;
     case 'mediator':
-      return female
-        ? `الوسيطة ${name} ترغب بالتواصل معك`
-        : `الوسيط ${name} يرغب بالتواصل معك`;
-    case 'subscription':
-      return `${name} اشترك في خدماتك`;
-    default:
-      return n.title || 'إشعار جديد';
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// SMART ROUTING
-// ═══════════════════════════════════════════════════════════════
-
-function resolveNotificationAction(n: NotificationItem, router: any) {
-  switch (n.type) {
-    case 'message': {
-      if (!n.conversation_id) return;
-      router.push(`${ROUTES.CHAT}?id=${n.conversation_id}`);
-      return;
-    }
+      return n.conversation_id ? `/chat?id=${n.conversation_id}` : null;
     case 'like':
     case 'view':
-    case 'match': {
-      router.push(ROUTES.LIKES);
-      return;
-    }
-    case 'mediator': {
-      router.push(ROUTES.LIKES);
-      return;
-    }
-    case 'subscription': {
-      router.push(ROUTES.SUBSCRIBERS);
-      return;
-    }
-    case 'system':
-    default: {
-      router.push(ROUTES.NOTIFICATIONS);
-      return;
-    }
+    case 'match':
+      return n.from_user ? `/view?id=${n.from_user}` : null;
+    default:
+      return null;
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// CONFIG
-// ═══════════════════════════════════════════════════════════════
-
-const CONFIG: Record<string, { icon: any; color: string; bg: string; glow: string }> = {
-  like: {
-    icon: Heart,
-    color: '#ef4444',
-    bg: 'rgba(239,68,68,0.12)',
-    glow: 'rgba(239,68,68,0.45)',
-  },
-  view: {
-    icon: Eye,
-    color: '#d4af37',
-    bg: 'rgba(212,175,55,0.12)',
-    glow: 'rgba(212,175,55,0.45)',
-  },
-  message: {
-    icon: MessageCircle,
-    color: '#38bdf8',
-    bg: 'rgba(56,189,248,0.12)',
-    glow: 'rgba(56,189,248,0.45)',
-  },
-  match: {
-    icon: Sparkles,
-    color: '#c084fc',
-    bg: 'rgba(192,132,252,0.12)',
-    glow: 'rgba(192,132,252,0.45)',
-  },
-  mediator: {
-    icon: Handshake,
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.12)',
-    glow: 'rgba(245,158,11,0.45)',
-  },
-  subscription: {
-    icon: Crown,
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.12)',
-    glow: 'rgba(245,158,11,0.45)',
-  },
-  system: {
-    icon: Bell,
-    color: '#ffffff',
-    bg: 'rgba(255,255,255,0.08)',
-    glow: 'rgba(255,255,255,0.18)',
-  },
-};
-
-// ═══════════════════════════════════════════════════════════════
-// FILTERS
-// ═══════════════════════════════════════════════════════════════
-
-const FILTERS = [
-  { key: 'all',          label: 'الكل'        },
-  { key: 'message',      label: 'الرسائل'     },
-  { key: 'like',         label: 'الإعجابات'   },
-  { key: 'view',         label: 'الزيارات'    },
-  { key: 'match',        label: 'التطابق'     },
-  { key: 'mediator',     label: 'الوسطاء'     },
-  { key: 'subscription', label: 'الاشتراكات'  },
-];
-
-// ═══════════════════════════════════════════════════════════════
-// CARD
-// ═══════════════════════════════════════════════════════════════
-
-function NotificationCard({ n, onRead }: {
+// ── بطاقة الإشعار ─────────────────────────────────────────────
+function NotificationCard({ n, onRead, onNavigate }: {
   n: NotificationItem;
   onRead: (id: string) => void;
+  onNavigate: (route: string | null) => void;
 }) {
-  const router = useRouter();
-  const cfg    = CONFIG[n.type ?? 'system'] ?? CONFIG.system;
-  const Icon   = cfg.icon;
-  const text   = buildNotificationText(n);
+  const cfg  = CONFIG[n.type ?? 'system'] ?? CONFIG.system;
+  const Icon = cfg.icon;
 
-  const handleClick = async () => {
+  const handleClick = () => {
     if (!n.is_read) onRead(n.notification_id);
-    resolveNotificationAction(n, router);
+    onNavigate(resolveRoute(n));
   };
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      whileTap={{ scale: 0.985 }}
+      exit={{ opacity: 0 }}
+      whileTap={{ scale: 0.987 }}
       onClick={handleClick}
       style={{
         position: 'relative',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 14,
-        padding: '16px',
+        display: 'flex', alignItems: 'center', gap: 14,
+        padding: '15px 16px',
         cursor: 'pointer',
         borderBottom: '1px solid var(--glass-border)',
-        background: n.is_read
-          ? 'transparent'
-          : 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01))',
-        backdropFilter: 'blur(18px)',
-        transition: 'all .22s ease',
+        background: n.is_read ? 'transparent' : 'rgba(255,255,255,0.02)',
       }}
     >
+      {/* حدود توهج للغير مقروء */}
       {!n.is_read && (
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
-          boxShadow: `inset 0 0 0 1px ${cfg.glow}22, 0 0 30px ${cfg.glow}12`,
-        }}/>
+          boxShadow: `inset 3px 0 0 ${cfg.color}`,
+        }} />
       )}
 
-      {/* Avatar */}
+      {/* الصورة + أيقونة النوع */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <div style={{
-          width: 58, height: 58, borderRadius: '50%', overflow: 'hidden',
-          border: n.is_read ? '1px solid var(--glass-border)' : `1px solid ${cfg.glow}`,
-          boxShadow: n.is_read ? 'none' : `0 8px 28px ${cfg.glow}22`,
+          width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
+          border: `1.5px solid ${n.is_read ? 'var(--glass-border)' : cfg.glow}`,
+          boxShadow: n.is_read ? 'none' : `0 6px 20px ${cfg.glow}`,
         }}>
           <img
             src={n.sender?.avatar_url || '/default-avatar.png'}
             alt=""
+            loading="lazy"
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
               filter:    n.sender?.is_photos_blurred ? 'blur(10px)' : 'none',
-              transform: n.sender?.is_photos_blurred ? 'scale(1.1)' : 'none',
+              transform: n.sender?.is_photos_blurred ? 'scale(1.1)'  : 'none',
             }}
           />
         </div>
         <div style={{
           position: 'absolute', bottom: -2, left: -2,
-          width: 24, height: 24, borderRadius: '50%',
-          background: cfg.bg, backdropFilter: 'blur(12px)',
-          border: `1px solid ${cfg.glow}`,
+          width: 22, height: 22, borderRadius: '50%',
+          background: cfg.bg, border: `1.5px solid ${cfg.glow}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: `0 6px 16px ${cfg.glow}22`,
+          boxShadow: `0 4px 12px ${cfg.glow}`,
         }}>
-          <Icon size={12} color={cfg.color} />
+          <Icon size={11} color={cfg.color} />
         </div>
+        {n.sender?.role === 'mediator' && (
+          <div style={{
+            position: 'absolute', top: -2, right: -2,
+            width: 20, height: 20, borderRadius: '50%',
+            background: 'linear-gradient(135deg,#d4af37,#f8e7a1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            border: '2px solid var(--bg-main)',
+          }}>
+            <Crown size={10} color="#000" />
+          </div>
+        )}
       </div>
 
-      {/* Content */}
+      {/* النص */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
           <span style={{
-            color: 'var(--text-main)',
-            fontWeight: n.is_read ? 600 : 800,
-            fontSize: 'calc(var(--base-font-size) * .82)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            color: 'var(--text-main)', fontWeight: n.is_read ? 600 : 800,
+            fontSize: 'calc(var(--base-font-size) * .84)',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
             {n.sender?.full_name || 'إشعار'}
           </span>
-          <span style={{
-            color: 'rgba(255,255,255,0.28)',
-            fontSize: 'calc(var(--base-font-size) * .66)',
-            flexShrink: 0,
-          }}>
+          <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 'calc(var(--base-font-size) * .66)', flexShrink: 0 }}>
             {timeAgo(n.created_at)}
           </span>
         </div>
         <p style={{
-          margin: '4px 0 0',
+          margin: 0,
           color: n.is_read ? 'var(--text-tertiary)' : 'var(--text-secondary)',
-          lineHeight: 1.55,
-          fontSize: 'calc(var(--base-font-size) * .76)',
+          fontSize: 'calc(var(--base-font-size) * .77)',
+          lineHeight: 1.5,
           overflow: 'hidden',
           display: '-webkit-box',
           WebkitLineClamp: 2,
           WebkitBoxOrient: 'vertical',
         }}>
-          {text}
+          {buildText(n)}
         </p>
       </div>
 
+      {/* نقطة غير مقروء */}
       {!n.is_read && (
-        <motion.div
-          initial={{ scale: 0 }} animate={{ scale: 1 }}
-          style={{
-            width: 10, height: 10, borderRadius: '50%',
-            background: cfg.color, boxShadow: `0 0 12px ${cfg.glow}`,
-            flexShrink: 0,
-          }}
-        />
+        <div style={{ width: 9, height: 9, borderRadius: '50%', background: cfg.color, flexShrink: 0, boxShadow: `0 0 10px ${cfg.glow}` }} />
       )}
-
-      <ChevronLeft size={16} color="rgba(255,255,255,0.18)" />
+      <ChevronLeft size={15} color="rgba(255,255,255,0.18)" />
     </motion.div>
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-// PAGE
-// ═══════════════════════════════════════════════════════════════
-
+// ── الصفحة ────────────────────────────────────────────────────
 export default function NotificationsPage() {
+  const router = useRouter();
+
   const [userId,        setUserId]        = useState<string | null>(null);
   const [loading,       setLoading]       = useState(true);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [filter,        setFilter]        = useState('all');
+  const [filter,        setFilter]        = useState<NotificationFilter>('all');
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -366,60 +249,51 @@ export default function NotificationsPage() {
     });
   }, []);
 
-  const loadNotifications = useCallback(async () => {
+  // ── جلب الإشعارات ────────────────────────────────────────
+  const load = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
 
     const { data, error } = await supabase
       .from('notifications')
-      .select(`
-        notification_id,
-        type,
-        title,
-        message,
-        is_read,
-        created_at,
-        from_user,
-        conversation_id
-      `)
+      .select('notification_id,type,title,message,is_read,created_at,from_user,conversation_id')
       .eq('id', userId)
       .order('created_at', { ascending: false });
 
-    if (error) { setLoading(false); return; }
+    if (error || !data) { setLoading(false); return; }
 
-    const ids = [...new Set((data || []).map((n: any) => n.from_user).filter(Boolean))];
-
+    // جلب بيانات المرسلين
+    const ids = [...new Set(data.map((n: any) => n.from_user).filter(Boolean))];
     const { data: profiles } = ids.length
-      ? await supabase.from('profiles')
-          .select('id, full_name, avatar_url, gender, is_photos_blurred')
-          .in('id', ids)
+      ? await supabase.from('profiles').select('id,full_name,avatar_url,gender,is_photos_blurred,role').in('id', ids)
       : { data: [] };
 
     const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]));
 
-    setNotifications((data || []).map((n: any) => ({
+    const items: NotificationItem[] = data.map((n: any) => ({
       ...n,
-      sender: n.from_user ? profileMap[n.from_user] : null,
-    })));
+      sender: n.from_user ? (profileMap[n.from_user] ?? null) : null,
+    }));
 
+    setNotifications(items);
     setLoading(false);
   }, [userId]);
 
+  // ── Realtime ─────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
-    loadNotifications();
-
-    const channel = supabase
-      .channel('notifications-live')
+    load();
+    const ch = supabase
+      .channel(`notif:${userId}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'notifications',
         filter: `id=eq.${userId}`,
-      }, () => loadNotifications())
+      }, load)
       .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [userId, load]);
 
-    return () => { supabase.removeChannel(channel); };
-  }, [userId, loadNotifications]);
-
+  // ── قراءة إشعار ─────────────────────────────────────────
   const markRead = async (notification_id: string) => {
     setNotifications(prev =>
       prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n)
@@ -427,110 +301,133 @@ export default function NotificationsPage() {
     await supabase.from('notifications').update({ is_read: true }).eq('notification_id', notification_id);
   };
 
+  // ── قراءة الكل ───────────────────────────────────────────
+  const markAllRead = async () => {
+    if (!userId) return;
+    setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+    await supabase.from('notifications').update({ is_read: true })
+      .eq('id', userId).eq('is_read', false);
+  };
+
+  // ── التنقل ───────────────────────────────────────────────
+  const navigate = (route: string | null) => {
+    if (route) router.push(route);
+  };
+
+  // ── تجميع + فلترة ────────────────────────────────────────
+  // أولاً: نجمع (آخر إشعار لكل from_user+type)
+  // ثانياً: نفلتر حسب التبويب
+  const deduplicated = useMemo(() => deduplicateNotifications(notifications), [notifications]);
+
   const filtered = useMemo(() =>
-    filter === 'all' ? notifications : notifications.filter(n => n.type === filter),
-    [notifications, filter]
+    filter === 'all' ? deduplicated : deduplicated.filter(n => n.type === filter),
+    [deduplicated, filter]
   );
 
-  const unread = notifications.filter(n => !n.is_read).length;
+  // عدد الغير مقروء لكل تبويب (من القائمة الكاملة قبل التجميع)
+  const counts = useMemo(() => {
+    const c: Partial<Record<NotificationFilter, number>> = { all: 0 };
+    for (const n of notifications) {
+      if (!n.is_read) {
+        c.all = (c.all ?? 0) + 1;
+        const t = n.type as NotificationFilter;
+        if (t) c[t] = (c[t] ?? 0) + 1;
+      }
+    }
+    return c;
+  }, [notifications]);
 
+  const unreadTotal = counts.all ?? 0;
+
+  // ── تحميل ────────────────────────────────────────────────
   if (loading) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-        style={{
-          width: 34, height: 34, borderRadius: '50%',
-          border: '2px solid var(--color-primary)', borderTopColor: 'transparent',
-        }}
-      />
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
+      <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
+        style={{ width: 32, height: 32, borderRadius: '50%', border: '2px solid var(--color-primary)', borderTopColor: 'transparent' }} />
     </div>
   );
 
   return (
-    <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 120 }}>
+    <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 'var(--nav-h)' }}>
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 50,
-        padding: '18px 18px 14px',
-        background: 'rgba(10,10,10,0.82)',
-        backdropFilter: 'blur(18px)',
+        padding: 'var(--sp-4) var(--sp-4) var(--sp-3)',
+        background: 'var(--bg-main)',
         borderBottom: '1px solid var(--glass-border)',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div>
-            <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: 'calc(var(--base-font-size) * 1.42)', fontWeight: 900 }}>
-              الإشعارات
-            </h1>
-            {unread > 0 && (
-              <p style={{ margin: '4px 0 0', color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * .72)' }}>
-                لديك {unread} إشعار غير مقروء
-              </p>
-            )}
-          </div>
-          <div style={{
-            width: 42, height: 42, borderRadius: 16,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--glass-border)',
-          }}>
-            <Bell size={18} color="var(--text-main)" />
-          </div>
+        <div>
+          <h1 style={{ margin: 0, color: 'var(--text-main)', fontSize: 'var(--text-xl)', fontWeight: 900 }}>
+            الإشعارات
+          </h1>
+          {unreadTotal > 0 && (
+            <p style={{ margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * .72)' }}>
+              {unreadTotal} إشعار غير مقروء
+            </p>
+          )}
         </div>
 
-        {/* Filters */}
-        <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingTop: 16, scrollbarWidth: 'none' }}>
-          {FILTERS.map(f => {
-            const active = filter === f.key;
-            return (
-              <motion.button
-                key={f.key}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setFilter(f.key)}
-                style={{
-                  height: 38, padding: '0 16px', borderRadius: 999,
-                  border: active ? '1px solid rgba(212,175,55,0.4)' : '1px solid var(--glass-border)',
-                  background: active ? 'rgba(212,175,55,0.12)' : 'rgba(255,255,255,0.03)',
-                  color: active ? '#d4af37' : 'var(--text-secondary)',
-                  fontWeight: active ? 800 : 600,
-                  cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit',
-                }}
-              >
-                {f.label}
-              </motion.button>
-            );
-          })}
-        </div>
+        {/* زر قراءة الكل */}
+        {unreadTotal > 0 && (
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={markAllRead}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: 'var(--sp-2) var(--sp-3)',
+              borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--glass-border)',
+              background: 'rgba(255,255,255,0.04)',
+              color: 'var(--text-secondary)',
+              fontSize: 'var(--text-xs)', fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
+            <CheckCheck size={14} />
+            قراءة الكل
+          </motion.button>
+        )}
       </div>
 
-      {/* Empty */}
-      {filtered.length === 0 && (
-        <div style={{ paddingTop: 140, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 18 }}>
-          <div style={{
-            width: 78, height: 78, borderRadius: 28,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'rgba(255,255,255,0.04)', border: '1px solid var(--glass-border)',
-          }}>
-            <Bell size={28} color="rgba(255,255,255,0.38)" />
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <h3 style={{ margin: 0, color: 'var(--text-main)', fontWeight: 800 }}>لا توجد إشعارات</h3>
-            <p style={{ marginTop: 6, color: 'var(--text-tertiary)' }}>ستظهر إشعاراتك هنا</p>
-          </div>
-        </div>
-      )}
+      {/* ── التبويبات ── */}
+      <NotificationTabs
+        value={filter}
+        onChange={setFilter}
+        counts={counts}
+      />
 
-      {/* List */}
-      {filtered.length > 0 && (
+      {/* ── القائمة ── */}
+      {filtered.length === 0 ? (
+        <div style={{ padding: 'var(--sp-16)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-4)' }}>
+          <div style={{
+            width: 72, height: 72, borderRadius: 24,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+          }}>
+            <Bell size={26} color="rgba(255,255,255,0.25)" />
+          </div>
+          <p style={{ color: 'var(--text-tertiary)', fontWeight: 700, margin: 0, fontSize: 'var(--text-sm)' }}>
+            لا توجد إشعارات
+          </p>
+        </div>
+      ) : (
         <div style={{
-          margin: 16, borderRadius: 28, overflow: 'hidden',
-          background: 'rgba(255,255,255,0.03)',
+          margin: 'var(--sp-4)',
+          borderRadius: 'var(--radius-xl)',
+          overflow: 'hidden',
+          background: 'var(--glass-bg)',
           border: '1px solid var(--glass-border)',
-          backdropFilter: 'blur(18px)',
         }}>
           <AnimatePresence initial={false}>
             {filtered.map(n => (
-              <NotificationCard key={n.notification_id} n={n} onRead={markRead} />
+              <NotificationCard
+                key={n._groupKey ?? n.notification_id}
+                n={n}
+                onRead={markRead}
+                onNavigate={navigate}
+              />
             ))}
           </AnimatePresence>
         </div>
