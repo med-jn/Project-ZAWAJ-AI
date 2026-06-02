@@ -1,9 +1,6 @@
 'use client';
 /**
  * 📁 components/cards/usercard.tsx — ZAWAJ AI
- * ✅ canAfford() — تحقق محلي فوري قبل السوايب
- * ✅ Optimistic UI — البطاقة تتحرك فوراً، الخصم في الخلفية
- * ✅ أزرار أصغر + thumbs up/down ثلاثية الأبعاد + توزيع متناسق
  */
 
 import { useRef, useState, useCallback } from 'react';
@@ -38,8 +35,8 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
   const [likeFlash, setLikeFlash] = useState(false);
   const [passFlash, setPassFlash] = useState(false);
   const [busy,      setBusy]      = useState(false);
-  const hasViewed   = useRef(false);
-  const isDragging  = useRef(false);
+  const hasViewed  = useRef(false);
+  const isDragging = useRef(false);
 
   const x      = useMotionValue(0);
   const rotate = useTransform(x, [-260, 260], [16, -16]);
@@ -47,7 +44,6 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
   const likeOp = useTransform(x, [20, 140], [0, 1]);
   const passOp = useTransform(x, [-140, -20], [1, 0]);
 
-  // ── تسجيل في likes ────────────────────────────────────────
   const recordLike = useCallback(async (action: 'like' | 'pass' | 'view') => {
     if (!u.currentUser?.id) return;
     try {
@@ -63,16 +59,12 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     } catch (e) { console.error('[UserCard]', e); }
   }, [u]);
 
-  // ── السوايب ───────────────────────────────────────────────
   const swipeTo = useCallback(async (dir: 1 | -1) => {
     if (busy) return;
     const action = dir === 1 ? 'like' : 'pass';
 
-    // ① تحقق محلي فوري — بدون انتظار
     if (!canAfford(action)) {
-      // رصيد غير كافٍ — أظهر Sonner وأعِد البطاقة
       const cost = action === 'like' ? 5 : 1;
-      const bal  = 0; // canAfford يعرف الرصيد الحقيقي
       import('sonner').then(({ toast }) => {
         toast.error(action === 'like' ? 'نقاطك لا تكفي للإعجاب' : 'نقاطك لا تكفي للتخطي', {
           description: `تحتاج ${cost} نقاط`,
@@ -85,14 +77,9 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     }
 
     setBusy(true);
-
-    // ② تحريك البطاقة فوراً (optimistic)
     const exitAnim = animate(x, dir * 900, { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] });
-
-    // ③ الخصم + تسجيل في الخلفية — بدون انتظار
     deduct({ action, target_id: u.id });
     recordLike(action);
-
     await exitAnim;
     x.set(0);
     setBusy(false);
@@ -118,11 +105,13 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     if (!isDragging.current) router.push(`/view?id=${u.id}`);
   };
 
-  // تسجيل view بدون خصم عند ظهور البطاقة في الهوم
   if (!hasViewed.current && u.currentUser) {
     hasViewed.current = true;
     recordLike('view');
   }
+
+  // حجم الزر الموحد
+  const BTN_SIZE = 62;
 
   return (
     <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', paddingBottom: 'var(--nav-h)' }}>
@@ -141,65 +130,86 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
         whileDrag={{ cursor: 'grabbing' }}
       >
         <img src={u.mainPhoto || '/default-avatar.png'} alt={u.name} draggable={false}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover',
-            userSelect: 'none', pointerEvents: 'none',
+          style={{
+            position: 'absolute', inset: 0, width: '100%', height: '100%',
+            objectFit: 'cover', userSelect: 'none', pointerEvents: 'none',
             filter: u.prefersBlur ? 'blur(24px)' : 'none',
-            transform: u.prefersBlur ? 'scale(1.08)' : 'none' }}
+            transform: u.prefersBlur ? 'scale(1.08)' : 'none',
+          }}
         />
 
         {/* تدرج أسفل */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(to top, var(--bg-main) 0%, color-mix(in srgb, var(--bg-main) 55%, transparent) 32%, transparent 58%)' }} />
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background: 'linear-gradient(to top, var(--bg-main) 0%, color-mix(in srgb, var(--bg-main) 55%, transparent) 32%, transparent 58%)',
+        }} />
 
         {/* overlays السوايب */}
-        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(to left, rgba(34,197,94,0.45) 0%, transparent 55%)', opacity: likeOp }} />
-        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(to right, rgba(164,22,26,0.45) 0%, transparent 55%)', opacity: passOp }} />
+        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to left, rgba(34,197,94,0.45) 0%, transparent 55%)', opacity: likeOp }} />
+        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to right, rgba(164,22,26,0.45) 0%, transparent 55%)', opacity: passOp }} />
 
         {/* مؤشر إعجاب */}
-        <motion.div style={{ position: 'absolute', top: 'var(--sp-10)', right: 'var(--sp-5)',
+        <motion.div style={{
+          position: 'absolute', top: 'var(--sp-10)', right: 'var(--sp-5)',
           opacity: likeOp, pointerEvents: 'none',
           border: '2px solid #22c55e', borderRadius: 'var(--radius-md)',
           padding: '4px 14px', transform: 'rotate(-12deg)',
-          display: 'flex', alignItems: 'center', gap: 6 }}>
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
           <ThumbsUp size={15} color="#22c55e" fill="#22c55e" />
           <span style={{ color: '#22c55e', fontWeight: 900, fontSize: 'var(--text-base)', letterSpacing: '0.06em' }}>إعجاب</span>
         </motion.div>
 
         {/* مؤشر تجاهل */}
-        <motion.div style={{ position: 'absolute', top: 'var(--sp-10)', left: 'var(--sp-5)',
+        <motion.div style={{
+          position: 'absolute', top: 'var(--sp-10)', left: 'var(--sp-5)',
           opacity: passOp, pointerEvents: 'none',
           border: '2px solid var(--color-primary)', borderRadius: 'var(--radius-md)',
           padding: '4px 14px', transform: 'rotate(12deg)',
-          display: 'flex', alignItems: 'center', gap: 6 }}>
+          display: 'flex', alignItems: 'center', gap: 6,
+        }}>
           <ThumbsDown size={15} color="var(--color-primary)" />
           <span style={{ color: 'var(--color-primary)', fontWeight: 900, fontSize: 'var(--text-base)', letterSpacing: '0.06em' }}>تجاهل</span>
         </motion.div>
 
-        {/* الاسم + المعلومات */}
+        {/* ── الاسم + العمر + المدينة ── */}
+        {/* bottom يترك مسافة كافية فوق الأزرار: nav + زر(62) + مسافة(sp-4) + gap(sp-3) */}
         <div style={{
           position: 'absolute', insetInlineStart: 0, insetInlineEnd: 0,
-          // رُفع قليلاً ليترك مسافة للأزرار
-          bottom: 'calc(var(--nav-h) + 7rem)',
+          bottom: `calc(var(--nav-h) + ${BTN_SIZE}px + var(--sp-4) + var(--sp-6))`,
           padding: '0 var(--sp-5)', direction: 'rtl', pointerEvents: 'none',
         }}>
-          <h2 style={{ margin: '0 0 var(--sp-2)', color: 'var(--text-main)', fontWeight: 900,
-            fontSize: 'var(--text-2xl)', lineHeight: 'var(--lh-tight)',
-            textShadow: '0 1px 12px rgba(0,0,0,0.4)' }}>
+          {/* الاسم */}
+          <h2 style={{
+            margin: '0 0 var(--sp-2)',
+            color: 'var(--color-secondary)',   // ← var(--color-secondary)
+            fontWeight: 900,
+            fontSize: 'var(--text-2xl)',
+            lineHeight: 'var(--lh-tight)',
+            textShadow: 'none',                // ← بدون ظل
+          }}>
             {u.name}
           </h2>
+
+          {/* العمر + المدينة */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
             {!!u.age && (
-              <span style={{ color: 'var(--text-main)', fontWeight: 700, fontSize: 'var(--text-md)',
-                textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
+              <span style={{
+                color: 'var(--color-secondary)', // ← var(--color-secondary)
+                fontWeight: 700,
+                fontSize: 'var(--text-md)',
+                textShadow: 'none',              // ← بدون ظل
+              }}>
                 {u.age} سنة
               </span>
             )}
             {u.city && (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-1)',
-                color: 'var(--text-secondary)', fontSize: 'var(--text-sm)',
-                textShadow: '0 1px 8px rgba(0,0,0,0.4)' }}>
+              <span style={{
+                display: 'flex', alignItems: 'center', gap: 'var(--sp-1)',
+                color: 'var(--color-secondary)', // ← var(--color-secondary)
+                fontSize: 'var(--text-sm)',
+                textShadow: 'none',              // ← بدون ظل
+              }}>
                 <MapPin size={12} style={{ flexShrink: 0 }} />{u.city}
               </span>
             )}
@@ -207,55 +217,36 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
         </div>
       </motion.div>
 
-      {/* ══ الأزرار — توزيع متناسق ══ */}
-      {/*
-        المسافة بين الزرين: gap كبير يضمن تناسقاً
-        لا قريبين من بعضهما ولا من الحواف
-        الحجم أصغر من السابق: 56 للإعجاب، 48 للتجاهل
-      */}
+      {/* ══ الأزرار ══ */}
       <div style={{
         position: 'fixed',
         left: 0, right: 0,
-        bottom: 'calc(var(--nav-h) + var(--sp-5))',
+        bottom: 'calc(var(--nav-h) + var(--sp-4))',
         zIndex: 180,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 'clamp(48px, 14vw, 80px)', // مسافة هندسية متكيفة مع عرض الشاشة
-        paddingInline: 'clamp(40px, 12vw, 80px)',
+        gap: 'clamp(56px, 18vw, 100px)', // ← أبعد عن بعضهما
       }}>
 
-        {/* إعجاب — thumbs up */}
+        {/* إعجاب */}
         <Btn3D
           variant="like"
-          size={56}
+          size={BTN_SIZE}
           active={likeFlash}
           busy={busy}
           onClick={() => { flash('like'); swipeTo(1); }}
-          icon={
-            <ThumbsUp
-              size={22}
-              fill={likeFlash ? '#fff' : 'rgba(255,255,255,0.9)'}
-              color="#fff"
-              strokeWidth={1.4}
-            />
-          }
+          icon={<ThumbsUp size={24} color="#fff" fill="#fff" strokeWidth={1.4} />}
         />
 
-        {/* تجاهل — thumbs down */}
+        {/* تجاهل */}
         <Btn3D
           variant="pass"
-          size={48}
+          size={BTN_SIZE}
           active={passFlash}
           busy={busy}
           onClick={() => { flash('pass'); swipeTo(-1); }}
-          icon={
-            <ThumbsDown
-              size={19}
-              color={passFlash ? '#fff' : 'rgba(200,200,210,0.85)'}
-              strokeWidth={2.2}
-            />
-          }
+          icon={<ThumbsDown size={24} color="#fff" strokeWidth={2} />}
         />
       </div>
     </div>
@@ -274,12 +265,8 @@ function Btn3D({ variant, size, active, busy, onClick, icon }: {
   const isLike = variant === 'like';
 
   const faceColor = isLike
-    ? active
-      ? 'linear-gradient(145deg,#e8293f 0%,#a3001a 100%)'
-      : 'linear-gradient(145deg,#c8002c 0%,#8a0018 100%)'
-    : active
-      ? 'linear-gradient(145deg,#555570 0%,#35354a 100%)'
-      : 'linear-gradient(145deg,#3a3a52 0%,#22223a 100%)';
+    ? active ? 'linear-gradient(145deg,#e8293f 0%,#a3001a 100%)' : 'linear-gradient(145deg,#c8002c 0%,#8a0018 100%)'
+    : active ? 'linear-gradient(145deg,#555570 0%,#35354a 100%)' : 'linear-gradient(145deg,#3a3a52 0%,#22223a 100%)';
 
   const depthColor = isLike ? '#5a000e' : '#0e0e1e';
 
@@ -312,7 +299,6 @@ function Btn3D({ variant, size, active, busy, onClick, icon }: {
         transition: 'box-shadow 0.18s, background 0.18s',
       }}
     >
-      {/* بريق علوي */}
       <div style={{
         position: 'absolute', inset: 0, borderRadius: '50%',
         background: 'radial-gradient(ellipse at 38% 22%, rgba(255,255,255,0.22) 0%, transparent 62%)',

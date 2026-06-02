@@ -1,268 +1,162 @@
 'use client';
-
 /**
- * 📁 components/notifications/NotificationTabs.tsx
- * ZAWAJ AI
- * Luxury Notifications Filter Tabs
+ * 📁 components/notifications/NotificationTabs.tsx — ZAWAJ AI
+ * ✅ عنوان ديناميكي يتغير مع التبويب النشط
+ * ✅ شريط مقسم بعدد التبويبات — كل جزء يمثل تبويباً
+ * ✅ متوافق مع متغيرات CSS بالكامل
  */
 
-import { motion } from 'framer-motion';
-
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bell,
-  MessageCircle,
-  Heart,
-  Eye,
-  Sparkles,
-  Handshake,
+  Bell, MessageCircle, Heart, Eye, Sparkles, Handshake,
 } from 'lucide-react';
 
 export type NotificationFilter =
-  | 'all'
-  | 'message'
-  | 'like'
-  | 'view'
-  | 'match'
-  | 'mediator';
+  | 'all' | 'message' | 'like' | 'view' | 'match' | 'mediator';
 
 interface TabItem {
-  key: NotificationFilter;
+  key:   NotificationFilter;
   label: string;
-  icon: React.ReactNode;
+  icon:  React.ReactNode;
 }
 
 interface Props {
-  value: NotificationFilter;
-
-  onChange: (
-    value: NotificationFilter
-  ) => void;
-
-  counts?: Partial<
-    Record<NotificationFilter, number>
-  >;
+  value:    NotificationFilter;
+  onChange: (value: NotificationFilter) => void;
+  counts?:  Partial<Record<NotificationFilter, number>>;
 }
 
 const TABS: TabItem[] = [
-  {
-    key: 'all',
-    label: 'الكل',
-    icon: <Bell size={14} />,
-  },
-
-  {
-    key: 'message',
-    label: 'الرسائل',
-    icon: <MessageCircle size={14} />,
-  },
-
-  {
-    key: 'like',
-    label: 'الإعجابات',
-    icon: <Heart size={14} />,
-  },
-
-  {
-    key: 'view',
-    label: 'الزيارات',
-    icon: <Eye size={14} />,
-  },
-
-  {
-    key: 'match',
-    label: 'التطابق',
-    icon: <Sparkles size={14} />,
-  },
-
-  {
-    key: 'mediator',
-    label: 'الوسطاء',
-    icon: <Handshake size={14} />,
-  },
+  { key: 'all',      label: 'الكل',       icon: <Bell          size={13} /> },
+  { key: 'message',  label: 'الرسائل',    icon: <MessageCircle size={13} /> },
+  { key: 'like',     label: 'الإعجابات',  icon: <Heart         size={13} /> },
+  { key: 'view',     label: 'الزيارات',   icon: <Eye           size={13} /> },
+  { key: 'match',    label: 'التطابق',    icon: <Sparkles      size={13} /> },
+  { key: 'mediator', label: 'الوسطاء',    icon: <Handshake     size={13} /> },
 ];
 
-export default function NotificationTabs({
-  value,
-  onChange,
-  counts = {},
-}: Props) {
+export default function NotificationTabs({ value, onChange, counts = {} }: Props) {
+  const activeTab  = TABS.find(t => t.key === value) ?? TABS[0];
+  const activeIdx  = TABS.findIndex(t => t.key === value);
+  const totalCount = counts[value] ?? 0;
+
   return (
     <div
       dir="rtl"
       style={{
-        position: 'sticky',
-        top: 73,
-        zIndex: 8,
-
-        padding: '12px 16px 14px',
-
-        backdropFilter: 'blur(18px)',
-
-        background:
-          'linear-gradient(to bottom, rgba(10,10,10,0.96), rgba(10,10,10,0.82))',
-
-        borderBottom:
-          '1px solid rgba(255,255,255,0.06)',
+        position:     'sticky',
+        top:          'var(--header-h)',
+        zIndex:       900,
+        background:   'var(--bg-surface, var(--bg-main))',
+        borderBottom: '1px solid var(--glass-border)',
+        padding:      'var(--sp-2) var(--sp-4) var(--sp-3)',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          gap: 10,
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-        }}
-      >
-        {TABS.map(tab => {
-          const active =
-            value === tab.key;
+      {/* ── العنوان الديناميكي + العدد ── */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={value}
+          initial={{ opacity: 0, y: -4 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 4 }}
+          transition={{ duration: 0.13 }}
+          style={{
+            display:    'flex',
+            alignItems: 'baseline',
+            gap:        'var(--sp-2)',
+            marginBottom: 'var(--sp-2)',
+          }}
+        >
+          <span style={{
+            fontSize:   'var(--text-xl)',
+            fontWeight: 900,
+            color:      'var(--text-main)',
+          }}>
+            {activeTab.label}
+          </span>
 
-          const count =
-            counts[tab.key] ?? 0;
+          {totalCount > 0 && (
+            <span style={{
+              fontSize:     'var(--text-sm)',
+              fontWeight:   700,
+              color:        'var(--color-primary)',
+              background:   'var(--color-primary-xsoft)',
+              padding:      '1px var(--sp-2)',
+              borderRadius: 'var(--radius-full)',
+            }}>
+              {totalCount > 99 ? '99+' : totalCount}
+            </span>
+          )}
+        </motion.div>
+      </AnimatePresence>
+
+      {/* ── الشريط المقسم ── */}
+      <div style={{ display: 'flex', gap: 5 }}>
+        {TABS.map((tab, i) => {
+          const isActive  = i === activeIdx;
+          const tabCount  = counts[tab.key] ?? 0;
 
           return (
-            <motion.button
+            <div
               key={tab.key}
-              whileTap={{ scale: 0.95 }}
-              onClick={() =>
-                onChange(tab.key)
-              }
+              onClick={() => onChange(tab.key)}
+              title={tab.label}
               style={{
+                flex:     1,
                 position: 'relative',
-
-                height: 42,
-
-                padding:
-                  '0 16px',
-
-                borderRadius: 999,
-
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-
-                flexShrink: 0,
-
-                cursor: 'pointer',
-
-                border: active
-                  ? '1px solid rgba(212,175,55,0.28)'
-                  : '1px solid rgba(255,255,255,0.05)',
-
-                background: active
-                  ? 'linear-gradient(135deg, rgba(212,175,55,0.18), rgba(212,175,55,0.08))'
-                  : 'rgba(255,255,255,0.03)',
-
-                color: active
-                  ? '#f3d27a'
-                  : 'rgba(255,255,255,0.72)',
-
-                boxShadow: active
-                  ? '0 4px 18px rgba(212,175,55,0.12)'
-                  : 'none',
-
-                transition:
-                  'all .18s ease',
-
-                fontFamily:
-                  'inherit',
+                cursor:   'pointer',
+                display:  'flex',
+                flexDirection: 'column',
+                alignItems:    'center',
+                gap:      3,
               }}
             >
-              {/* Glow */}
-              {active && (
-                <motion.div
-                  layoutId="notif-tab-glow"
-                  transition={{
-                    type: 'spring',
-                    bounce: 0.22,
-                    duration: 0.45,
-                  }}
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    borderRadius: 999,
-
-                    background:
-                      'linear-gradient(135deg, rgba(212,175,55,0.12), rgba(212,175,55,0.02))',
-
-                    pointerEvents: 'none',
-                  }}
-                />
-              )}
-
-              {/* Icon */}
-              <span
+              {/* شريط ملون */}
+              <motion.div
+                animate={{
+                  background: isActive
+                    ? 'var(--color-primary)'
+                    : 'rgba(255,255,255,0.12)',
+                }}
+                transition={{ duration: 0.2 }}
                 style={{
-                  position: 'relative',
-                  zIndex: 1,
+                  width:        '100%',
+                  height:       4,
+                  borderRadius: 'var(--radius-full)',
+                }}
+              />
 
-                  display: 'flex',
-                  alignItems: 'center',
+              {/* أيقونة صغيرة تحت الشريط */}
+              <motion.span
+                animate={{
+                  color:   isActive ? 'var(--color-primary)' : 'rgba(255,255,255,0.28)',
+                  opacity: isActive ? 1 : 0.6,
+                }}
+                transition={{ duration: 0.18 }}
+                style={{
+                  display:        'flex',
+                  alignItems:     'center',
                   justifyContent: 'center',
+                  position:       'relative',
                 }}
               >
                 {tab.icon}
-              </span>
 
-              {/* Label */}
-              <span
-                style={{
-                  position: 'relative',
-                  zIndex: 1,
-
-                  fontSize:
-                    'calc(var(--base-font-size) * 0.76)',
-
-                  fontWeight: active
-                    ? 800
-                    : 600,
-
-                  whiteSpace:
-                    'nowrap',
-                }}
-              >
-                {tab.label}
-              </span>
-
-              {/* Counter */}
-              {count > 0 && (
-                <div
-                  style={{
-                    position: 'relative',
-                    zIndex: 1,
-
-                    minWidth: 18,
-                    height: 18,
-
-                    padding:
-                      '0 5px',
-
-                    borderRadius: 999,
-
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-
-                    background: active
-                      ? '#d4af37'
-                      : 'rgba(255,255,255,0.08)',
-
-                    color: active
-                      ? '#000'
-                      : '#fff',
-
-                    fontSize:
-                      '10px',
-
-                    fontWeight: 800,
-                  }}
-                >
-                  {count > 99
-                    ? '99+'
-                    : count}
-                </div>
-              )}
-            </motion.button>
+                {/* نقطة العدد */}
+                {tabCount > 0 && !isActive && (
+                  <span style={{
+                    position:    'absolute',
+                    top:         -3,
+                    insetInlineEnd: -4,
+                    width:       6,
+                    height:      6,
+                    borderRadius: '50%',
+                    background:  'var(--color-primary)',
+                    flexShrink:  0,
+                  }} />
+                )}
+              </motion.span>
+            </div>
           );
         })}
       </div>
