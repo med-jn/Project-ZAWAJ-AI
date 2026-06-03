@@ -4,13 +4,49 @@ import { usePathname } from 'next/navigation';
 import { motion, useAnimation } from 'framer-motion';
 import {
   Crown,
-  HouseHeart,
   Heart,
   Bell,
   User,
   Users,
   LayoutDashboard,
 } from 'lucide-react';
+
+// ── HouseHeart مخصصة — قلب منفصل يظهر كـ "ثقب" داخل البيت ──
+// Lucide تملأ البيت والقلب معاً بنفس اللون فيختفي القلب
+// الحل: path منفصل للقلب بـ fill=bg-main دائماً عند التفعيل
+function HouseHeartIcon({ active, size = 'var(--icon-lg)' }: { active: boolean; size?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      style={{
+        width:          size,
+        height:         size,
+        display:        'block',
+        fill:           'none',
+        stroke:         active ? 'var(--bg-main)' : 'var(--color-secondary)',
+        strokeWidth:    active ? 1.4 : 1.6,
+        strokeLinecap:  'round',
+        strokeLinejoin: 'round',
+        opacity:        active ? 1 : 0.42,
+        transition:     'all .15s ease',
+      }}
+    >
+      {/* البيت — يمتلئ بـ color-secondary عند التفعيل */}
+      <path
+        d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"
+        fill={active ? 'var(--color-secondary)' : 'none'}
+        stroke={active ? 'var(--color-secondary)' : 'var(--color-secondary)'}
+      />
+      {/* القلب — fill بلون الخلفية دائماً عند التفعيل ليبدو كـ "نقش" */}
+      <path
+        d="M12 17c0 0-4-2.2-4-4.5A2.3 2.3 0 0 1 12 11a2.3 2.3 0 0 1 4 1.5C16 14.8 12 17 12 17z"
+        fill={active ? 'var(--bg-main)' : 'none'}
+        stroke={active ? 'var(--bg-main)' : 'var(--color-secondary)'}
+        strokeWidth={active ? 0 : 1.5}
+      />
+    </svg>
+  );
+}
 import { supabase } from '@/lib/supabase/client';
 
 // ── نغمة الإشعار ──────────────────────────────────────────────
@@ -189,12 +225,11 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
       strokeMode: 'bg' as StrokeMode,
     },
     // 90% — أقصى اليسار
-    // HouseHeart: stroke=bg عند التفعيل حتى يظهر القلب الداخلي
+    // HouseHeart مخصصة: قلب منفصل يظهر كنقش داخل البيت
     {
-      tabKey:     'home',
-      route:      'home',
-      Icon:       HouseHeart,
-      strokeMode: 'bg' as StrokeMode,
+      tabKey:        'home',
+      route:         'home',
+      isHouseHeart:  true,
     },
   ];
 
@@ -296,7 +331,9 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
             <div style={{ position: 'relative', display: 'inline-flex' }}>
               {tab.isBell
                 ? <BellIcon ringing={ringing} active={active} />
-                : <NavIcon  Icon={tab.Icon!}  active={active} strokeMode={tab.strokeMode ?? 'bg'} />
+                : tab.isHouseHeart
+                  ? <HouseHeartIcon active={active} />
+                  : <NavIcon Icon={tab.Icon!} active={active} strokeMode={tab.strokeMode ?? 'bg'} />
               }
 
               {/* بادج الإشعارات */}
