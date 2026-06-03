@@ -26,33 +26,37 @@ function playNotifSound() {
 //
 // globals.css: svg { fill:none; stroke:currentColor; stroke-width:2px }
 // inline style على عنصر SVG نفسه يتفوق عليه دائماً في CSS cascade
-// لذا نمرر style مباشرة لكل أيقونة Lucide
 //
-// المفعّلة : fill = --color-secondary  (ممتلئة بالكامل)
-// المعطّلة : fill = none + opacity 0.4  (خطية شفافة)
+// strokeMode عند التفعيل:
+//   'bg'   → stroke بلون الخلفية — يُبرز تفاصيل أيقونات مركّبة (HouseHeart)
+//   'same' → stroke = fill = color-secondary — للأيقونات البسيطة (User)
 //
 type LucideComp = React.ElementType;
+type StrokeMode = 'bg' | 'same';
 
 interface NavIconProps {
-  Icon:   LucideComp;
-  active: boolean;
-  size?:  number | string;
+  Icon:        LucideComp;
+  active:      boolean;
+  size?:       number | string;
+  strokeMode?: StrokeMode;
 }
 
-function NavIcon({ Icon, active, size = 'var(--icon-lg)' }: NavIconProps) {
+function NavIcon({ Icon, active, size = 'var(--icon-lg)', strokeMode = 'bg' }: NavIconProps) {
+  const activeStroke = strokeMode === 'same'
+    ? 'var(--color-secondary)'
+    : 'var(--bg-main)';
+
   return (
     <Icon
       style={{
-        width:          size,
-        height:         size,
-        display:        'block',
-        // ── الحالة المفعّلة: ممتلئة بـ color-secondary ──
-        fill:           active ? 'var(--color-secondary)' : 'none',
-        // ── stroke: مع الملء نجعله بلون الخلفية ليبرز الشكل ──
-        stroke:         active ? 'var(--bg-main)' : 'var(--color-secondary)',
-        strokeWidth:    active ? 1.2 : 1.6,
-        opacity:        active ? 1 : 0.42,
-        transition:     'fill .15s ease, stroke .15s ease, opacity .15s ease',
+        width:       size,
+        height:      size,
+        display:     'block',
+        fill:        active ? 'var(--color-secondary)' : 'none',
+        stroke:      active ? activeStroke : 'var(--color-secondary)',
+        strokeWidth: active ? 1.4 : 1.6,
+        opacity:     active ? 1 : 0.42,
+        transition:  'fill .15s ease, stroke .15s ease, opacity .15s ease',
       }}
     />
   );
@@ -158,10 +162,12 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
   // المواضع الأفقية: 10% 30% 50% 70% 90%
   const tabs = [
     // 10% — أقصى اليمين
+    // User: stroke=same عند التفعيل (stroke بنفس لون الـ fill)
     {
-      tabKey: 'profile',
-      route:  isMediator ? 'dash'        : 'profile',
-      Icon:   isMediator ? LayoutDashboard : User,
+      tabKey:      'profile',
+      route:       isMediator ? 'dash'        : 'profile',
+      Icon:        isMediator ? LayoutDashboard : User,
+      strokeMode:  'same' as StrokeMode,
     },
     // 30%
     {
@@ -177,15 +183,18 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     },
     // 70%
     {
-      tabKey: 'likes',
-      route:  isMediator ? 'subscribers' : 'likes',
-      Icon:   isMediator ? Users         : Heart,
+      tabKey:     'likes',
+      route:      isMediator ? 'subscribers' : 'likes',
+      Icon:       isMediator ? Users         : Heart,
+      strokeMode: 'bg' as StrokeMode,
     },
     // 90% — أقصى اليسار
+    // HouseHeart: stroke=bg عند التفعيل حتى يظهر القلب الداخلي
     {
-      tabKey: 'home',
-      route:  'home',
-      Icon:   HouseHeart,
+      tabKey:     'home',
+      route:      'home',
+      Icon:       HouseHeart,
+      strokeMode: 'bg' as StrokeMode,
     },
   ];
 
@@ -287,7 +296,7 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
             <div style={{ position: 'relative', display: 'inline-flex' }}>
               {tab.isBell
                 ? <BellIcon ringing={ringing} active={active} />
-                : <NavIcon  Icon={tab.Icon!}  active={active} />
+                : <NavIcon  Icon={tab.Icon!}  active={active} strokeMode={tab.strokeMode ?? 'bg'} />
               }
 
               {/* بادج الإشعارات */}
