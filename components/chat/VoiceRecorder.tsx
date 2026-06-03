@@ -2,7 +2,8 @@
 /**
  * 📁 components/chat/VoiceRecorder.tsx — ZAWAJ AI
  * ضغط مطوّل = تسجيل / رفع الإصبع = إرسال / سحب لأعلى = إلغاء
- * ✅ FIX: guard ضد ALREADY_RECORDING
+ * ✅ Touch-only على native — Mouse-only على ويب (لا تداخل)
+ * ✅ guard ضد ALREADY_RECORDING
  * ✅ حد 10 ثوانٍ مع حلقة زمنية
  */
 
@@ -43,12 +44,13 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
   const [state,   setState]   = useState<RecordState>('idle');
   const [elapsed, setElapsed] = useState(0);
 
-  const timerRef      = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cancelRef     = useRef(false);
-  const isRecordingRef = useRef(false); // ✅ guard ضد ALREADY_RECORDING
-  const startYRef     = useRef(0);
-  const mediaRef      = useRef<MediaRecorder | null>(null);
-  const chunksRef     = useRef<Blob[]>([]);
+  const timerRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cancelRef       = useRef(false);
+  const isRecordingRef  = useRef(false);
+  const isTouchRef      = useRef(false); // ✅ هل الحدث touch؟ لمنع mouse بعده
+  const startYRef       = useRef(0);
+  const mediaRef        = useRef<MediaRecorder | null>(null);
+  const chunksRef       = useRef<Blob[]>([]);
 
   useEffect(() => {
     loadNativeRecorder();
@@ -74,27 +76,19 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
 
   const startRecording = useCallback(async () => {
     if (disabled) return;
-    // ✅ منع الاستدعاء المزدوج
     if (isRecordingRef.current) return;
 
-    cancelRef.current     = false;
+    cancelRef.current      = false;
     isRecordingRef.current = true;
 
-    // ── Native ──────────────────────────────────────────
     if (Capacitor.isNativePlatform() && VoiceRecorderPlugin) {
       try {
-        // تأكد من الإذن أولاً
-        const { value: hasPerm } =
-          await VoiceRecorderPlugin.hasAudioRecordingPermission();
+        const { value: hasPerm } = await VoiceRecorderPlugin.hasAudioRecordingPermission();
         if (!hasPerm) {
-          const { value: granted } =
-            await VoiceRecorderPlugin.requestAudioRecordingPermission();
+          const { value: granted } = await VoiceRecorderPlugin.requestAudioRecordingPermission();
           if (!granted) { isRecordingRef.current = false; return; }
         }
-
-        // توقف أي تسجيل سابق قبل البدء
         try { await VoiceRecorderPlugin.stopRecording(); } catch (_) {}
-
         await VoiceRecorderPlugin.startRecording();
         setState('recording');
         startTimer();
@@ -105,18 +99,13 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
       return;
     }
 
-    // ── Web fallback ─────────────────────────────────────
     try {
       const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
         ? 'audio/webm;codecs=opus' : 'audio/webm';
-
       const recorder    = new MediaRecorder(stream, { mimeType });
       chunksRef.current = [];
-
-      recorder.ondataavailable = e => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
+      recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
       recorder.onstop = () => {
         stream.getTracks().forEach(t => t.stop());
         if (!cancelRef.current && chunksRef.current.length > 0) {
@@ -126,7 +115,6 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
         setElapsed(0);
         isRecordingRef.current = false;
       };
-
       recorder.start(100);
       mediaRef.current = recorder;
       setState('recording');
@@ -142,15 +130,13 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
     stopTimer();
     cancelRef.current = cancel;
 
-    // ── Native ───────────────────────────────────────────
     if (Capacitor.isNativePlatform() && VoiceRecorderPlugin) {
       try {
         const result = await VoiceRecorderPlugin.stopRecording();
         if (!cancel) {
           const { recordDataBase64, mimeType } = result?.value ?? {};
           if (recordDataBase64) {
-            const blob = base64ToBlob(recordDataBase64, mimeType || 'audio/aac');
-            onSend(blob);
+            onSend(base64ToBlob(recordDataBase64, mimeType || 'audio/aac'));
           }
         }
       } catch (e) {
@@ -162,37 +148,49 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
       return;
     }
 
-    // ── Web fallback ──────────────────────────────────────
     if (mediaRef.current?.state === 'recording') {
-      mediaRef.current.stop(); // onstop يتولى الباقي
+      mediaRef.current.stop();
     } else {
       isRecordingRef.current = false;
     }
     if (cancel) { setState('idle'); setElapsed(0); }
   }, [onSend]);
 
-  // ── أحداث اللمس ───────────────────────────────────────────
+  // ── Touch handlers ─────────────────────────────────────────
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
-    startYRef.current = e.touches[0].clientY;
+    isTouchRef.current = true; // ✅ علّم أن الحدث touch
+    startYRef.current  = e.touches[0].clientY;
     startRecording();
   };
+
   const handleTouchMove = (e: React.TouchEvent) => {
     if (state !== 'recording') return;
     if (startYRef.current - e.touches[0].clientY > 60) stopRecording(true);
   };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
+    if (state === 'recording') stopRecording(false);
+    // أعد التعيين بعد تأخير قصير لمنع mouse events التالية
+    setTimeout(() => { isTouchRef.current = false; }, 500);
+  };
+
+  // ── Mouse handlers (ويب فقط — يُتجاهل بعد touch) ──────────
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (isTouchRef.current) return; // ✅ تجاهل إذا كان touch
+    e.preventDefault();
+    startRecording();
+  };
+
+  const handleMouseUp = (e: React.MouseEvent) => {
+    if (isTouchRef.current) return; // ✅ تجاهل إذا كان touch
     e.preventDefault();
     if (state === 'recording') stopRecording(false);
   };
 
-  // ── ماوس (ويب) ────────────────────────────────────────────
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    startRecording();
-  };
-  const handleMouseUp = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const handleMouseLeave = (e: React.MouseEvent) => {
+    if (isTouchRef.current) return;
     if (state === 'recording') stopRecording(false);
   };
 
@@ -270,7 +268,7 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
         onTouchEnd={handleTouchEnd}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
         animate={{
           scale:      state === 'recording' ? 1.15 : 1,
           background: state === 'recording'
