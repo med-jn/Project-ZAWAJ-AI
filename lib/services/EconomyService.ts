@@ -1,21 +1,18 @@
 /**
  * ⚙️ محرك الاقتصاد — ZAWAJ AI
- * ✅ balance_after يحفظ balance_free فقط (التطبيق مجاني بالكامل)
- * ✅ addBonusPoints تكتب في gift_transactions
- * ✅ deductPoints تكتب في point_transactions
+ * التطبيق مجاني بالكامل — نقاط هدايا فقط (balance_free)
+ * لا شراء، لا اشتراكات، لا point_transactions
  */
 import { supabase }         from '@/lib/supabase/client';
 import { ECONOMY_SETTINGS } from '@/constants/constants';
 import { ECONOMY_RULES, type TransactionSource } from '@/constants/ecomomy';
 
-const { DATABASE, GENERAL_INTERFACE, MEDIATOR_SPACE, REWARDS, ALERTS, UI_LOGIC } = ECONOMY_SETTINGS;
+const { DATABASE, REWARDS, UI_LOGIC } = ECONOMY_SETTINGS;
 
 interface WalletRow {
   id:               string;
-  balance:          number;
   balance_free:     number;
   last_daily_login: string | null;
-  last_active_at:   string | null;
 }
 
 // ══════════════════════════════════════════
@@ -24,48 +21,12 @@ interface WalletRow {
 export async function getWallet(userId: string): Promise<WalletRow> {
   const { data, error } = await supabase
     .from(DATABASE.TABLE_WALLETS)
-    .select('id, balance, balance_free, last_daily_login, last_active_at')
+    .select('id, balance_free, last_daily_login')
     .eq(DATABASE.WALLET_KEY, userId)
     .single();
 
   if (error) throw new Error(`تعذّر جلب المحفظة: ${error.message}`);
   return data;
-}
-
-export function hasEnoughBalance(
-  wallet: WalletRow,
-  cost: number,
-  paidOnly = false
-): boolean {
-  if (paidOnly) return wallet.balance >= cost;
-  return wallet.balance_free >= cost; // التطبيق يخصم من balance_free فقط
-}
-
-// ══════════════════════════════════════════
-//  تسجيل خصم في point_transactions
-// ══════════════════════════════════════════
-async function logDeduction(params: {
-  userId:       string;
-  amount:       number;
-  balanceAfter: number; // balance_free فقط
-  source:       TransactionSource;
-  action?:      string;
-  notes?:       string;
-  paymentId?:   string;
-}): Promise<void> {
-  const { error } = await supabase
-    .from(DATABASE.TABLE_TRANSACTIONS)
-    .insert({
-      user_id:       params.userId,
-      amount:        params.amount,
-      balance_after: params.balanceAfter,
-      source:        params.source,
-      action:        params.action    ?? null,
-      notes:         params.notes     ?? null,
-      payment_id:    params.paymentId ?? null,
-    });
-
-  if (error) console.error('[EconomyService] فشل تسجيل الخصم:', error.message);
 }
 
 // ══════════════════════════════════════════
@@ -74,7 +35,7 @@ async function logDeduction(params: {
 async function logGift(params: {
   userId:       string;
   amount:       number;
-  balanceAfter: number; // balance_free فقط
+  balanceAfter: number;
   source:       string;
   action?:      string;
   notes?:       string;
@@ -84,7 +45,7 @@ async function logGift(params: {
     .insert({
       user_id:       params.userId,
       amount:        params.amount,
-      balance_after: params.balanceAfter, // balance_free فقط
+      balance_after: params.balanceAfter,
       source:        params.source,
       action:        params.action ?? null,
       notes:         params.notes  ?? null,
@@ -94,49 +55,7 @@ async function logGift(params: {
 }
 
 // ══════════════════════════════════════════
-//  خصم نقاط (من balance_free فقط)
-// ══════════════════════════════════════════
-export async function deductPoints(
-  userId:  string,
-  cost:    number,
-  action:  string,
-  paidOnly = false
-): Promise<{ success: boolean; message: string }> {
-
-  const wallet = await getWallet(userId);
-
-  if (!hasEnoughBalance(wallet, cost, paidOnly)) {
-    return {
-      success: false,
-      message: paidOnly ? ALERTS.PAID_ONLY : ALERTS.LOW_BALANCE,
-    };
-  }
-
-  const newBonus = wallet.balance_free - cost;
-
-  const { error } = await supabase
-    .from(DATABASE.TABLE_WALLETS)
-    .update({
-      [DATABASE.COLUMN_BONUS]: newBonus,
-      updated_at: new Date().toISOString(),
-    })
-    .eq(DATABASE.WALLET_KEY, userId);
-
-  if (error) throw new Error(`فشل تحديث المحفظة: ${error.message}`);
-
-  await logDeduction({
-    userId,
-    amount:       -cost,
-    balanceAfter: newBonus, // balance_free فقط
-    source:       ECONOMY_RULES.TRANSACTION_SOURCES.ACTION,
-    action,
-  });
-
-  return { success: true, message: 'تم الخصم بنجاح' };
-}
-
-// ══════════════════════════════════════════
-//  إضافة نقاط مكافأة (bonus فقط)
+//  إضافة نقاط مكافأة (balance_free فقط)
 // ══════════════════════════════════════════
 export async function addBonusPoints(
   userId: string,
@@ -144,7 +63,6 @@ export async function addBonusPoints(
   source: TransactionSource,
   notes?: string
 ): Promise<void> {
-
   const wallet   = await getWallet(userId);
   const newBonus = wallet.balance_free + amount;
 
@@ -161,7 +79,7 @@ export async function addBonusPoints(
   await logGift({
     userId,
     amount,
-    balanceAfter: newBonus, // balance_free فقط — لا يُظهر balance المشتراة
+    balanceAfter: newBonus,
     source:       String(source),
     action:       String(source),
     notes,
@@ -169,37 +87,17 @@ export async function addBonusPoints(
 }
 
 // ══════════════════════════════════════════
-//  عمليات الواجهة
-// ══════════════════════════════════════════
-export const swipeRight = (userId: string) =>
-  deductPoints(userId, GENERAL_INTERFACE.SWIPE_RIGHT_COST, ECONOMY_RULES.ACTIONS.BACK);
-
-export const sendLike = (userId: string) =>
-  deductPoints(userId, GENERAL_INTERFACE.LIKE_COST, ECONOMY_RULES.ACTIONS.LIKE);
-
-export const sendMessage = (userId: string) =>
-  deductPoints(userId, GENERAL_INTERFACE.MESSAGE_COST, ECONOMY_RULES.ACTIONS.CHAT);
-
-export const requestUrgentConsultation = (userId: string) =>
-  deductPoints(userId, MEDIATOR_SPACE.SINGLE_SERVICES.URGENT_CONSULTATION, ECONOMY_RULES.ACTIONS.CONSULT, true);
-
-export const sendGiftToMediator = (userId: string) =>
-  deductPoints(userId, MEDIATOR_SPACE.SINGLE_SERVICES.GIFT_TO_MEDIATOR, ECONOMY_RULES.ACTIONS.GIFT, true);
-
-// ══════════════════════════════════════════
 //  مكافأة التسجيل اليومي
 // ══════════════════════════════════════════
 export async function claimDailyBonus(
   userId: string
 ): Promise<{ success: boolean; message: string }> {
-
   const wallet = await getWallet(userId);
 
   const todayReset = new Date();
   todayReset.setUTCHours(UI_LOGIC.RESET_HOUR_UTC, 0, 0, 0);
 
   const lastClaim = wallet.last_daily_login ? new Date(wallet.last_daily_login) : null;
-
   if (lastClaim && lastClaim >= todayReset) {
     return { success: false, message: 'استلمت مكافأتك اليوم بالفعل!' };
   }

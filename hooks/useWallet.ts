@@ -1,16 +1,14 @@
 'use client';
 /**
  * 📁 hooks/useWallet.ts — ZAWAJ AI
- * ✅ badge_type: none|bronze|silver|gold|diamond
+ * التطبيق مجاني — balance_free فقط
  * ✅ Realtime
  */
-import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/client";
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
 
 export interface WalletData {
-  balance:          number;
   balance_free:     number;
-  totalBalance:     number;
   badge_type:       'none' | 'bronze' | 'silver' | 'gold' | 'diamond';
   badge_expires_at: string | null;
   badge_active:     boolean;
@@ -18,9 +16,11 @@ export interface WalletData {
 }
 
 const DEFAULT: WalletData = {
-  balance: 0, balance_free: 0, totalBalance: 0,
-  badge_type: 'none', badge_expires_at: null,
-  badge_active: false, last_daily_login: null,
+  balance_free:     0,
+  badge_type:       'none',
+  badge_expires_at: null,
+  badge_active:     false,
+  last_daily_login: null,
 };
 
 export function useWallet() {
@@ -40,21 +40,19 @@ export function useWallet() {
 
     const load = async () => {
       const { data } = await supabase
-        .from("wallets")
-        .select("balance, balance_free, badge_type, badge_expires_at, last_daily_login")
-        .eq("id", userId)
+        .from('wallets')
+        .select('balance_free, badge_type, badge_expires_at, last_daily_login')
+        .eq('id', userId)
         .single();
 
       if (data) {
         const badgeActive =
-          data.badge_type !== "none" &&
+          data.badge_type !== 'none' &&
           (!data.badge_expires_at || new Date(data.badge_expires_at) > new Date());
 
         setWallet({
-          balance:          data.balance          ?? 0,
           balance_free:     data.balance_free      ?? 0,
-          totalBalance:     (data.balance ?? 0) + (data.balance_free ?? 0),
-          badge_type:       data.badge_type ?? "none",
+          badge_type:       data.badge_type        ?? 'none',
           badge_expires_at: data.badge_expires_at  ?? null,
           badge_active:     badgeActive,
           last_daily_login: data.last_daily_login  ?? null,
@@ -67,9 +65,9 @@ export function useWallet() {
 
     const channel = supabase
       .channel(`wallet:${userId}`)
-      .on("postgres_changes", {
-        event: "*", schema: "public",
-        table: "wallets", filter: `id=eq.${userId}`,
+      .on('postgres_changes', {
+        event: '*', schema: 'public',
+        table: 'wallets', filter: `id=eq.${userId}`,
       }, load)
       .subscribe();
 
