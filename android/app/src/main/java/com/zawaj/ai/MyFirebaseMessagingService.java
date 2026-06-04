@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -33,10 +35,15 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private static final AtomicInteger notifId = new AtomicInteger(1000);
 
+    // ✅ Thread pool لتحميل الأفاتار خارج Main Thread
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
+
     @Override
     public void onNewToken(String token) {
         super.onNewToken(token);
         createAllChannels();
+        // ✅ عند تجديد الـ token — لا نفعل شيئاً هنا
+        // usePushNotifications.ts سيحفظه عند أول register()
     }
 
     @Override
@@ -45,18 +52,32 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Map<String, String> data = message.getData();
 
-        String type    = getOrDef(data, "type",      "system");
-        String title   = getOrDef(data, "title",     "ZAWAJ AI");
-        String body    = getOrDef(data, "body",      "إشعار جديد");
-        String avatar  = getOrDef(data, "avatar",    "");
-        String route   = getOrDef(data, "route",     "/notifications");
-        String chanId  = getOrDef(data, "channel_id", resolveChannel(type));
-        boolean silent = "true".equals(data.get("is_silent"));
+        final String type   = getOrDef(data, "type",      "system");
+        final String title  = getOrDef(data, "title",     "ZAWAJ AI");
+        final String body   = getOrDef(data, "body",      "إشعار جديد");
+        final String avatar = getOrDef(data, "avatar",    "");
+        final String route  = getOrDef(data, "route",     "/notifications");
+        final String chanId = getOrDef(data, "channel_id", resolveChannel(type));
+        final boolean silent = "true".equals(data.get("is_silent"));
 
-        Bitmap avatarBitmap = loadBitmap(avatar);
+        // ✅ تحميل الأفاتار في background thread — لا يبطئ الإشعار
+        executor.execute(() -> {
+            Bitmap avatarBitmap = loadBitmap(avatar);
+            showNotification(title, body, route, chanId, silent, avatarBitmap);
+        });
+    }
+
+    private void showNotification(String title, String body, String route,
+                                   String chanId, boolean silent, Bitmap avatarBitmap) {
+
+        // ✅ RTL: نضيف RTL mark في بداية العنوان والنص
+        // \u202B = RIGHT-TO-LEFT EMBEDDING
+        String rtlTitle = "\u202B" + title;
+        String rtlBody  = "\u202B" + body;
+
         PendingIntent pendingIntent = buildPendingIntent(route);
 
-        Person.Builder personBuilder = new Person.Builder().setName(title);
+        Person.Builder personBuilder = new Person.Builder().setName(rtlTitle);
         if (avatarBitmap != null) {
             personBuilder.setIcon(IconCompat.createWithBitmap(getRoundedBitmap(avatarBitmap)));
         }
@@ -64,20 +85,24 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         NotificationCompat.MessagingStyle style =
             new NotificationCompat.MessagingStyle(person)
-                .addMessage(body, System.currentTimeMillis(), person);
+                .setConversationTitle(rtlTitle)
+                .addMessage(rtlBody, System.currentTimeMillis(), person);
 
         NotificationCompat.Builder builder =
             new NotificationCompat.Builder(this, chanId)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(title)
-                .setContentText(body)
+                .setContentTitle(rtlTitle)
+                .setContentText(rtlBody)
                 .setStyle(style)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(pendingIntent)
                 .setColor(0xFFB3334B);
 
-        if (avatarBitmap != null) builder.setLargeIcon(getRoundedBitmap(avatarBitmap));
+        if (avatarBitmap != null) {
+            builder.setLargeIcon(getRoundedBitmap(avatarBitmap));
+        }
+
         if (silent) builder.setSilent(true);
         else        builder.setSound(getSoundUri());
 
@@ -90,35 +115,31 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     // ── PendingIntent ─────────────────────────────────────────
-    // الإصلاح الجوهري:
-    // ❌ قبل: intent.setData(Uri) + intent.putExtra("route")
-    //         setData يمسح الـ Extras مع FLAG_ACTIVITY_SINGLE_TOP
-    // ✅ بعد:  نضع route في URI فقط كـ zawaj://app?route=/chat?id=xxx
-    //         MainActivity يستخرجه من URI مباشرة — لا Extras
+    // ✅ route يُوضع في Extra فقط — بسيط وموثوق
+    // MainActivity يقرأه مباشرة بدون URI parsing
     private PendingIntent buildPendingIntent(String route) {
-        // نشفّر route كـ query parameter في URI
-        // zawaj://app?route=/chat%3Fid%3Dxxx
-        String encodedRoute = Uri.encode(route);
-        Uri deepLinkUri = Uri.parse("zawaj://app?route=" + encodedRoute);
-
         Intent intent = new Intent(this, MainActivity.class);
-        intent.setAction(Intent.ACTION_VIEW);
-        intent.setData(deepLinkUri);
         intent.addFlags(
             Intent.FLAG_ACTIVITY_CLEAR_TOP |
             Intent.FLAG_ACTIVITY_SINGLE_TOP
         );
+        // ✅ نستخدم Extra فقط — بدون setData() الذي يمسح الـ Extras
+        intent.putExtra("route", route);
 
-        int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-            ? PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            : PendingIntent.FLAG_UPDATE_CURRENT;
+        // request code فريد لكل إشعار — يمنع استبدال PendingIntent
+        int reqCode = notifId.getAndIncrement();
 
-        return PendingIntent.getActivity(
-            this,
-            notifId.getAndIncrement(),
-            intent,
-            flags
-        );
+        // ✅ FLAG_MUTABLE مطلوب مع Android 12+ لأن Capacitor يحتاج تعديل الـ Intent
+        int flags;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
+        } else {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        }
+
+        return PendingIntent.getActivity(this, reqCode, intent, flags);
     }
 
     private void createAllChannels() {
@@ -126,16 +147,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr == null) return;
 
-        Uri soundUri = getSoundUri();
+        Uri soundUri   = getSoundUri();
         AudioAttributes audioAttr = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build();
 
-        makeChannel(mgr, CH_MESSAGES,     "الرسائل",     "رسائل المحادثات",          NotificationManager.IMPORTANCE_HIGH,    soundUri, audioAttr);
-        makeChannel(mgr, CH_SOCIAL,       "التفاعل",     "إعجابات وزيارات وتوافقات", NotificationManager.IMPORTANCE_HIGH,    soundUri, audioAttr);
-        makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات",  "إشعارات الوسطاء",          NotificationManager.IMPORTANCE_DEFAULT, soundUri, audioAttr);
-        makeChannel(mgr, CH_SYSTEM,       "النظام",      "إشعارات عامة",             NotificationManager.IMPORTANCE_LOW,     null,     null);
+        makeChannel(mgr, CH_MESSAGES,     "الرسائل",    "رسائل المحادثات",          NotificationManager.IMPORTANCE_HIGH,    soundUri, audioAttr);
+        makeChannel(mgr, CH_SOCIAL,       "التفاعل",    "إعجابات وزيارات وتوافقات", NotificationManager.IMPORTANCE_HIGH,    soundUri, audioAttr);
+        makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات", "إشعارات الوسطاء",          NotificationManager.IMPORTANCE_DEFAULT, soundUri, audioAttr);
+        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",             NotificationManager.IMPORTANCE_LOW,     null,     null);
     }
 
     private void makeChannel(NotificationManager mgr, String id, String name, String desc,
@@ -159,21 +180,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private Bitmap getRoundedBitmap(Bitmap src) {
         if (src == null) return null;
         int size = Math.min(src.getWidth(), src.getHeight());
-        Bitmap output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(output);
+        Bitmap out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        android.graphics.Canvas canvas = new android.graphics.Canvas(out);
         android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint);
         paint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN));
         canvas.drawBitmap(src, 0, 0, paint);
-        return output;
+        return out;
     }
 
     private String resolveChannel(String type) {
         switch (type) {
-            case "message": case "mediator":                              return CH_MESSAGES;
-            case "like": case "view": case "match": case "contact_request": return CH_SOCIAL;
-            case "subscription":                                          return CH_SUBSCRIPTION;
-            default:                                                      return CH_SYSTEM;
+            case "message": case "mediator":                                  return CH_MESSAGES;
+            case "like": case "view": case "match": case "contact_request":   return CH_SOCIAL;
+            case "subscription":                                               return CH_SUBSCRIPTION;
+            default:                                                           return CH_SYSTEM;
         }
     }
 

@@ -10,17 +10,6 @@ import android.os.Looper;
 
 import com.getcapacitor.BridgeActivity;
 
-/**
- * ZAWAJ AI — MainActivity
- *
- * يستقبل Deep Links من الإشعارات ويوجّه الـ WebView
- * داخل التطبيق (https://localhost) وليس للمتصفح الخارجي.
- *
- * URI format من MyFirebaseMessagingService:
- *   zawaj://app?route=/chat%3Fid%3Dxxx
- *
- * extractRoute يفكّ الترميز ويعيد: /chat?id=xxx
- */
 public class MainActivity extends BridgeActivity {
 
     private static final String BASE_URL = "https://localhost";
@@ -51,6 +40,7 @@ public class MainActivity extends BridgeActivity {
 
         final String targetUrl = BASE_URL + route;
 
+        // تأخير بسيط لضمان جاهزية Capacitor WebView
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 if (getBridge() != null && getBridge().getWebView() != null) {
@@ -61,43 +51,33 @@ public class MainActivity extends BridgeActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }, 800);
+        }, 600);
     }
 
     /**
-     * استخراج route من Intent بالأولوية:
-     *
-     * 1. URI من الإشعار: zawaj://app?route=/chat%3Fid%3Dxxx
-     *    → نقرأ query param "route" ونفكّ ترميزه
-     *    → يعيد: /chat?id=xxx
-     *
-     * 2. Extra "route" مباشر (fallback للحالات القديمة)
+     * ✅ Extra "route" فقط — بسيط وموثوق
+     * MyFirebaseMessagingService يضعه بـ intent.putExtra("route", route)
+     * بدون setData() الذي كان يسبب مشاكل
      */
     private String extractRoute(Intent intent) {
+        // 1. Extra مباشر من FCM
+        String route = intent.getStringExtra("route");
+        if (route != null && !route.isEmpty()) {
+            return route.startsWith("/") ? route : "/" + route;
+        }
 
+        // 2. fallback: URI من Deep Link القديم zawaj://app/...
         Uri data = intent.getData();
-        if (data != null && "zawaj".equals(data.getScheme()) && "app".equals(data.getHost())) {
-
-            // 1. قراءة route من query parameter
-            String routeParam = data.getQueryParameter("route");
-            if (routeParam != null && !routeParam.isEmpty()) {
-                // Uri.getQueryParameter يفكّ الترميز تلقائياً
-                return routeParam.startsWith("/") ? routeParam : "/" + routeParam;
-            }
-
-            // 2. fallback: path مباشر zawaj://app/chat → /chat
-            // (بدون query string — لن يعمل مع ?id= لكن أفضل من لا شيء)
+        if (data != null
+                && "zawaj".equals(data.getScheme())
+                && "app".equals(data.getHost())) {
             String path  = data.getPath();
             String query = data.getQuery();
             if (path != null && !path.isEmpty()) {
-                return (query != null && !query.isEmpty()) ? path + "?" + query : path;
+                return (query != null && !query.isEmpty())
+                    ? path + "?" + query
+                    : path;
             }
-        }
-
-        // 3. Extra مباشر (fallback)
-        String routeExtra = intent.getStringExtra("route");
-        if (routeExtra != null && !routeExtra.isEmpty()) {
-            return routeExtra.startsWith("/") ? routeExtra : "/" + routeExtra;
         }
 
         return null;
