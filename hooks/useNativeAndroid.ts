@@ -25,6 +25,8 @@ async function applyBars() {
   try {
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     const isLight = document.documentElement.classList.contains('light');
+    const bgColor = getBgColor();
+  
 
     // شريط الحالة العلوي
     await StatusBar.setOverlaysWebView({ overlay: false });

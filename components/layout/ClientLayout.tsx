@@ -20,6 +20,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/likes':        'الإعجابات',
   '/notifications':'الإشعارات',
   '/profile':      'الملف الشخصي',
+  '/view':         'البيانات',
   '/profile/edit': 'تعديل الملف',
   '/settings':     'الإعدادات',
   '/privacy':      'الخصوصية',

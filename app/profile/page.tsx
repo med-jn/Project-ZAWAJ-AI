@@ -21,19 +21,6 @@ import {
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
 
-// ── حالة التواجد ────────────────────────────────────────────────
-function getOnlineStatus(last?: string, gender?: string) {
-  const f = gender === 'female';
-  if (!last) return { text: f ? 'غير متصلة' : 'غير متصل', color: 'var(--text-tertiary)' };
-  const mins = Math.floor((Date.now() - new Date(last).getTime()) / 60000);
-  if (mins < 5)  return { text: f ? 'متواجدة الآن' : 'متواجد الآن', color: '#22c55e' };
-  if (mins < 60) return { text: `منذ ${mins} دقيقة`, color: 'var(--text-secondary)' };
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24)  return { text: `منذ ${hrs} ساعة`, color: 'var(--text-tertiary)' };
-  const days = Math.floor(hrs / 24);
-  if (days < 7)  return { text: `منذ ${days} أيام`, color: 'var(--text-tertiary)' };
-  return { text: f ? 'غير متصلة' : 'غير متصل', color: 'var(--text-tertiary)' };
-}
 
 // ── صف معلومة ────────────────────────────────────────────────────
 function Row({ icon, label, value }: {
