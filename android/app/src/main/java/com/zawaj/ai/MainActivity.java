@@ -13,18 +13,16 @@ import com.getcapacitor.BridgeActivity;
 /**
  * ZAWAJ AI — MainActivity
  *
- * Deep Link flow:
- *   MyFirebaseMessagingService يبني PendingIntent بـ:
- *     intent.putExtra("route", "/chat?id=xxx")
+ * يستقبل Deep Links من الإشعارات ويوجّه الـ WebView
+ * داخل التطبيق (https://localhost) وليس للمتصفح الخارجي.
  *
- *   MainActivity يستقبل الـ Intent ويوجّه الـ WebView
- *   إلى https://localhost/... (Capacitor server)
- *   وليس إلى zawaj.orcaup.com الذي يفتح المتصفح
+ * URI format من MyFirebaseMessagingService:
+ *   zawaj://app?route=/chat%3Fid%3Dxxx
+ *
+ * extractRoute يفكّ الترميز ويعيد: /chat?id=xxx
  */
 public class MainActivity extends BridgeActivity {
 
-    // ✅ Capacitor يخدم التطبيق على https://localhost
-    // لا تستخدم zawaj.orcaup.com — يفتح المتصفح الخارجي
     private static final String BASE_URL = "https://localhost";
 
     @Override
@@ -53,7 +51,6 @@ public class MainActivity extends BridgeActivity {
 
         final String targetUrl = BASE_URL + route;
 
-        // نؤخر التوجيه حتى يصبح Capacitor WebView جاهزاً
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 if (getBridge() != null && getBridge().getWebView() != null) {
@@ -68,29 +65,39 @@ public class MainActivity extends BridgeActivity {
     }
 
     /**
-     * استخراج route بالأولوية:
-     * 1. Extra "route" مباشرة من FCM data payload
-     * 2. URI من Deep Link: zawaj://app/chat?id=xxx
+     * استخراج route من Intent بالأولوية:
+     *
+     * 1. URI من الإشعار: zawaj://app?route=/chat%3Fid%3Dxxx
+     *    → نقرأ query param "route" ونفكّ ترميزه
+     *    → يعيد: /chat?id=xxx
+     *
+     * 2. Extra "route" مباشر (fallback للحالات القديمة)
      */
     private String extractRoute(Intent intent) {
-        // 1. Extra مباشر — الأكثر موثوقية
-        String route = intent.getStringExtra("route");
-        if (route != null && !route.isEmpty()) {
-            return route.startsWith("/") ? route : "/" + route;
-        }
 
-        // 2. URI من Deep Link
         Uri data = intent.getData();
-        if (data != null
-                && "zawaj".equals(data.getScheme())
-                && "app".equals(data.getHost())) {
+        if (data != null && "zawaj".equals(data.getScheme()) && "app".equals(data.getHost())) {
+
+            // 1. قراءة route من query parameter
+            String routeParam = data.getQueryParameter("route");
+            if (routeParam != null && !routeParam.isEmpty()) {
+                // Uri.getQueryParameter يفكّ الترميز تلقائياً
+                return routeParam.startsWith("/") ? routeParam : "/" + routeParam;
+            }
+
+            // 2. fallback: path مباشر zawaj://app/chat → /chat
+            // (بدون query string — لن يعمل مع ?id= لكن أفضل من لا شيء)
             String path  = data.getPath();
             String query = data.getQuery();
             if (path != null && !path.isEmpty()) {
-                return (query != null && !query.isEmpty())
-                    ? path + "?" + query
-                    : path;
+                return (query != null && !query.isEmpty()) ? path + "?" + query : path;
             }
+        }
+
+        // 3. Extra مباشر (fallback)
+        String routeExtra = intent.getStringExtra("route");
+        if (routeExtra != null && !routeExtra.isEmpty()) {
+            return routeExtra.startsWith("/") ? routeExtra : "/" + routeExtra;
         }
 
         return null;
