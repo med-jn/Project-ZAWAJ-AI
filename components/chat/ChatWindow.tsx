@@ -1,16 +1,12 @@
 'use client';
 /**
- * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.4
- * ✅ هيدر RTL صريح: سهم يسار | أفاتار+اسم وسط | نقاط يمين
- * ✅ تاريخ الرسالة مخفي — يظهر عند الضغط المطول فقط
- * ✅ زر الإرسال: أيقونة بيضاء عند التفعيل
- * ✅ VoiceRecorder بدون تداخل touch/mouse
+ * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.5
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowLeft, Send, CheckCheck,
+  ArrowLeft, Send, CheckCheck, Check,
   MoreVertical, ShieldOff,
   Clock, MessageCircle, Trash2, Mic,
 } from 'lucide-react';
@@ -23,17 +19,23 @@ import VoiceRecorder      from './VoiceRecorder';
 import VoiceMessageBubble from './VoiceMessageBubble';
 import ReportSheet        from '@/components/security/ReportSheet';
 
+// ── تاريخ بأرقام لاتينية + 24 ساعة ──────────────────────────
 function msgTime(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
+  const d    = new Date(dateStr);
+  const diff = Date.now() - d.getTime();
   const s    = Math.floor(diff / 1000);
   if (s < 60)  return 'الآن';
   const m = Math.floor(s / 60);
   if (m < 60)  return `${m} د`;
   const h = Math.floor(m / 60);
-  if (h < 24)  return `${h} س`;
-  return new Date(dateStr).toLocaleDateString('ar-EG', {
-    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
-  });
+  if (h < 24) {
+    // HH:MM بأرقام لاتينية 24h
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm  = String(d.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+  }
+  // تاريخ بأرقام لاتينية
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
 }
 
 interface Recipient {
@@ -75,7 +77,7 @@ export default function ChatWindow({
   const [inputText,    setInputText]    = useState('');
   const [showMenu,     setShowMenu]     = useState(false);
   const [showReport,   setShowReport]   = useState(false);
-  const [pressedId,    setPressedId]    = useState<string | null>(null); // long press
+  const [pressedId,    setPressedId]    = useState<string | null>(null);
   const [sendingVoice, setSendingVoice] = useState(false);
   const [isTyping,     setIsTyping]     = useState(false);
 
@@ -112,7 +114,6 @@ export default function ChatWindow({
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── إرسال نص ───────────────────────────────────────────────
   const handleSend = async () => {
     const text = inputText.trim();
     if (!text) return;
@@ -126,7 +127,6 @@ export default function ChatWindow({
     if (sent) { setInputText(''); setTyping(false); inputRef.current?.blur(); }
   };
 
-  // ── إرسال صوت ──────────────────────────────────────────────
   const handleVoiceSend = useCallback(async (blob: Blob) => {
     setSendingVoice(true);
     const needsCoins = !convStatus.is_free && !convStatus.is_unlocked;
@@ -144,12 +144,9 @@ export default function ChatWindow({
     setTyping(val.length > 0);
   };
 
-  // ── Long press على الرسالة ──────────────────────────────────
-  const handleMsgPressStart = (msgId: string, isMine: boolean) => {
-    pressTimer.current = setTimeout(() => setPressedId(msgId), 500);
-  };
-  const handleMsgPressEnd = () => {
-    if (pressTimer.current) clearTimeout(pressTimer.current);
+  // ── لمس الرسالة → يظهر التاريخ ────────────────────────────
+  const handleMsgTouch = (msgId: string) => {
+    setPressedId(prev => prev === msgId ? null : msgId);
   };
 
   const handleBlock = async () => {
@@ -178,46 +175,44 @@ export default function ChatWindow({
     >
 
       {/* ══════════════════════════════
-          HEADER
-          DOM: [سهم يسار] [وسط flex-1] [نقاط يمين]
+          HEADER — dir="rtl" مثل PageHeader
+          ترتيب DOM (RTL يعكسه):
+          [اسم+أفاتار flex-1] [نقاط] [سهم]
+          النتيجة المرئية:
+          [سهم يسار] [أفاتار+اسم وسط] [نقاط يمين]
       ══════════════════════════════ */}
-      <div style={{
-        paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
-        height:        'calc(60px + var(--safe-top, env(safe-area-inset-top, 0px)))',
-        display:       'flex',
-        flexDirection: 'row',        // LTR في DOM — الترتيب صريح
-        alignItems:    'center',
-        paddingLeft:   4,
-        paddingRight:  4,
-        gap:           4,
-        background:    'var(--bg-surface)',
-        borderBottom:  '1px solid var(--glass-border)',
-        flexShrink:    0,
-      }}>
-
-        {/* ① سهم الرجوع — يسار ─────────────────────────── */}
-        <button onClick={onBack} style={{
-          background: 'transparent', border: 'none', cursor: 'pointer',
-          width: 44, height: 44, flexShrink: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--text-main)',
-        }}>
-          <ArrowLeft size={22} />
-        </button>
-
-        {/* ② أفاتار + اسم — وسط ────────────────────────── */}
+      <header
+        dir="rtl"
+        style={{
+          position:      'fixed',
+          top: 0, right: 0, left: 0,
+          zIndex:        1001,
+          height:        'var(--header-h, 60px)',
+          paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
+          display:       'flex',
+          alignItems:    'center',
+          padding:       '0 4px',
+          paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
+          gap:           4,
+          background:    'var(--bg-surface)',
+          borderBottom:  '1px solid var(--glass-border)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      >
+        {/* ① اسم + أفاتار — flex-1 (يمين في RTL) */}
         <button
           onClick={() => onOpenProfile?.(recipient.id)}
           style={{
             flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'center',
-            flexDirection: 'row-reverse', // أفاتار يمين الاسم
+            flexDirection: 'row', // أفاتار أولاً ثم الاسم (RTL: أفاتار يمين)
             gap: 10,
             background: 'transparent', border: 'none', cursor: 'pointer',
-            padding: '0 4px',
+            padding: '0 4px', textAlign: 'right',
           }}
         >
-          {/* الأفاتار */}
+          {/* الأفاتار مع OnlineDot */}
           <div style={{ position: 'relative', width: AVATAR, height: AVATAR, flexShrink: 0 }}>
             <div style={{
               width: AVATAR, height: AVATAR, borderRadius: '50%',
@@ -236,13 +231,10 @@ export default function ChatWindow({
                 }}
               />
             </div>
-            {/* OnlineDot: مركزها على حافة الأفاتار */}
             <div style={{
               position: 'absolute',
-              bottom: -(DOT / 2),
-              right:  -(DOT / 2),
-              width:   DOT,
-              height:  DOT,
+              bottom: -(DOT / 2), right: -(DOT / 2),
+              width: DOT, height: DOT,
             }}>
               <OnlineDot
                 userId={recipient.id}
@@ -253,7 +245,7 @@ export default function ChatWindow({
           </div>
 
           {/* الاسم + يكتب الآن */}
-          <div style={{ minWidth: 0, textAlign: 'right', flex: 1 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
             <span style={{
               color: 'var(--text-main)', fontWeight: 700, fontSize: 15,
               display: 'block', overflow: 'hidden',
@@ -275,7 +267,7 @@ export default function ChatWindow({
           </div>
         </button>
 
-        {/* ③ ثلاث نقاط — يمين ─────────────────────────── */}
+        {/* ② ثلاث نقاط (في RTL: يسار الأفاتار، مرئياً: يمين الشاشة بعد الأفاتار) */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button onClick={() => setShowMenu(v => !v)} style={{
             background: 'transparent', border: 'none', cursor: 'pointer',
@@ -298,7 +290,7 @@ export default function ChatWindow({
                   transition={{ duration: 0.15 }}
                   dir="rtl"
                   style={{
-                    position: 'absolute', top: 46, right: 0, zIndex: 20,
+                    position: 'absolute', top: 46, left: 0, zIndex: 20,
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--glass-border)',
                     borderRadius: 16, overflow: 'hidden', width: 150,
@@ -326,7 +318,20 @@ export default function ChatWindow({
             )}
           </AnimatePresence>
         </div>
-      </div>
+
+        {/* ③ سهم الرجوع (في RTL: آخر عنصر = يسار الشاشة) */}
+        <button onClick={onBack} style={{
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          width: 44, height: 44, flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--text-main)',
+        }}>
+          <ArrowLeft size={22} />
+        </button>
+      </header>
+
+      {/* spacer للهيدر الـ fixed */}
+      <div style={{ height: 'var(--header-h, 60px)', flexShrink: 0 }} />
 
       {/* بانر قبول */}
       <AnimatePresence>
@@ -377,9 +382,7 @@ export default function ChatWindow({
         )}
       </AnimatePresence>
 
-      {/* ══════════════════════════════
-          الرسائل
-      ══════════════════════════════ */}
+      {/* الرسائل */}
       <div style={{
         flex: 1, overflowY: 'auto',
         padding: '12px 12px 8px',
@@ -393,18 +396,17 @@ export default function ChatWindow({
             جارٍ التحميل...
           </div>
         ) : messages.map(msg => {
-          const isMine   = msg.sender_id === currentUserId;
+          const isMine    = msg.sender_id === currentUserId;
           const isPressed = pressedId === msg.id;
 
           return (
             <div key={msg.id} dir="rtl"
-              style={{ display: 'flex', flexDirection: 'column',
-                alignItems: isMine ? 'flex-start' : 'flex-end', gap: 2 }}
-              onTouchStart={() => handleMsgPressStart(msg.id, isMine)}
-              onTouchEnd={handleMsgPressEnd}
-              onMouseDown={() => handleMsgPressStart(msg.id, isMine)}
-              onMouseUp={handleMsgPressEnd}
-              onMouseLeave={handleMsgPressEnd}
+              style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: isMine ? 'flex-start' : 'flex-end',
+                gap: 2,
+              }}
+              onClick={e => { e.stopPropagation(); handleMsgTouch(msg.id); }}
             >
               <div style={{
                 maxWidth: '78%', position: 'relative',
@@ -444,20 +446,7 @@ export default function ChatWindow({
                   </p>
                 )}
 
-                {/* ✅ علامة القراءة فقط — بدون وقت */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 3,
-                  marginTop: 3, justifyContent: 'flex-end',
-                }}>
-                  {isMine && (
-                    <CheckCheck size={11} style={{
-                      color: msg.is_read ? '#4fc3f7' : 'rgba(255,255,255,0.35)',
-                    }} />
-                  )}
-                  {msg.failed && <span style={{ fontSize: 9, color: '#f87171' }}>!</span>}
-                </div>
-
-                {/* زر الحذف عند long press */}
+                {/* زر الحذف عند اللمس — رسائلي فقط */}
                 <AnimatePresence>
                   {isMine && isPressed && (
                     <motion.button
@@ -482,21 +471,28 @@ export default function ChatWindow({
                 </AnimatePresence>
               </div>
 
-              {/* ✅ وقت الرسالة — يظهر فقط عند الضغط المطول */}
+              {/* ✅ وقت + حالة القراءة — يظهر عند اللمس */}
               <AnimatePresence>
                 {isPressed && (
-                  <motion.span
+                  <motion.div
                     initial={{ opacity: 0, y: -4 }}
                     animate={{ opacity: 1, y: 0   }}
                     exit={{    opacity: 0, y: -4   }}
                     style={{
-                      fontSize: 10,
-                      color: 'var(--text-tertiary)',
+                      display: 'flex', alignItems: 'center', gap: 4,
                       paddingInline: 6,
                     }}
                   >
-                    {msgTime(msg.created_at)}
-                  </motion.span>
+                    {/* ✅ علامة القراءة الحقيقية */}
+                    {isMine && (
+                      msg.is_read
+                        ? <CheckCheck size={12} color="#4fc3f7" />
+                        : <Check      size={12} color="var(--text-tertiary)" />
+                    )}
+                    <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                      {msgTime(msg.created_at)}
+                    </span>
+                  </motion.div>
                 )}
               </AnimatePresence>
             </div>
@@ -505,9 +501,7 @@ export default function ChatWindow({
         <div ref={scrollRef} />
       </div>
 
-      {/* ══════════════════════════════
-          شريط الإدخال
-      ══════════════════════════════ */}
+      {/* شريط الإدخال */}
       <div dir="rtl" style={{
         padding:       '8px 12px',
         paddingBottom: 'max(var(--safe-bottom, env(safe-area-inset-bottom, 0px)), 8px)',
@@ -539,14 +533,12 @@ export default function ChatWindow({
               onClick={handleSend}
               style={{
                 width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                // ✅ خلفية ملونة عند التفعيل
                 background: hasText ? 'var(--color-accent)' : 'rgba(255,255,255,0.06)',
                 border: 'none', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 0.2s',
               }}
             >
-              {/* ✅ أيقونة بيضاء عند التفعيل */}
               <Send size={15} color={hasText ? '#ffffff' : 'var(--text-tertiary)'} />
             </motion.button>
 
@@ -565,7 +557,6 @@ export default function ChatWindow({
               }}
             />
 
-            {/* VoiceRecorder */}
             <VoiceRecorder
               onSend={handleVoiceSend}
               disabled={sendingVoice || showWaitBanner}
