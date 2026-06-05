@@ -1,7 +1,6 @@
 /**
- * 📁 lib/notifications/notification-route.ts
- * ZAWAJ AI
- * Smart Notification Routing Engine
+ * 📁 lib/notifications/notification-route.ts — ZAWAJ AI
+ * ✅ مسارات صحيحة متوافقة مع routes التطبيق الفعلية
  */
 
 export type NotificationType =
@@ -15,142 +14,39 @@ export type NotificationType =
   | 'system';
 
 export interface NotificationRoutePayload {
-  type?: NotificationType | string | null;
-
+  type?:            NotificationType | string | null;
   conversation_id?: string | null;
-
-  from_user?: string | null;
-
-  profile_id?: string | null;
-
-  mediator_id?: string | null;
-
-  request_id?: string | null;
-
-  subscription_id?: string | null;
-
-  external_url?: string | null;
+  from_user?:       string | null;
+  external_url?:    string | null;
 }
 
-/**
- * ─────────────────────────────────────────────
- * هل الإشعار يفتح ProfileModal؟
- * ─────────────────────────────────────────────
- */
-export function shouldOpenProfile(
-  type?: string | null
-) {
-  return [
-    'like',
-    'view',
-    'match',
-    'contact_request',
-  ].includes(type ?? '');
-}
-
-/**
- * ─────────────────────────────────────────────
- * هل الإشعار يفتح محادثة؟
- * ─────────────────────────────────────────────
- */
-export function shouldOpenChat(
-  type?: string | null
-) {
-  return [
-    'message',
-    'mediator',
-  ].includes(type ?? '');
-}
-
-/**
- * ─────────────────────────────────────────────
- * استخراج المسار الصحيح
- * ─────────────────────────────────────────────
- */
 export function resolveNotificationRoute(
   payload: NotificationRoutePayload
 ): string | null {
-
   const type = payload.type;
 
-  // ─────────────────────────
-  // الرسائل
-  // ─────────────────────────
-  if (
-    shouldOpenChat(type) &&
-    payload.conversation_id
-  ) {
+  // رسالة أو وسيط → صفحة الدردشة
+  if ((type === 'message' || type === 'mediator') && payload.conversation_id) {
     return `/chat?id=${payload.conversation_id}`;
   }
 
-  // ─────────────────────────
-  // الإعجاب / الزيارة / التطابق
-  // ─────────────────────────
-  if (
-    shouldOpenProfile(type) &&
-    payload.from_user
-  ) {
-    return `/discover/${payload.from_user}`;
+  // إعجاب أو زيارة أو توافق → ملف صاحب الإشعار
+  if ((type === 'like' || type === 'view' || type === 'match' || type === 'contact_request')
+      && payload.from_user) {
+    return `/view?id=${payload.from_user}`;
   }
 
-  // ─────────────────────────
-  // الاشتراكات
-  // ─────────────────────────
-  if (
-    type === 'subscription'
-  ) {
-    return '/packages';
-  }
+  // اشتراك → صفحة النقاط
+  if (type === 'subscription') return '/points';
 
-  // ─────────────────────────
-  // الوسطاء
-  // ─────────────────────────
-  if (
-    type === 'mediator'
-  ) {
-    return '/mediator';
-  }
-
-  // ─────────────────────────
   // رابط خارجي
-  // ─────────────────────────
-  if (payload.external_url) {
-    return payload.external_url;
-  }
+  if (payload.external_url) return payload.external_url;
 
-  // ─────────────────────────
   // fallback
-  // ─────────────────────────
   return '/notifications';
 }
 
-/**
- * ─────────────────────────────────────────────
- * هل نستخدم ProfileModal أو Router؟
- * ─────────────────────────────────────────────
- */
-export function resolveNotificationAction(
-  payload: NotificationRoutePayload
-) {
-  const type = payload.type;
-
-  // فتح بروفايل
-  if (
-    shouldOpenProfile(type) &&
-    payload.from_user
-  ) {
-    return {
-      action: 'profile',
-      userId: payload.from_user,
-    };
-  }
-
-  // فتح مسار
-  const route =
-    resolveNotificationRoute(payload);
-
-  return {
-    action: 'route',
-    route,
-  };
+export function resolveNotificationAction(payload: NotificationRoutePayload) {
+  const route = resolveNotificationRoute(payload);
+  return { action: 'route', route };
 }

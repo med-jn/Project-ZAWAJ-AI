@@ -21,6 +21,12 @@ import {
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
 
+// ── حالة التواجد ────────────────────────────────────────────────
+function getOnlineStatus(last?: string, gender?: string) {
+  const f = gender === 'female';
+
+  return { text: f ? 'غير متصلة' : 'غير متصل', color: 'var(--text-tertiary)' };
+}
 
 // ── صف معلومة ────────────────────────────────────────────────────
 function Row({ icon, label, value }: {
