@@ -34,6 +34,11 @@ async function applyBars() {
     await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
     await StatusBar.setBackgroundColor({ color: getBgColor() });
 
+    const info = await StatusBar.getInfo();
+    if (info?.statusBarHeight) {
+      document.documentElement.style.setProperty('--safe-top', `${info.statusBarHeight}px`);
+    }
+
     // NavigationBar — يُتحكم به من styles.xml مباشرة
   } catch {
     // بيئة غير Capacitor — نتجاهل
