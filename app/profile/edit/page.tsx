@@ -831,7 +831,7 @@ export default function ProfileEditPage() {
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.13 }}
             style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)', paddingTop: 'var(--sp-3)' }}>
-            <span style={{ fontSize: 'var(--text-xl)', fontWeight: 900, color: 'var(--text-main)' }}>{TITLE[step]}</span>
+            <span style={{ fontSize: 'var(--text-md)', fontWeight: 900, color: 'var(--text-main)' }}>{TITLE[step]}</span>
             <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>{step + 1}/{STEPS.length}</span>
           </motion.div>
         </AnimatePresence>

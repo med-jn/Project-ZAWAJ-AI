@@ -1651,7 +1651,7 @@ export default function OnboardingForm() {
               marginBottom:'var(--sp-2)',paddingTop:'var(--sp-3)',
             }}>
             <span style={{
-              fontSize:'var(--text-xl)',fontWeight:900,color:'var(--text-main)',
+              fontSize:'var(--text-md)',fontWeight:900,color:'var(--text-main)',
             }}>{TITLE[step]}</span>
             <span style={{fontSize:'var(--text-sm)',color:'var(--text-tertiary)'}}>
               {step+1}/{STEPS.length}
