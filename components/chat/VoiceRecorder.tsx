@@ -156,10 +156,12 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
     if (cancel) { setState('idle'); setElapsed(0); }
   }, [onSend]);
 
+  const isNative = Capacitor.isNativePlatform();
+
   // ── Touch handlers ─────────────────────────────────────────
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
-    isTouchRef.current = true; // ✅ علّم أن الحدث touch
+    isTouchRef.current = true;
     startYRef.current  = e.touches[0].clientY;
     startRecording();
   };
@@ -172,27 +174,26 @@ export default function VoiceRecorder({ onSend, disabled }: Props) {
   const handleTouchEnd = (e: React.TouchEvent) => {
     e.preventDefault();
     if (state === 'recording') stopRecording(false);
-    // أعد التعيين بعد تأخير قصير لمنع mouse events التالية
     setTimeout(() => { isTouchRef.current = false; }, 500);
   };
 
-  // ── Mouse handlers (ويب فقط — يُتجاهل بعد touch) ──────────
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (isTouchRef.current) return; // ✅ تجاهل إذا كان touch
+  // ── Mouse handlers (ويب فقط — محذوفة على native تماماً) ────
+  const handleMouseDown = !isNative ? (e: React.MouseEvent) => {
+    if (isTouchRef.current) return;
     e.preventDefault();
     startRecording();
-  };
+  } : undefined;
 
-  const handleMouseUp = (e: React.MouseEvent) => {
-    if (isTouchRef.current) return; // ✅ تجاهل إذا كان touch
+  const handleMouseUp = !isNative ? (e: React.MouseEvent) => {
+    if (isTouchRef.current) return;
     e.preventDefault();
     if (state === 'recording') stopRecording(false);
-  };
+  } : undefined;
 
-  const handleMouseLeave = (e: React.MouseEvent) => {
+  const handleMouseLeave = !isNative ? (e: React.MouseEvent) => {
     if (isTouchRef.current) return;
     if (state === 'recording') stopRecording(false);
-  };
+  } : undefined;
 
   const progress  = (elapsed / MAX_SECONDS) * 100;
   const timeLeft  = MAX_SECONDS - elapsed;

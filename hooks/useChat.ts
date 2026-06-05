@@ -156,19 +156,24 @@ export function useChat(
           setMessages(prev => prev.filter(m => m.id !== payload.old.id));
         }
       )
-      // ✅ مراقبة تغيير is_read في الوقت الفعلي
+      // ✅ مراقبة is_read في الوقت الفعلي
+      // عند أي UPDATE نحدّث كل الرسائل المرسلة مني دفعة واحدة
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages',
           filter: `conversation_id=eq.${conversationId}` },
         payload => {
           const updated = payload.new as ChatMessage;
-          setMessages(prev =>
-            prev.map(m => m.id === updated.id
-              ? { ...m, is_read: updated.is_read }
-              : m
-            )
-          );
+          if (updated.is_read) {
+            // الطرف الآخر قرأ — نعلّم كل رسائلي كمقروءة
+            setMessages(prev =>
+              prev.map(m =>
+                m.sender_id === userId && !m.is_read
+                  ? { ...m, is_read: true }
+                  : m
+              )
+            );
+          }
         }
       )
       .on(
