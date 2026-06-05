@@ -48,8 +48,13 @@ export default function TopBar() {
   return (
     <>
       <header
-        className="fixed top-0 right-0 left-0 h-[var(--header-h)] z-[200] flex items-center justify-between px-4 flex-row-reverse"
-        style={{ backdropFilter: 'blur(10px)', background: 'transparent' }}
+        className="fixed top-0 right-0 left-0 z-[200] flex items-center justify-between px-4 flex-row-reverse"
+        style={{ 
+          paddingTop: 'var(--safe-top)', 
+          height: 'var(--header-h-safe)',
+          backdropFilter: 'blur(10px)', 
+          background: 'transparent' 
+        }}
       >
             <div className="scale-[0.65] origin-left -mb-2"><Brand />
             </div>

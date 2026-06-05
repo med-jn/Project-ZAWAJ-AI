@@ -1,5 +1,4 @@
 'use client';
-// 📁 components/layout/PageHeader.tsx
 import { useRouter } from 'next/navigation';
 import { ArrowLeft  } from 'lucide-react';
 
@@ -7,7 +6,7 @@ interface Props {
   title:    string;
   onBack?:  () => void;
   actions?: React.ReactNode;
-  [key: string]: any; // لقبول data-top-bar وغيره
+  [key: string]: any;
 }
 
 export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
@@ -22,17 +21,18 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
         position:   'fixed',
         top: 0, right: 0, left: 0,
         zIndex:     1000,
-        height:     'var(--header-h)',
+        height:     'var(--header-h-safe)',
         display:    'flex',
-        alignItems: 'center',
-        padding:    '0 var(--sp-2)',
+        alignItems: 'flex-end',
+        paddingBottom: 'var(--sp-2)',
+        paddingLeft:  'var(--sp-2)',
+        paddingRight: 'var(--sp-2)',
         background: 'var(--bg-surface)',
         borderBottom: '1px solid var(--glass-border)',
         backdropFilter: 'blur(8px)',
         WebkitBackdropFilter: 'blur(8px)',
       }}
     >
-      {/* اسم الصفحة — يمين */}
       <span style={{
         flex: 1,
         color:      'var(--text-main)',
@@ -45,7 +45,6 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
 
       {actions}
 
-      {/* سهم الرجوع — يسار */}
       <button
         onClick={back}
         style={{
@@ -60,7 +59,6 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
           cursor: 'pointer',
           color: 'var(--text-main)',
           flexShrink: 0,
-          
         }}
       >
         <ArrowLeft size={24} />
