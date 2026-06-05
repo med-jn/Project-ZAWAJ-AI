@@ -11,15 +11,9 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
-import android.graphics.RenderEffect;
-import android.graphics.Shader;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicBlur;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -43,7 +37,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final String CH_SUBSCRIPTION = "subscription";
     private static final String CH_SYSTEM       = "system";
 
-    private static final AtomicInteger notifId  = new AtomicInteger(1000);
+    private static final AtomicInteger notifId   = new AtomicInteger(1000);
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     @Override
@@ -58,36 +52,33 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Map<String, String> data = message.getData();
 
-        final String type     = getOrDef(data, "type",      "system");
-        final String title    = getOrDef(data, "title",     "ZAWAJ AI");
-        final String body     = getOrDef(data, "body",      "إشعار جديد");
-        final String avatar   = getOrDef(data, "avatar",    "");
-        final String route    = getOrDef(data, "route",     "/notifications");
-        final String chanId   = getOrDef(data, "channel_id", resolveChannel(type));
-        final boolean silent  = "true".equals(data.get("is_silent"));
-        final boolean blurred = "true".equals(data.get("is_blurred"));
+        final String type    = getOrDef(data, "type",      "system");
+        final String title   = getOrDef(data, "title",     "ZAWAJ AI");
+        final String body    = getOrDef(data, "body",      "إشعار جديد");
+        final String avatar  = getOrDef(data, "avatar",    "");
+        final String route   = getOrDef(data, "route",     "/notifications");
+        final String chanId  = getOrDef(data, "channel_id", resolveChannel(type));
+        final boolean silent = "true".equals(data.get("is_silent"));
 
-        // تحميل الأفاتار في background thread
+        // تحميل الأفاتار في background thread — لا يبطئ الإشعار
         executor.execute(() -> {
-            Bitmap avatarBitmap = loadBitmap(avatar);
-            if (avatarBitmap != null) {
-                avatarBitmap = getRoundedBitmap(avatarBitmap);
-                // ✅ blur إذا طلبه السيرفر
-                if (blurred) avatarBitmap = blurBitmap(avatarBitmap);
-            }
-            showNotification(title, body, route, chanId, silent, avatarBitmap);
+            Bitmap bmp = null;
+            try {
+                Bitmap raw = loadBitmap(avatar);
+                if (raw != null) bmp = getRoundedBitmap(raw);
+            } catch (Exception ignored) {}
+            showNotification(title, body, route, chanId, silent, bmp);
         });
     }
 
     private void showNotification(String title, String body, String route,
                                    String chanId, boolean silent, Bitmap avatar) {
-        // ✅ RTL: \u202B يجبر Android على عرض النص من اليمين
+        // ✅ RTL: \u202B يجبر Android على عرض النص من اليمين لليسار
         String rtlTitle = "\u202B" + title;
         String rtlBody  = "\u202B" + body;
 
-        PendingIntent pendingIntent = buildPendingIntent(route);
+        PendingIntent pi = buildPendingIntent(route);
 
-        // ✅ Person مع الأفاتار على اليمين في MessagingStyle
         Person.Builder pb = new Person.Builder().setName(rtlTitle);
         if (avatar != null) pb.setIcon(IconCompat.createWithBitmap(avatar));
         Person person = pb.build();
@@ -105,7 +96,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setStyle(style)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                .setContentIntent(pendingIntent)
+                .setContentIntent(pi)
                 .setColor(0xFFB3334B);
 
         if (avatar != null) builder.setLargeIcon(avatar);
@@ -120,6 +111,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     // ── PendingIntent ─────────────────────────────────────────
+    // ✅ FLAG_MUTABLE في Android 12+ لضمان وصول الـ Extra
     private PendingIntent buildPendingIntent(String route) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
@@ -127,7 +119,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         int flags;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // ✅ Android 12+: FLAG_MUTABLE مطلوب حتى تصل الـ Extras
             flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE;
         } else {
             flags = PendingIntent.FLAG_UPDATE_CURRENT;
@@ -136,42 +127,21 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         return PendingIntent.getActivity(this, notifId.getAndIncrement(), intent, flags);
     }
 
-    // ── blur الأفاتار ─────────────────────────────────────────
-    @SuppressWarnings("deprecation")
-    private Bitmap blurBitmap(Bitmap src) {
-        if (src == null) return null;
-        try {
-            Bitmap blurred = src.copy(Bitmap.Config.ARGB_8888, true);
-            RenderScript rs = RenderScript.create(this);
-            Allocation input  = Allocation.createFromBitmap(rs, blurred);
-            Allocation output = Allocation.createTyped(rs, input.getType());
-            ScriptIntrinsicBlur blur = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
-            blur.setRadius(18f); // قوة الـ blur
-            blur.setInput(input);
-            blur.forEach(output);
-            output.copyTo(blurred);
-            rs.destroy();
-            return blurred;
-        } catch (Exception e) {
-            return src;
-        }
-    }
-
     private void createAllChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
         NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr == null) return;
 
-        Uri soundUri  = getSoundUri();
+        Uri soundUri = getSoundUri();
         AudioAttributes attr = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build();
 
-        makeChannel(mgr, CH_MESSAGES,     "الرسائل",    "رسائل المحادثات",           NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
-        makeChannel(mgr, CH_SOCIAL,       "التفاعل",    "إعجابات وزيارات وتوافقات",  NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
-        makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات", "إشعارات الوسطاء",           NotificationManager.IMPORTANCE_DEFAULT, soundUri, attr);
-        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",              NotificationManager.IMPORTANCE_LOW,     null,     null);
+        makeChannel(mgr, CH_MESSAGES,     "الرسائل",    "رسائل المحادثات",          NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
+        makeChannel(mgr, CH_SOCIAL,       "التفاعل",    "إعجابات وزيارات وتوافقات", NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
+        makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات", "إشعارات الوسطاء",          NotificationManager.IMPORTANCE_DEFAULT, soundUri, attr);
+        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",             NotificationManager.IMPORTANCE_LOW,     null,     null);
     }
 
     private void makeChannel(NotificationManager mgr, String id, String name, String desc,
