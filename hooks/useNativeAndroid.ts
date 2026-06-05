@@ -11,6 +11,7 @@ import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
 import { App }       from '@capacitor/app';
+import { tr } from 'date-fns/locale';
 
 const IS_NATIVE  = Capacitor.isNativePlatform();
 const EXIT_PAGES = ['/', '/home', '/login', '/register'];
@@ -29,7 +30,7 @@ async function applyBars() {
   
 
     // شريط الحالة العلوي
-    await StatusBar.setOverlaysWebView({ overlay: false });
+    await StatusBar.setOverlaysWebView({ overlay: true });
     await StatusBar.setStyle({ style: isLight ? Style.Light : Style.Dark });
     await StatusBar.setBackgroundColor({ color: getBgColor() });
 
