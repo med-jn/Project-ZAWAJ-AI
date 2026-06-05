@@ -85,7 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body style={{ margin: 0, padding: 0, overflowX: 'hidden' }}>
+      <body style={{ margin: 0, overflowX: 'hidden' }}>
 
         <Toaster
           position="top-center"
