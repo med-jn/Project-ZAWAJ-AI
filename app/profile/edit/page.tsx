@@ -817,17 +817,9 @@ export default function ProfileEditPage() {
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)' }}>
 
-      {/* ── PageHeader ثابت ─────────────────────────────── */}
-      <div data-top-bar dir="rtl" style={{ position: 'fixed', top: 0, right: 0, left: 0, zIndex: 1000, height: 'var(--header-h)', display: 'flex', alignItems: 'center', padding: '0 var(--sp-2)', background: 'var(--bg-surface)', borderBottom: '1px solid var(--glass-border)', backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)' }}>
-        <span style={{ flex: 1, color: 'var(--text-main)', fontSize: 'var(--text-lg)', fontWeight: 800, paddingRight: 'var(--sp-2)' }}>تعديل الملف</span>
-        <motion.button whileTap={{ scale: 0.9 }} onClick={goBack}
-          style={{ width: 'var(--btn-h)', height: 'var(--btn-h)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-full)', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-main)', flexShrink: 0 }}>
-          <ArrowLeft size={20} />
-        </motion.button>
-      </div>
 
       {/* ── StickySubHeader ──────────────────────────────── */}
-      <div style={{ position: 'sticky', top: 'var(--header-h)', zIndex: 900, background: 'var(--bg-surface)', borderBottom: '1px solid var(--glass-border)', padding: '0 var(--sp-4) var(--sp-2)' }}>
+      <div style={{ position: 'sticky', top: 'var(--header-h-safe)', zIndex: 900, background: 'var(--bg-surface)', borderBottom: '1px solid var(--glass-border)', padding: '0 var(--sp-4) var(--sp-2)' }}>
         <AnimatePresence mode="wait">
           <motion.div key={step} initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }} transition={{ duration: 0.13 }}
             style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--sp-2)', marginBottom: 'var(--sp-2)', paddingTop: 'var(--sp-3)' }}>
