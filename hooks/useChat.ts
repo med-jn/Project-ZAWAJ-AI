@@ -299,9 +299,9 @@ export function useChat(
   };
 
   const deleteMessage = async (messageId: string) => {
+    // ✅ حذف للطرفين — بدون قيد sender_id
     setMessages(prev => prev.filter(m => m.id !== messageId));
-    await supabase.from('messages').delete()
-      .eq('id', messageId).eq('sender_id', userId);
+    await supabase.from('messages').delete().eq('id', messageId);
   };
 
   const markConversationRead = async () => {

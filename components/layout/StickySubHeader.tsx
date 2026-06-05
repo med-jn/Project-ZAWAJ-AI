@@ -11,7 +11,7 @@ export default function StickySubHeader({ label, count, children }: Props) {
       dir="rtl"
       style={{
         position:     'sticky',
-        top:          'var(--header-h)',
+        top:          'var(--header-h-safe)', // أسفل الـ TopBar
         zIndex:       900,
         background:   'var(--bg-surface)',
         borderBottom: '1px solid var(--glass-border)',

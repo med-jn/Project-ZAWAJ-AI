@@ -23,7 +23,9 @@ import { getSpecialtyLabel } from '@/constants/occupations';
 
 // ── حالة التواجد ────────────────────────────────────────────────
 function getOnlineStatus(last?: string, gender?: string) {
-  
+  const f = gender === 'female';
+
+  return { text: f ? '' : '', color: 'var(--text-tertiary)' };
 }
 
 // ── صف معلومة ────────────────────────────────────────────────────

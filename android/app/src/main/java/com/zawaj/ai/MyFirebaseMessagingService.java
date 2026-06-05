@@ -7,9 +7,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.RenderEffect;
+import android.graphics.Shader;
 import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicBlur;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -22,9 +32,9 @@ import com.google.firebase.messaging.RemoteMessage;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
@@ -33,17 +43,13 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final String CH_SUBSCRIPTION = "subscription";
     private static final String CH_SYSTEM       = "system";
 
-    private static final AtomicInteger notifId = new AtomicInteger(1000);
-
-    // ✅ Thread pool لتحميل الأفاتار خارج Main Thread
+    private static final AtomicInteger notifId  = new AtomicInteger(1000);
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     @Override
     public void onNewToken(String token) {
         super.onNewToken(token);
         createAllChannels();
-        // ✅ عند تجديد الـ token — لا نفعل شيئاً هنا
-        // usePushNotifications.ts سيحفظه عند أول register()
     }
 
     @Override
@@ -52,36 +58,39 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Map<String, String> data = message.getData();
 
-        final String type   = getOrDef(data, "type",      "system");
-        final String title  = getOrDef(data, "title",     "ZAWAJ AI");
-        final String body   = getOrDef(data, "body",      "إشعار جديد");
-        final String avatar = getOrDef(data, "avatar",    "");
-        final String route  = getOrDef(data, "route",     "/notifications");
-        final String chanId = getOrDef(data, "channel_id", resolveChannel(type));
-        final boolean silent = "true".equals(data.get("is_silent"));
+        final String type     = getOrDef(data, "type",      "system");
+        final String title    = getOrDef(data, "title",     "ZAWAJ AI");
+        final String body     = getOrDef(data, "body",      "إشعار جديد");
+        final String avatar   = getOrDef(data, "avatar",    "");
+        final String route    = getOrDef(data, "route",     "/notifications");
+        final String chanId   = getOrDef(data, "channel_id", resolveChannel(type));
+        final boolean silent  = "true".equals(data.get("is_silent"));
+        final boolean blurred = "true".equals(data.get("is_blurred"));
 
-        // ✅ تحميل الأفاتار في background thread — لا يبطئ الإشعار
+        // تحميل الأفاتار في background thread
         executor.execute(() -> {
             Bitmap avatarBitmap = loadBitmap(avatar);
+            if (avatarBitmap != null) {
+                avatarBitmap = getRoundedBitmap(avatarBitmap);
+                // ✅ blur إذا طلبه السيرفر
+                if (blurred) avatarBitmap = blurBitmap(avatarBitmap);
+            }
             showNotification(title, body, route, chanId, silent, avatarBitmap);
         });
     }
 
     private void showNotification(String title, String body, String route,
-                                   String chanId, boolean silent, Bitmap avatarBitmap) {
-
-        // ✅ RTL: نضيف RTL mark في بداية العنوان والنص
-        // \u202B = RIGHT-TO-LEFT EMBEDDING
+                                   String chanId, boolean silent, Bitmap avatar) {
+        // ✅ RTL: \u202B يجبر Android على عرض النص من اليمين
         String rtlTitle = "\u202B" + title;
         String rtlBody  = "\u202B" + body;
 
         PendingIntent pendingIntent = buildPendingIntent(route);
 
-        Person.Builder personBuilder = new Person.Builder().setName(rtlTitle);
-        if (avatarBitmap != null) {
-            personBuilder.setIcon(IconCompat.createWithBitmap(getRoundedBitmap(avatarBitmap)));
-        }
-        Person person = personBuilder.build();
+        // ✅ Person مع الأفاتار على اليمين في MessagingStyle
+        Person.Builder pb = new Person.Builder().setName(rtlTitle);
+        if (avatar != null) pb.setIcon(IconCompat.createWithBitmap(avatar));
+        Person person = pb.build();
 
         NotificationCompat.MessagingStyle style =
             new NotificationCompat.MessagingStyle(person)
@@ -99,47 +108,53 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setContentIntent(pendingIntent)
                 .setColor(0xFFB3334B);
 
-        if (avatarBitmap != null) {
-            builder.setLargeIcon(getRoundedBitmap(avatarBitmap));
-        }
+        if (avatar != null) builder.setLargeIcon(avatar);
+        if (silent)         builder.setSilent(true);
+        else                builder.setSound(getSoundUri());
 
-        if (silent) builder.setSilent(true);
-        else        builder.setSound(getSoundUri());
-
-        int id = notifId.getAndIncrement();
         try {
-            NotificationManagerCompat.from(this).notify(id, builder.build());
+            NotificationManagerCompat.from(this).notify(notifId.getAndIncrement(), builder.build());
         } catch (SecurityException e) {
             e.printStackTrace();
         }
     }
 
     // ── PendingIntent ─────────────────────────────────────────
-    // ✅ route يُوضع في Extra فقط — بسيط وموثوق
-    // MainActivity يقرأه مباشرة بدون URI parsing
     private PendingIntent buildPendingIntent(String route) {
         Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(
-            Intent.FLAG_ACTIVITY_CLEAR_TOP |
-            Intent.FLAG_ACTIVITY_SINGLE_TOP
-        );
-        // ✅ نستخدم Extra فقط — بدون setData() الذي يمسح الـ Extras
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra("route", route);
 
-        // request code فريد لكل إشعار — يمنع استبدال PendingIntent
-        int reqCode = notifId.getAndIncrement();
-
-        // ✅ FLAG_MUTABLE مطلوب مع Android 12+ لأن Capacitor يحتاج تعديل الـ Intent
         int flags;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // ✅ Android 12+: FLAG_MUTABLE مطلوب حتى تصل الـ Extras
             flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
         } else {
             flags = PendingIntent.FLAG_UPDATE_CURRENT;
         }
 
-        return PendingIntent.getActivity(this, reqCode, intent, flags);
+        return PendingIntent.getActivity(this, notifId.getAndIncrement(), intent, flags);
+    }
+
+    // ── blur الأفاتار ─────────────────────────────────────────
+    @SuppressWarnings("deprecation")
+    private Bitmap blurBitmap(Bitmap src) {
+        if (src == null) return null;
+        try {
+            Bitmap blurred = src.copy(Bitmap.Config.ARGB_8888, true);
+            RenderScript rs = RenderScript.create(this);
+            Allocation input  = Allocation.createFromBitmap(rs, blurred);
+            Allocation output = Allocation.createTyped(rs, input.getType());
+            ScriptIntrinsicBlur blur = ScriptIntrinsicBlur.create(rs, Element.U8_4(rs));
+            blur.setRadius(18f); // قوة الـ blur
+            blur.setInput(input);
+            blur.forEach(output);
+            output.copyTo(blurred);
+            rs.destroy();
+            return blurred;
+        } catch (Exception e) {
+            return src;
+        }
     }
 
     private void createAllChannels() {
@@ -147,16 +162,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         NotificationManager mgr = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (mgr == null) return;
 
-        Uri soundUri   = getSoundUri();
-        AudioAttributes audioAttr = new AudioAttributes.Builder()
+        Uri soundUri  = getSoundUri();
+        AudioAttributes attr = new AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build();
 
-        makeChannel(mgr, CH_MESSAGES,     "الرسائل",    "رسائل المحادثات",          NotificationManager.IMPORTANCE_HIGH,    soundUri, audioAttr);
-        makeChannel(mgr, CH_SOCIAL,       "التفاعل",    "إعجابات وزيارات وتوافقات", NotificationManager.IMPORTANCE_HIGH,    soundUri, audioAttr);
-        makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات", "إشعارات الوسطاء",          NotificationManager.IMPORTANCE_DEFAULT, soundUri, audioAttr);
-        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",             NotificationManager.IMPORTANCE_LOW,     null,     null);
+        makeChannel(mgr, CH_MESSAGES,     "الرسائل",    "رسائل المحادثات",           NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
+        makeChannel(mgr, CH_SOCIAL,       "التفاعل",    "إعجابات وزيارات وتوافقات",  NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
+        makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات", "إشعارات الوسطاء",           NotificationManager.IMPORTANCE_DEFAULT, soundUri, attr);
+        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",              NotificationManager.IMPORTANCE_LOW,     null,     null);
     }
 
     private void makeChannel(NotificationManager mgr, String id, String name, String desc,
@@ -181,10 +196,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         if (src == null) return null;
         int size = Math.min(src.getWidth(), src.getHeight());
         Bitmap out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        android.graphics.Canvas canvas = new android.graphics.Canvas(out);
-        android.graphics.Paint paint = new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);
+        Canvas canvas = new Canvas(out);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint);
-        paint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN));
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_IN));
         canvas.drawBitmap(src, 0, 0, paint);
         return out;
     }

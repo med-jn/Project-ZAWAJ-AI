@@ -187,12 +187,12 @@ export default function ChatWindow({
           position:      'fixed',
           top: 0, right: 0, left: 0,
           zIndex:        1001,
-          height:        'var(--header-h, 60px)',
-          paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
+          height:        'var(--header-h-safe)',
           display:       'flex',
-          alignItems:    'center',
-          padding:       '0 4px',
-          paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
+          alignItems:    'flex-end',
+          paddingBottom: '8px',
+          paddingLeft:   '4px',
+          paddingRight:  '4px',
           gap:           4,
           background:    'var(--bg-surface)',
           borderBottom:  '1px solid var(--glass-border)',
@@ -331,7 +331,7 @@ export default function ChatWindow({
       </header>
 
       {/* spacer للهيدر الـ fixed */}
-      <div style={{ height: 'var(--header-h, 60px)', flexShrink: 0 }} />
+      <div style={{ height: 'var(--header-h-safe)', flexShrink: 0 }} />
 
       {/* بانر قبول */}
       <AnimatePresence>
