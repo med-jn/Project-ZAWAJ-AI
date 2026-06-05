@@ -8,8 +8,8 @@
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentStatus">false</item>
-        <item name="android:navigationBarColor">#080008</item>
-        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentNavigation">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
@@ -19,15 +19,15 @@
         <item name="android:windowBackground">@color/background</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:windowTranslucentStatus">false</item>
-        <item name="android:navigationBarColor">#080008</item>
-        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowTranslucentNavigation">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">#080008</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
 </resources>
