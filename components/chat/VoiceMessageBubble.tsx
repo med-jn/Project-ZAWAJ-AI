@@ -2,25 +2,28 @@
 /**
  * 📁 components/chat/VoiceMessageBubble.tsx — ZAWAJ AI
  * ✅ Signed URL للـ private bucket
- * ✅ كتم كل الرسائل الأخرى عند التشغيل (Audio singleton)
- * ✅ Duration fix لـ Android AAC
+ * ✅ كتم كل الرسائل الأخرى عند التشغيل
+ * ✅ تحديث listened_at عند انتهاء الاستماع (الطرف الثاني فقط)
+ * ✅ pg_cron يحذف الرسالة بعد 30 ثانية تلقائياً
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause } from 'lucide-react';
 import { getVoiceSignedUrl } from '@/lib/supabase/chatStorage';
+import { supabase } from '@/lib/supabase/client';
 
 interface Props {
   audioUrl:  string;
   isMine:    boolean;
   duration?: number;
+  messageId: string; // مطلوب لتحديث listened_at
 }
 
 const BARS        = [3,6,9,7,12,8,5,10,6,8,11,7,4,9,6,8,10,5,7,9,6,4,8,5,3];
 const MAX_SECONDS = 10;
 
-// ── Singleton: يوقف أي تشغيل سابق ────────────────────────────
+// ── Singleton: يوقف أي تشغيل سابق ───────────────────────────
 let currentAudio: HTMLAudioElement | null = null;
 let currentStop:  (() => void) | null     = null;
 
@@ -34,7 +37,7 @@ function stopCurrentAudio() {
   currentStop  = null;
 }
 
-export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props) {
+export default function VoiceMessageBubble({ audioUrl, isMine, duration, messageId }: Props) {
   const [playing,   setPlaying]   = useState(false);
   const [progress,  setProgress]  = useState(0);
   const [realDur,   setRealDur]   = useState(duration ?? 0);
@@ -74,12 +77,28 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
     };
 
     audio.onloadedmetadata = () => { if (!tryDur()) audio.currentTime = 1e101; };
-    audio.ondurationchange = () => { tryDur(); if (isFinite(audio.duration)) audio.currentTime = 0; };
+    audio.ondurationchange = () => {
+      tryDur();
+      if (isFinite(audio.duration)) audio.currentTime = 0;
+    };
+
     audio.onended = () => {
       setPlaying(false);
       setProgress(0);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (currentAudio === audio) { currentAudio = null; currentStop = null; }
+
+      // ✅ الطرف الثاني فقط — تحديث listened_at
+      // pg_cron سيحذف الرسالة بعد 30 ثانية تلقائياً
+      if (!isMine && messageId) {
+        supabase
+          .from('messages')
+          .update({ listened_at: new Date().toISOString() })
+          .eq('id', messageId)
+          .then(({ error }) => {
+            if (error) console.error('[VoiceMsg] listened_at update failed:', error.message);
+          });
+      }
     };
 
     audio.src = signedUrl;
@@ -91,7 +110,7 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (currentAudio === audio) { currentAudio = null; currentStop = null; }
     };
-  }, [signedUrl]);
+  }, [signedUrl, isMine, messageId]);
 
   const tick = () => {
     const audio = audioRef.current;
@@ -118,9 +137,12 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
         .then(() => {
           setPlaying(true);
           rafRef.current = requestAnimationFrame(tick);
-          // سجّل نفسك كـ current
           currentAudio = audio;
-          currentStop  = () => { setPlaying(false); setProgress(0); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+          currentStop  = () => {
+            setPlaying(false);
+            setProgress(0);
+            if (rafRef.current) cancelAnimationFrame(rafRef.current);
+          };
         })
         .catch(console.error);
     }
@@ -152,7 +174,6 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 160, maxWidth: 220 }}>
 
-      {/* زر Play/Pause */}
       <motion.button
         whileTap={{ scale: 0.88 }}
         onClick={togglePlay}
@@ -182,7 +203,6 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
         )}
       </motion.button>
 
-      {/* موجة + وقت */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 2, height: 28 }}>
           {BARS.map((h, i) => {
@@ -191,7 +211,9 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
               <motion.div key={i}
                 animate={{ scaleY: playing ? [1, 1.3, 1] : 1 }}
                 transition={playing ? {
-                  repeat: Infinity, duration: 0.6 + (i % 5) * 0.12, delay: (i % 7) * 0.07,
+                  repeat: Infinity,
+                  duration: 0.6 + (i % 5) * 0.12,
+                  delay: (i % 7) * 0.07,
                 } : {}}
                 style={{
                   width: 3, height: h, borderRadius: 2,

@@ -1604,7 +1604,7 @@ export default function OnboardingForm() {
       {/* ── PageHeader ثابت ── */}
       <div data-top-bar dir="rtl" style={{
         position:'fixed',top:0,right:0,left:0,zIndex:1000,
-        height:'var(--header-h)',
+        height:'var(--header-h-safe)',
         display:'flex',alignItems:'center',
         padding:'0 var(--sp-2)',
         background:'var(--bg-surface)',
@@ -1636,7 +1636,7 @@ export default function OnboardingForm() {
 
       {/* ── StickySubHeader — اسم الخطوة + الشريط الرباعي ── */}
       <div style={{
-        position:'sticky',top:'var(--header-h)',zIndex:900,
+        position:'sticky',top:'var(--header-h-safe)',zIndex:900,
         background:'var(--bg-surface)',
         borderBottom:'1px solid var(--glass-border)',
         padding:'0 var(--sp-4) var(--sp-2)',

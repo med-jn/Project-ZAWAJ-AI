@@ -187,12 +187,12 @@ export default function ChatWindow({
           position:      'fixed',
           top: 0, right: 0, left: 0,
           zIndex:        1001,
-          height:        'var(--header-h-safe)',
+          height:        'var(--header-h, 60px)',
+          paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
           display:       'flex',
-          alignItems:    'flex-end',
-          paddingBottom: '8px',
-          paddingLeft:   '4px',
-          paddingRight:  '4px',
+          alignItems:    'center',
+          padding:       '0 4px',
+          paddingTop:    'var(--safe-top, env(safe-area-inset-top, 0px))',
           gap:           4,
           background:    'var(--bg-surface)',
           borderBottom:  '1px solid var(--glass-border)',
@@ -331,7 +331,7 @@ export default function ChatWindow({
       </header>
 
       {/* spacer للهيدر الـ fixed */}
-      <div style={{ height: 'var(--header-h-safe)', flexShrink: 0 }} />
+      <div style={{ height: 'var(--header-h, 60px)', flexShrink: 0 }} />
 
       {/* بانر قبول */}
       <AnimatePresence>
@@ -420,7 +420,11 @@ export default function ChatWindow({
               }}>
 
                 {msg.message_type === 'voice' && msg.audio_url ? (
-                  <VoiceMessageBubble audioUrl={msg.audio_url} isMine={isMine} />
+                  <VoiceMessageBubble
+                    audioUrl={msg.audio_url}
+                    isMine={isMine}
+                    messageId={msg.id}
+                  />
                 ) : msg.message_type === 'voice' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, opacity: 0.7 }}>
                     <div style={{
