@@ -17,8 +17,6 @@ import android.os.Build;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
-import androidx.core.app.Person;
-import androidx.core.graphics.drawable.IconCompat;
 
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -60,7 +58,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         final String chanId  = getOrDef(data, "channel_id", resolveChannel(type));
         final boolean silent = "true".equals(data.get("is_silent"));
 
-        // تحميل الأفاتار في background thread — لا يبطئ الإشعار
         executor.execute(() -> {
             Bitmap bmp = null;
             try {
@@ -73,35 +70,31 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     private void showNotification(String title, String body, String route,
                                    String chanId, boolean silent, Bitmap avatar) {
-        // ✅ RTL: \u202B يجبر Android على عرض النص من اليمين لليسار
-        String rtlTitle = "\u202B" + title;
-        String rtlBody  = "\u202B" + body;
-
         PendingIntent pi = buildPendingIntent(route);
 
-        Person.Builder pb = new Person.Builder().setName(rtlTitle);
-        if (avatar != null) pb.setIcon(IconCompat.createWithBitmap(avatar));
-        Person person = pb.build();
-
-        NotificationCompat.MessagingStyle style =
-            new NotificationCompat.MessagingStyle(person)
-                .setConversationTitle(rtlTitle)
-                .addMessage(rtlBody, System.currentTimeMillis(), person);
+        // ✅ BigTextStyle — أنظف وأكثر توافقاً من MessagingStyle
+        // العنوان = اسم المرسل، النص = محتوى الرسالة
+        NotificationCompat.BigTextStyle style =
+            new NotificationCompat.BigTextStyle()
+                .bigText(body)
+                .setBigContentTitle(title);
 
         NotificationCompat.Builder builder =
             new NotificationCompat.Builder(this, chanId)
                 .setSmallIcon(R.drawable.ic_notification)
-                .setContentTitle(rtlTitle)
-                .setContentText(rtlBody)
+                .setContentTitle(title)   // اسم المرسل
+                .setContentText(body)     // نص الرسالة
                 .setStyle(style)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentIntent(pi)
                 .setColor(0xFFB3334B);
 
+        // ✅ الأفاتار على اليسار (LargeIcon)
         if (avatar != null) builder.setLargeIcon(avatar);
-        if (silent)         builder.setSilent(true);
-        else                builder.setSound(getSoundUri());
+
+        if (silent) builder.setSilent(true);
+        else        builder.setSound(getSoundUri());
 
         try {
             NotificationManagerCompat.from(this).notify(notifId.getAndIncrement(), builder.build());
@@ -110,8 +103,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 
-    // ── PendingIntent ─────────────────────────────────────────
-    // ✅ FLAG_MUTABLE في Android 12+ لضمان وصول الـ Extra
     private PendingIntent buildPendingIntent(String route) {
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);

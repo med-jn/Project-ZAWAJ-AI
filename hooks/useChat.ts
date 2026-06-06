@@ -125,27 +125,54 @@ export function useChat(
         { event: 'INSERT', schema: 'public', table: 'messages',
           filter: `conversation_id=eq.${conversationId}` },
         payload => {
-          const newMsg = payload.new as ChatMessage;
+          const raw = payload.new as ChatMessage;
+
+          // ── رسالة صوتية من المُرسِل نفسه ──────────────────
+          // sendVoiceMessage تحدّثها مباشرة — نتجاهل الـ realtime
+          if (raw.message_type === 'voice' && raw.sender_id === userId) return;
+
+          // ── رسالة صوتية من الطرف الآخر ────────────────────
+          // payload.new لا يحمل audio_url — نجلب الكاملة
+          if (raw.message_type === 'voice' && raw.sender_id !== userId) {
+            void (async () => {
+              const { data: fullMsg } = await supabase
+                .from('messages')
+                .select('id, conversation_id, sender_id, content, message_type, audio_url, is_read, created_at')
+                .eq('id', raw.id)
+                .single();
+              const newMsg = (fullMsg ?? raw) as ChatMessage;
+              setMessages(prev => {
+                if (prev.some(m => m.id === newMsg.id)) return prev;
+                return [...prev, newMsg];
+              });
+              setConvStatus(prev => ({ ...prev, is_unlocked: true, pending_unlock: false }));
+              unlockConversation();
+              markConversationRead();
+            })();
+            return;
+          }
+
+          // ── رسالة نصية ────────────────────────────────────
           setMessages(prev => {
-            if (prev.some(m => m.id === newMsg.id)) return prev;
+            if (prev.some(m => m.id === raw.id)) return prev;
             const tempIdx = prev.findIndex(m =>
               m.is_optimistic &&
-              m.sender_id === newMsg.sender_id &&
-              m.content   === newMsg.content &&
-              Math.abs(new Date(m.created_at).getTime() - new Date(newMsg.created_at).getTime()) < 10000
+              m.sender_id === raw.sender_id &&
+              m.content   === raw.content &&
+              Math.abs(new Date(m.created_at).getTime() - new Date(raw.created_at).getTime()) < 10000
             );
             if (tempIdx !== -1) {
               const updated = [...prev];
-              updated[tempIdx] = { ...newMsg, is_optimistic: false };
+              updated[tempIdx] = { ...raw, is_optimistic: false };
               return updated;
             }
-            return [...prev, newMsg];
+            return [...prev, raw];
           });
-          if (newMsg.sender_id === recipientId) {
+          if (raw.sender_id === recipientId) {
             setConvStatus(prev => ({ ...prev, is_unlocked: true, pending_unlock: false }));
             unlockConversation();
           }
-          if (newMsg.sender_id !== userId) markConversationRead();
+          if (raw.sender_id !== userId) markConversationRead();
         }
       )
       .on(
@@ -153,6 +180,7 @@ export function useChat(
         { event: 'DELETE', schema: 'public', table: 'messages',
           filter: `conversation_id=eq.${conversationId}` },
         payload => {
+          // ✅ حذف فوري للطرفين في الوقت الحقيقي
           setMessages(prev => prev.filter(m => m.id !== payload.old.id));
         }
       )

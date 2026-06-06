@@ -2,8 +2,8 @@
 /**
  * 📁 components/chat/VoiceMessageBubble.tsx — ZAWAJ AI
  * ✅ Signed URL للـ private bucket
+ * ✅ كتم كل الرسائل الأخرى عند التشغيل (Audio singleton)
  * ✅ Duration fix لـ Android AAC
- * ✅ حذف للطرفين عند long press
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -12,20 +12,34 @@ import { Play, Pause } from 'lucide-react';
 import { getVoiceSignedUrl } from '@/lib/supabase/chatStorage';
 
 interface Props {
-  audioUrl:  string; // مسار نسبي أو URL كامل
+  audioUrl:  string;
   isMine:    boolean;
   duration?: number;
 }
 
-const BARS       = [3, 6, 9, 7, 12, 8, 5, 10, 6, 8, 11, 7, 4, 9, 6, 8, 10, 5, 7, 9, 6, 4, 8, 5, 3];
+const BARS        = [3,6,9,7,12,8,5,10,6,8,11,7,4,9,6,8,10,5,7,9,6,4,8,5,3];
 const MAX_SECONDS = 10;
 
+// ── Singleton: يوقف أي تشغيل سابق ────────────────────────────
+let currentAudio: HTMLAudioElement | null = null;
+let currentStop:  (() => void) | null     = null;
+
+function stopCurrentAudio() {
+  if (currentAudio && !currentAudio.paused) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+  }
+  currentStop?.();
+  currentAudio = null;
+  currentStop  = null;
+}
+
 export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props) {
-  const [playing,    setPlaying]    = useState(false);
-  const [progress,   setProgress]   = useState(0);
-  const [realDur,    setRealDur]    = useState(duration ?? 0);
-  const [signedUrl,  setSignedUrl]  = useState<string | null>(null);
-  const [loadError,  setLoadError]  = useState(false);
+  const [playing,   setPlaying]   = useState(false);
+  const [progress,  setProgress]  = useState(0);
+  const [realDur,   setRealDur]   = useState(duration ?? 0);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const rafRef   = useRef<number | null>(null);
@@ -43,7 +57,7 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
     return () => { cancelled = true; };
   }, [audioUrl]);
 
-  // ── init audio بعد جلب signed URL ─────────────────────────
+  // ── init audio ─────────────────────────────────────────────
   useEffect(() => {
     if (!signedUrl) return;
 
@@ -59,17 +73,13 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
       return false;
     };
 
-    audio.onloadedmetadata = () => {
-      if (!tryDur()) audio.currentTime = 1e101;
-    };
-    audio.ondurationchange = () => {
-      tryDur();
-      if (isFinite(audio.duration)) audio.currentTime = 0;
-    };
+    audio.onloadedmetadata = () => { if (!tryDur()) audio.currentTime = 1e101; };
+    audio.ondurationchange = () => { tryDur(); if (isFinite(audio.duration)) audio.currentTime = 0; };
     audio.onended = () => {
       setPlaying(false);
       setProgress(0);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (currentAudio === audio) { currentAudio = null; currentStop = null; }
     };
 
     audio.src = signedUrl;
@@ -79,6 +89,7 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
       audio.pause();
       audio.src = '';
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (currentAudio === audio) { currentAudio = null; currentStop = null; }
     };
   }, [signedUrl]);
 
@@ -98,9 +109,19 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
       audio.pause();
       setPlaying(false);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (currentAudio === audio) { currentAudio = null; currentStop = null; }
     } else {
+      // ✅ أوقف أي رسالة أخرى تعزف
+      stopCurrentAudio();
+
       audio.play()
-        .then(() => { setPlaying(true); rafRef.current = requestAnimationFrame(tick); })
+        .then(() => {
+          setPlaying(true);
+          rafRef.current = requestAnimationFrame(tick);
+          // سجّل نفسك كـ current
+          currentAudio = audio;
+          currentStop  = () => { setPlaying(false); setProgress(0); if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+        })
         .catch(console.error);
     }
   };
@@ -151,8 +172,7 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
             transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
             style={{
               width: 12, height: 12, borderRadius: '50%',
-              border: `2px solid ${accentColor}`,
-              borderTopColor: 'transparent',
+              border: `2px solid ${accentColor}`, borderTopColor: 'transparent',
             }}
           />
         ) : playing ? (
@@ -171,24 +191,18 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration }: Props
               <motion.div key={i}
                 animate={{ scaleY: playing ? [1, 1.3, 1] : 1 }}
                 transition={playing ? {
-                  repeat: Infinity,
-                  duration: 0.6 + (i % 5) * 0.12,
-                  delay: (i % 7) * 0.07,
+                  repeat: Infinity, duration: 0.6 + (i % 5) * 0.12, delay: (i % 7) * 0.07,
                 } : {}}
                 style={{
                   width: 3, height: h, borderRadius: 2,
                   background: filled ? accentColor : dimColor,
-                  transition: 'background 0.1s',
-                  transformOrigin: 'center',
+                  transition: 'background 0.1s', transformOrigin: 'center',
                 }}
               />
             );
           })}
         </div>
-        <span style={{
-          fontSize: 10,
-          color: isMine ? 'rgba(255,255,255,0.6)' : 'var(--text-tertiary)',
-        }}>
+        <span style={{ fontSize: 10, color: isMine ? 'rgba(255,255,255,0.6)' : 'var(--text-tertiary)' }}>
           {displayTime()}
         </span>
       </div>
