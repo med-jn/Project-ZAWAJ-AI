@@ -12,26 +12,47 @@ export default function AuthCallbackPage() {
         const hash   = window.location.hash;
         const search = window.location.search;
 
-        // ── اقرأ type قبل أي شيء آخر ────────────────────────
         const searchParams = new URLSearchParams(search);
         const hashParams   = new URLSearchParams(hash.replace('#', '?'));
-        const type = searchParams.get('type') || hashParams.get('type');
 
-        // ── استبدل الكود بـ session ──────────────────────────
-        const params = hash || search;
-        if (params) {
-          await supabase.auth.exchangeCodeForSession(window.location.href);
+        // ── اقرأ type و token_hash من كل المصادر الممكنة ──────
+        const type       = searchParams.get('type')       || hashParams.get('type');
+        const tokenHash  = searchParams.get('token_hash') || hashParams.get('token_hash');
+        const next       = searchParams.get('next')       || '/home';
+
+        // ── حالة Recovery عبر token_hash (PKCE الحديث) ────────
+        if (tokenHash && type === 'recovery') {
+          const { error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'recovery',
+          });
+          if (!error) { router.replace('/reset-password'); return; }
         }
 
-        await new Promise(r => setTimeout(r, 500));
-
-        // ── توجيه حسب النوع ───────────────────────────────────
-        if (type === 'recovery') {
-          router.replace('/reset-password');
-          return;
+        // ── حالة hash قديمة (#access_token) ────────────────────
+        if (hash.includes('access_token')) {
+          const hp          = new URLSearchParams(hash.replace('#', '?'));
+          const accessToken  = hp.get('access_token')  ?? '';
+          const refreshToken = hp.get('refresh_token') ?? '';
+          const hashType     = hp.get('type');
+          if (accessToken && refreshToken) {
+            await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+            if (hashType === 'recovery') { router.replace('/reset-password'); return; }
+          }
         }
 
-        // ── باقي الحالات ──────────────────────────────────────
+        // ── حالة code (تأكيد الإيميل / تسجيل دخول عادي) ───────
+        const code = searchParams.get('code');
+        if (code) {
+          await supabase.auth.exchangeCodeForSession(code);
+        }
+
+        await new Promise(r => setTimeout(r, 300));
+
+        // ── توجيه حسب type الصريح (fallback) ───────────────────
+        if (type === 'recovery') { router.replace('/reset-password'); return; }
+
+        // ── باقي الحالات ─────────────────────────────────────────
         const { data: { session } } = await supabase.auth.getSession();
 
         if (session) {
@@ -39,7 +60,7 @@ export default function AuthCallbackPage() {
             .from('profiles').select('is_completed')
             .eq('id', session.user.id).maybeSingle();
 
-          router.replace(profile?.is_completed ? '/home' : '/onboarding');
+          router.replace(profile?.is_completed ? next === '/home' ? '/home' : next : '/onboarding');
         } else {
           router.replace('/');
         }
