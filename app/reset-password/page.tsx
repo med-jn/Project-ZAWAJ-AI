@@ -57,46 +57,42 @@ export default function ResetPasswordPage() {
   const [saving,      setSaving]      = useState(false);
   const [error,       setError]       = useState('');
 
-  // ── استقبال الـ session من الرابط ─────────────────────────
+  // ── استقبال الجلسة ─────────────────────────────────────────
   useEffect(() => {
-    const handleReset = async () => {
-      try {
-        // Supabase يضع الـ token في الـ hash أو query string
-        const { data, error } = await supabase.auth.exchangeCodeForSession(
-          window.location.href
-        );
+    // أولاً: تحقق إن كانت الجلسة موجودة مسبقاً (مرّت عبر /auth/callback)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) { setStage('form'); return; }
 
-        if (error || !data.session) {
-          // جرّب من الـ hash مباشرة
-          const hash = window.location.hash;
-          if (hash.includes('access_token')) {
-            const params = new URLSearchParams(hash.replace('#', '?'));
-            const accessToken  = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-            if (accessToken && refreshToken) {
-              await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
-              setStage('form');
-              return;
-            }
+      // ثانياً: استمع لحدث PASSWORD_RECOVERY الذي يُطلقه Supabase
+      // عند فتح الرابط مباشرة بدون callback
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        (event, session) => {
+          if (event === 'PASSWORD_RECOVERY' && session) {
+            setStage('form');
+          } else if (event === 'SIGNED_IN' && session) {
+            setStage('form');
           }
-          setStage('invalid');
-          return;
         }
-        setStage('form');
-      } catch {
-        setStage('invalid');
-      }
-    };
+      );
 
-    handleReset();
+      // ثالثاً: timeout — إذا لم تأت جلسة بعد 4 ثوانٍ فالرابط منتهٍ
+      const timeout = setTimeout(() => {
+        setStage(prev => prev === 'loading' ? 'invalid' : prev);
+      }, 4000);
+
+      return () => {
+        subscription.unsubscribe();
+        clearTimeout(timeout);
+      };
+    });
   }, []);
 
   // ── حفظ كلمة المرور الجديدة ───────────────────────────────
   const handleSave = async () => {
     setError('');
-    if (!newPass)             { setError('أدخل كلمة المرور الجديدة'); return; }
-    if (newPass.length < 8)   { setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return; }
-    if (newPass !== confirmPass) { setError('كلمتا المرور غير متطابقتين'); return; }
+    if (!newPass)                { setError('أدخل كلمة المرور الجديدة'); return; }
+    if (newPass.length < 8)      { setError('كلمة المرور يجب أن تكون 8 أحرف على الأقل'); return; }
+    if (newPass !== confirmPass)  { setError('كلمتا المرور غير متطابقتين'); return; }
 
     setSaving(true);
     const { error: updateError } = await supabase.auth.updateUser({ password: newPass });
@@ -107,7 +103,6 @@ export default function ResetPasswordPage() {
       return;
     }
     setStage('success');
-    // توجيه للصفحة الرئيسية بعد 2 ثانية
     setTimeout(() => router.replace('/home'), 2000);
   };
 
@@ -158,7 +153,7 @@ export default function ResetPasswordPage() {
         يرجى طلب رابط جديد من إعدادات الأمان.
       </p>
       <button
-        onClick={() => router.replace('/settings/security')}
+        onClick={() => router.replace('/security')}
         className="btn-premium"
         style={{ height: 'var(--btn-h)', paddingInline: 'var(--sp-8)', fontSize: 'var(--text-sm)' }}
       >
@@ -191,7 +186,7 @@ export default function ResetPasswordPage() {
         <CheckCircle size={30} />
       </motion.div>
       <h2 style={{ fontSize: 'var(--text-xl)', fontWeight: 800, color: 'var(--text-main)', margin: '0 0 var(--sp-3)', textAlign: 'center' }}>
-        تم تعيين كلمة المرور ✓
+        تم تعيين كلمة المرور
       </h2>
       <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)', textAlign: 'center', margin: 0 }}>
         جارٍ تحويلك...
@@ -216,7 +211,6 @@ export default function ResetPasswordPage() {
         className="glass-panel"
         style={{ width: '100%', maxWidth: 400, padding: 'var(--sp-8)', direction: 'rtl' }}
       >
-        {/* أيقونة */}
         <div style={{
           width: '3.5rem', height: '3.5rem', borderRadius: 'var(--radius-sm)',
           background: 'rgba(179,51,75,0.1)',
@@ -233,7 +227,6 @@ export default function ResetPasswordPage() {
           اختر كلمة مرور قوية لحماية حسابك
         </p>
 
-        {/* رسالة الخطأ */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -254,7 +247,6 @@ export default function ResetPasswordPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
 
-          {/* كلمة المرور الجديدة */}
           <div>
             <label style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
               كلمة المرور الجديدة
@@ -285,7 +277,6 @@ export default function ResetPasswordPage() {
             <StrengthBar pass={newPass} />
           </div>
 
-          {/* تأكيد كلمة المرور */}
           <div>
             <label style={{ display: 'block', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginBottom: 'var(--sp-2)', fontWeight: 600 }}>
               تأكيد كلمة المرور
@@ -314,7 +305,6 @@ export default function ResetPasswordPage() {
                 {showConf ? <EyeOff size={14} /> : <Eye size={14} />}
               </button>
             </div>
-            {/* مؤشر التطابق */}
             {confirmPass && newPass && (
               <motion.p
                 initial={{ opacity: 0 }} animate={{ opacity: 1 }}
@@ -325,7 +315,6 @@ export default function ResetPasswordPage() {
             )}
           </div>
 
-          {/* زر الحفظ */}
           <button
             onClick={handleSave}
             disabled={saving || !newPass || !confirmPass}
