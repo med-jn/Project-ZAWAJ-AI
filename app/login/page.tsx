@@ -74,7 +74,7 @@ export default function LoginPage() {
     }
     setForgotLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(t, {
-      redirectTo: 'https://zawaj.orcaup.com/reset-password',
+      redirectTo: 'https://zawaj.orcaup.com/auth/callback?next=/reset-password',
     });
     setForgotLoading(false);
     if (error) { setForgotError('حدث خطأ، حاول مجدداً'); }
