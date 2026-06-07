@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -20,7 +21,11 @@ import androidx.core.app.NotificationManagerCompat;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
 
+import java.io.InputStream;
+import java.net.URL;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MyFirebaseMessagingService extends FirebaseMessagingService {
@@ -30,7 +35,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final String CH_SUBSCRIPTION = "subscription";
     private static final String CH_SYSTEM       = "system";
 
-    private static final AtomicInteger notifId = new AtomicInteger(1000);
+    private static final AtomicInteger notifId   = new AtomicInteger(1000);
+    private static final ExecutorService executor = Executors.newCachedThreadPool();
 
     @Override
     public void onNewToken(String token) {
@@ -44,57 +50,37 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
         Map<String, String> data = message.getData();
 
-        final String type    = getOrDef(data, "type",       "system");
-        final String title   = getOrDef(data, "title",      "ZAWAJ AI");
-        final String body    = getOrDef(data, "body",       "إشعار جديد");
-        final String route   = getOrDef(data, "route",      "/notifications");
-        final String chanId  = getOrDef(data, "channel_id", resolveChannel(type));
-        final boolean silent = "true".equals(data.get("is_silent"));
+        final String type      = getOrDef(data, "type",       "system");
+        final String title     = getOrDef(data, "title",      "ZAWAJ AI");
+        final String body      = getOrDef(data, "body",       "إشعار جديد");
+        final String avatar    = getOrDef(data, "avatar",     "");
+        final String route     = getOrDef(data, "route",      "/notifications");
+        final String chanId    = getOrDef(data, "channel_id", resolveChannel(type));
+        final boolean silent   = "true".equals(data.get("is_silent"));
+        final boolean blurred  = "true".equals(data.get("is_blurred"));
 
-        // ✅ أفاتار محلي فوري — دائرة #b3334b + الحرف الأول
-        Bitmap avatar = buildLetterAvatar(title);
+        final int id = notifId.getAndIncrement();
 
-        showNotification(title, body, route, chanId, silent, avatar);
-    }
+        if (!avatar.isEmpty() && !blurred) {
+            // ✅ صورة حقيقية غير ضبابية — نعرض أولاً بالحرف ثم نحدّث بالصورة
+            Bitmap letterBmp = buildLetterAvatar(title);
+            showNotification(id, title, body, route, chanId, silent, letterBmp);
 
-    // ── أفاتار نصي محلي — لا network، لا تأخير ──────────────
-    private Bitmap buildLetterAvatar(String name) {
-        int size = 128;
-        Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bmp);
-
-        // دائرة حمراء
-        Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        bgPaint.setColor(Color.parseColor("#b3334b"));
-        canvas.drawCircle(size / 2f, size / 2f, size / 2f, bgPaint);
-
-        // الحرف الأول
-        String letter = "ز";
-        if (name != null && !name.isEmpty()) {
-            // نأخذ أول حرف حقيقي (نتخطى RTL marks والمسافات)
-            for (int i = 0; i < name.length(); i++) {
-                char c = name.charAt(i);
-                if (Character.isLetter(c)) {
-                    letter = String.valueOf(c).toUpperCase();
-                    break;
-                }
-            }
+            executor.execute(() -> {
+                try {
+                    Bitmap raw = loadBitmap(avatar);
+                    if (raw != null) {
+                        showNotification(id, title, body, route, chanId, silent, getRoundedBitmap(raw));
+                    }
+                } catch (Exception ignored) {}
+            });
+        } else {
+            // ✅ صورة ضبابية أو لا صورة — دائرة بالحرف الأول فقط
+            showNotification(id, title, body, route, chanId, silent, buildLetterAvatar(title));
         }
-
-        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(size * 0.45f);
-        textPaint.setTypeface(Typeface.DEFAULT_BOLD);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-
-        // توسيط الحرف عمودياً
-        float y = size / 2f - (textPaint.descent() + textPaint.ascent()) / 2f;
-        canvas.drawText(letter, size / 2f, y, textPaint);
-
-        return bmp;
     }
 
-    private void showNotification(String title, String body, String route,
+    private void showNotification(int id, String title, String body, String route,
                                    String chanId, boolean silent, Bitmap avatar) {
         PendingIntent pi = buildPendingIntent(route);
 
@@ -113,16 +99,61 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setAutoCancel(true)
                 .setContentIntent(pi)
                 .setColor(0xFFB3334B)
+                .setOnlyAlertOnce(true)
                 .setLargeIcon(avatar);
 
         if (silent) builder.setSilent(true);
         else        builder.setSound(getSoundUri());
 
         try {
-            NotificationManagerCompat.from(this).notify(notifId.getAndIncrement(), builder.build());
+            NotificationManagerCompat.from(this).notify(id, builder.build());
         } catch (SecurityException e) {
             e.printStackTrace();
         }
+    }
+
+    // ✅ دائرة #b3334b + الحرف الأول — فورية بدون network
+    private Bitmap buildLetterAvatar(String name) {
+        int size = 128;
+        Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+
+        Paint bg = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bg.setColor(Color.parseColor("#b3334b"));
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, bg);
+
+        String letter = "ز";
+        if (name != null) {
+            for (int i = 0; i < name.length(); i++) {
+                char c = name.charAt(i);
+                if (Character.isLetter(c)) {
+                    letter = String.valueOf(c);
+                    break;
+                }
+            }
+        }
+
+        Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+        text.setColor(Color.WHITE);
+        text.setTextSize(size * 0.45f);
+        text.setTypeface(Typeface.DEFAULT_BOLD);
+        text.setTextAlign(Paint.Align.CENTER);
+        float y = size / 2f - (text.descent() + text.ascent()) / 2f;
+        canvas.drawText(letter, size / 2f, y, text);
+
+        return bmp;
+    }
+
+    private Bitmap getRoundedBitmap(Bitmap src) {
+        if (src == null) return null;
+        int size = Math.min(src.getWidth(), src.getHeight());
+        Bitmap out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(out);
+        Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint);
+        paint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN));
+        canvas.drawBitmap(src, 0, 0, paint);
+        return out;
     }
 
     private PendingIntent buildPendingIntent(String route) {
@@ -138,6 +169,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
         return PendingIntent.getActivity(this, notifId.getAndIncrement(), intent, flags);
+    }
+
+    private Bitmap loadBitmap(String url) {
+        if (url == null || url.isEmpty()) return null;
+        try {
+            InputStream in = new URL(url).openStream();
+            return BitmapFactory.decodeStream(in);
+        } catch (Exception e) { return null; }
     }
 
     private void createAllChannels() {

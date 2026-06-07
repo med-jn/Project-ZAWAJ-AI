@@ -15,12 +15,11 @@ export default function AuthCallbackPage() {
         const searchParams = new URLSearchParams(search);
         const hashParams   = new URLSearchParams(hash.replace('#', '?'));
 
-        // ── اقرأ type و token_hash من كل المصادر الممكنة ──────
-        const type       = searchParams.get('type')       || hashParams.get('type');
-        const tokenHash  = searchParams.get('token_hash') || hashParams.get('token_hash');
-        const next       = searchParams.get('next')       || '/home';
+        const type      = searchParams.get('type')       || hashParams.get('type');
+        const tokenHash = searchParams.get('token_hash') || hashParams.get('token_hash');
+        const next      = searchParams.get('next')       || null;
 
-        // ── حالة Recovery عبر token_hash (PKCE الحديث) ────────
+        // ── حالة Recovery عبر token_hash ────────────────────────
         if (tokenHash && type === 'recovery') {
           const { error } = await supabase.auth.verifyOtp({
             token_hash: tokenHash,
@@ -29,19 +28,20 @@ export default function AuthCallbackPage() {
           if (!error) { router.replace('/reset-password'); return; }
         }
 
-        // ── حالة hash قديمة (#access_token) ────────────────────
+        // ── حالة hash قديمة (#access_token) ─────────────────────
         if (hash.includes('access_token')) {
-          const hp          = new URLSearchParams(hash.replace('#', '?'));
+          const hp           = new URLSearchParams(hash.replace('#', '?'));
           const accessToken  = hp.get('access_token')  ?? '';
           const refreshToken = hp.get('refresh_token') ?? '';
           const hashType     = hp.get('type');
           if (accessToken && refreshToken) {
             await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
             if (hashType === 'recovery') { router.replace('/reset-password'); return; }
+            if (next)                   { router.replace(next);              return; }
           }
         }
 
-        // ── حالة code (تأكيد الإيميل / تسجيل دخول عادي) ───────
+        // ── حالة code ────────────────────────────────────────────
         const code = searchParams.get('code');
         if (code) {
           await supabase.auth.exchangeCodeForSession(code);
@@ -49,7 +49,10 @@ export default function AuthCallbackPage() {
 
         await new Promise(r => setTimeout(r, 300));
 
-        // ── توجيه حسب type الصريح (fallback) ───────────────────
+        // ── next له الأولوية المطلقة بعد تبادل الجلسة ───────────
+        if (next) { router.replace(next); return; }
+
+        // ── type=recovery بدون token_hash (fallback) ─────────────
         if (type === 'recovery') { router.replace('/reset-password'); return; }
 
         // ── باقي الحالات ─────────────────────────────────────────
@@ -60,7 +63,7 @@ export default function AuthCallbackPage() {
             .from('profiles').select('is_completed')
             .eq('id', session.user.id).maybeSingle();
 
-          router.replace(profile?.is_completed ? next === '/home' ? '/home' : next : '/onboarding');
+          router.replace(profile?.is_completed ? '/home' : '/onboarding');
         } else {
           router.replace('/');
         }
