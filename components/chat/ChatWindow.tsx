@@ -1,6 +1,9 @@
 'use client';
 /**
- * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.5
+ * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.6
+ * ✅ "يكتب الآن" — 3 نقاط متموجة في مكان الرسالة القادمة
+ * ✅ VoiceMessageBubble مع messageId
+ * ✅ كل التفاعلات realtime
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -19,7 +22,6 @@ import VoiceRecorder      from './VoiceRecorder';
 import VoiceMessageBubble from './VoiceMessageBubble';
 import ReportSheet        from '@/components/security/ReportSheet';
 
-// ── تاريخ بأرقام لاتينية + 24 ساعة ──────────────────────────
 function msgTime(dateStr: string): string {
   const d    = new Date(dateStr);
   const diff = Date.now() - d.getTime();
@@ -29,13 +31,44 @@ function msgTime(dateStr: string): string {
   if (m < 60)  return `${m} د`;
   const h = Math.floor(m / 60);
   if (h < 24) {
-    // HH:MM بأرقام لاتينية 24h
     const hh = String(d.getHours()).padStart(2, '0');
     const mm  = String(d.getMinutes()).padStart(2, '0');
     return `${hh}:${mm}`;
   }
-  // تاريخ بأرقام لاتينية
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
+}
+
+// ── 3 نقاط متموجة "يكتب الآن" ────────────────────────────────
+function TypingBubble({ isFemale }: { isFemale: boolean }) {
+  return (
+    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+      <div style={{
+        padding: '10px 14px', borderRadius: 18,
+        borderBottomLeftRadius: 4,
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--glass-border)',
+        display: 'flex', alignItems: 'center', gap: 5,
+        minWidth: 60,
+      }}>
+        {[0, 1, 2].map(i => (
+          <motion.div
+            key={i}
+            animate={{ y: [0, -5, 0] }}
+            transition={{
+              repeat: Infinity,
+              duration: 0.7,
+              delay: i * 0.15,
+              ease: 'easeInOut',
+            }}
+            style={{
+              width: 7, height: 7, borderRadius: '50%',
+              background: 'var(--text-tertiary)',
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 interface Recipient {
@@ -83,7 +116,6 @@ export default function ChatWindow({
 
   const scrollRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLInputElement>(null);
-  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isFemale = recipient.gender === 'female';
 
@@ -112,7 +144,7 @@ export default function ChatWindow({
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isTyping]);
 
   const handleSend = async () => {
     const text = inputText.trim();
@@ -144,7 +176,6 @@ export default function ChatWindow({
     setTyping(val.length > 0);
   };
 
-  // ── لمس الرسالة → يظهر التاريخ ────────────────────────────
   const handleMsgTouch = (msgId: string) => {
     setPressedId(prev => prev === msgId ? null : msgId);
   };
@@ -174,13 +205,7 @@ export default function ChatWindow({
       onClick={() => pressedId && setPressedId(null)}
     >
 
-      {/* ══════════════════════════════
-          HEADER — dir="rtl" مثل PageHeader
-          ترتيب DOM (RTL يعكسه):
-          [اسم+أفاتار flex-1] [نقاط] [سهم]
-          النتيجة المرئية:
-          [سهم يسار] [أفاتار+اسم وسط] [نقاط يمين]
-      ══════════════════════════════ */}
+      {/* HEADER */}
       <header
         dir="rtl"
         style={{
@@ -200,19 +225,18 @@ export default function ChatWindow({
           WebkitBackdropFilter: 'blur(8px)',
         }}
       >
-        {/* ① اسم + أفاتار — flex-1 (يمين في RTL) */}
+        {/* أفاتار + اسم */}
         <button
           onClick={() => onOpenProfile?.(recipient.id)}
           style={{
             flex: 1, minWidth: 0,
             display: 'flex', alignItems: 'center',
-            flexDirection: 'row', // أفاتار أولاً ثم الاسم (RTL: أفاتار يمين)
+            flexDirection: 'row',
             gap: 10,
             background: 'transparent', border: 'none', cursor: 'pointer',
             padding: '0 4px', textAlign: 'right',
           }}
         >
-          {/* الأفاتار مع OnlineDot */}
           <div style={{ position: 'relative', width: AVATAR, height: AVATAR, flexShrink: 0 }}>
             <div style={{
               width: AVATAR, height: AVATAR, borderRadius: '50%',
@@ -244,7 +268,6 @@ export default function ChatWindow({
             </div>
           </div>
 
-          {/* الاسم + يكتب الآن */}
           <div style={{ minWidth: 0, flex: 1 }}>
             <span style={{
               color: 'var(--text-main)', fontWeight: 700, fontSize: 15,
@@ -253,6 +276,7 @@ export default function ChatWindow({
             }}>
               {recipient.name}
             </span>
+            {/* ✅ "يكتب الآن" نصي في الهيدر فقط */}
             <AnimatePresence mode="wait">
               {isTyping && (
                 <motion.span key="typing"
@@ -267,7 +291,7 @@ export default function ChatWindow({
           </div>
         </button>
 
-        {/* ② ثلاث نقاط (في RTL: يسار الأفاتار، مرئياً: يمين الشاشة بعد الأفاتار) */}
+        {/* ثلاث نقاط */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button onClick={() => setShowMenu(v => !v)} style={{
             background: 'transparent', border: 'none', cursor: 'pointer',
@@ -319,7 +343,7 @@ export default function ChatWindow({
           </AnimatePresence>
         </div>
 
-        {/* ③ سهم الرجوع (في RTL: آخر عنصر = يسار الشاشة) */}
+        {/* سهم الرجوع */}
         <button onClick={onBack} style={{
           background: 'transparent', border: 'none', cursor: 'pointer',
           width: 44, height: 44, flexShrink: 0,
@@ -330,7 +354,6 @@ export default function ChatWindow({
         </button>
       </header>
 
-      {/* spacer للهيدر الـ fixed */}
       <div style={{ height: 'var(--header-h-safe)', flexShrink: 0 }} />
 
       {/* بانر قبول */}
@@ -395,109 +418,126 @@ export default function ChatWindow({
           }}>
             جارٍ التحميل...
           </div>
-        ) : messages.map(msg => {
-          const isMine    = msg.sender_id === currentUserId;
-          const isPressed = pressedId === msg.id;
+        ) : (
+          <>
+            {messages.map(msg => {
+              const isMine    = msg.sender_id === currentUserId;
+              const isPressed = pressedId === msg.id;
 
-          return (
-            <div key={msg.id} dir="rtl"
-              style={{
-                display: 'flex', flexDirection: 'column',
-                alignItems: isMine ? 'flex-start' : 'flex-end',
-                gap: 2,
-              }}
-              onClick={e => { e.stopPropagation(); handleMsgTouch(msg.id); }}
-            >
-              <div style={{
-                maxWidth: '78%', position: 'relative',
-                padding: '9px 13px', borderRadius: 18,
-                borderBottomRightRadius: isMine ? 4  : 18,
-                borderBottomLeftRadius:  isMine ? 18 : 4,
-                background: isMine ? '#8B1A1A' : 'var(--bg-elevated)',
-                border: `1px solid ${isMine ? 'rgba(139,26,26,0.6)' : 'var(--glass-border)'}`,
-                opacity: msg.is_optimistic ? 0.7 : 1,
-                transition: 'opacity 0.2s',
-              }}>
-
-                {msg.message_type === 'voice' && msg.audio_url ? (
-                  <VoiceMessageBubble audioUrl={msg.audio_url} isMine={isMine} />
-                ) : msg.message_type === 'voice' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, opacity: 0.7 }}>
-                    <div style={{
-                      width: 32, height: 32, borderRadius: '50%',
-                      background: 'rgba(255,255,255,0.15)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                      <Mic size={14} color="rgba(255,255,255,0.7)" />
-                    </div>
-                    <motion.div
-                      animate={{ opacity: [0.4, 1, 0.4] }}
-                      transition={{ repeat: Infinity, duration: 1.2 }}
-                      style={{ width: 60, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }}
-                    />
-                  </div>
-                ) : (
-                  <p style={{
-                    margin: 0, fontSize: 14, lineHeight: 1.6,
-                    color: isMine ? '#ffffff' : 'var(--text-main)',
-                    wordBreak: 'break-word',
+              return (
+                <div key={msg.id} dir="rtl"
+                  style={{
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: isMine ? 'flex-start' : 'flex-end',
+                    gap: 2,
+                  }}
+                  onClick={e => { e.stopPropagation(); handleMsgTouch(msg.id); }}
+                >
+                  <div style={{
+                    maxWidth: '78%', position: 'relative',
+                    padding: '9px 13px', borderRadius: 18,
+                    borderBottomRightRadius: isMine ? 4  : 18,
+                    borderBottomLeftRadius:  isMine ? 18 : 4,
+                    background: isMine ? '#8B1A1A' : 'var(--bg-elevated)',
+                    border: `1px solid ${isMine ? 'rgba(139,26,26,0.6)' : 'var(--glass-border)'}`,
+                    opacity: msg.is_optimistic ? 0.7 : 1,
+                    transition: 'opacity 0.2s',
                   }}>
-                    {msg.content}
-                  </p>
-                )}
 
-                {/* زر الحذف عند اللمس — رسائلي فقط */}
-                <AnimatePresence>
-                  {isMine && isPressed && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.7 }}
-                      animate={{ opacity: 1, scale: 1   }}
-                      exit={{    opacity: 0, scale: 0.7 }}
-                      onClick={e => {
-                        e.stopPropagation();
-                        deleteMessage(msg.id);
-                        setPressedId(null);
-                      }}
-                      style={{
-                        position: 'absolute', top: -12, right: -10,
-                        width: 28, height: 28, borderRadius: '50%',
-                        background: '#f87171', border: 'none', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
-                    >
-                      <Trash2 size={12} color="#fff" />
-                    </motion.button>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* ✅ وقت + حالة القراءة — يظهر عند اللمس */}
-              <AnimatePresence>
-                {isPressed && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0   }}
-                    exit={{    opacity: 0, y: -4   }}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 4,
-                      paddingInline: 6,
-                    }}
-                  >
-                    {/* ✅ علامة القراءة الحقيقية */}
-                    {isMine && (
-                      msg.is_read
-                        ? <CheckCheck size={12} color="#4fc3f7" />
-                        : <Check      size={12} color="var(--text-tertiary)" />
+                    {msg.message_type === 'voice' && msg.audio_url ? (
+                      <VoiceMessageBubble
+                        audioUrl={msg.audio_url}
+                        isMine={isMine}
+                        messageId={msg.id}
+                      />
+                    ) : msg.message_type === 'voice' ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, opacity: 0.7 }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.15)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Mic size={14} color="rgba(255,255,255,0.7)" />
+                        </div>
+                        <motion.div
+                          animate={{ opacity: [0.4, 1, 0.4] }}
+                          transition={{ repeat: Infinity, duration: 1.2 }}
+                          style={{ width: 60, height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.3)' }}
+                        />
+                      </div>
+                    ) : (
+                      <p style={{
+                        margin: 0, fontSize: 14, lineHeight: 1.6,
+                        color: isMine ? '#ffffff' : 'var(--text-main)',
+                        wordBreak: 'break-word',
+                      }}>
+                        {msg.content}
+                      </p>
                     )}
-                    <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
-                      {msgTime(msg.created_at)}
-                    </span>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
+
+                    <AnimatePresence>
+                      {isMine && isPressed && (
+                        <motion.button
+                          initial={{ opacity: 0, scale: 0.7 }}
+                          animate={{ opacity: 1, scale: 1   }}
+                          exit={{    opacity: 0, scale: 0.7 }}
+                          onClick={e => {
+                            e.stopPropagation();
+                            deleteMessage(msg.id);
+                            setPressedId(null);
+                          }}
+                          style={{
+                            position: 'absolute', top: -12, right: -10,
+                            width: 28, height: 28, borderRadius: '50%',
+                            background: '#f87171', border: 'none', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}
+                        >
+                          <Trash2 size={12} color="#fff" />
+                        </motion.button>
+                      )}
+                    </AnimatePresence>
+                  </div>
+
+                  <AnimatePresence>
+                    {isPressed && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -4 }}
+                        animate={{ opacity: 1, y: 0   }}
+                        exit={{    opacity: 0, y: -4   }}
+                        style={{ display: 'flex', alignItems: 'center', gap: 4, paddingInline: 6 }}
+                      >
+                        {isMine && (
+                          msg.is_read
+                            ? <CheckCheck size={12} color="#4fc3f7" />
+                            : <Check      size={12} color="var(--text-tertiary)" />
+                        )}
+                        <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                          {msgTime(msg.created_at)}
+                        </span>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+
+            {/* ✅ فقاعة "يكتب الآن" في مكان الرسالة القادمة */}
+            <AnimatePresence>
+              {isTyping && (
+                <motion.div
+                  key="typing-bubble"
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0,  scale: 1    }}
+                  exit={{    opacity: 0, y: 8,  scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <TypingBubble isFemale={isFemale} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
         <div ref={scrollRef} />
       </div>
 
@@ -527,7 +567,6 @@ export default function ChatWindow({
             border: '1px solid var(--glass-border)',
             borderRadius: 30, padding: '4px',
           }}>
-            {/* زر الإرسال */}
             <motion.button
               whileTap={{ scale: 0.82 }}
               onClick={handleSend}
@@ -542,7 +581,6 @@ export default function ChatWindow({
               <Send size={15} color={hasText ? '#ffffff' : 'var(--text-tertiary)'} />
             </motion.button>
 
-            {/* حقل النص */}
             <input
               ref={inputRef}
               type="text" dir="rtl"
