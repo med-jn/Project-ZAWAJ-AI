@@ -13,15 +13,12 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
 
     private static final String BASE_URL = "https://localhost";
-
-    // نحفظ الـ route هنا إذا وصل قبل جاهزية الـ WebView
     private String pendingRoute = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // ✅ إجبار WebView على الامتداد خلف شريط التنقل
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             getWindow().setDecorFitsSystemWindows(false);
         } else {
@@ -32,7 +29,7 @@ public class MainActivity extends BridgeActivity {
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getWindow().setNavigationBarColor(Color.TRANSPARENT); // شفاف بدل #080008
+            getWindow().setNavigationBarColor(Color.TRANSPARENT);
         }
 
         pendingRoute = extractRoute(getIntent());
@@ -41,10 +38,11 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onStart() {
         super.onStart();
-        // WebView جاهز بعد onStart — ننفّذ الـ route المعلّق
         if (pendingRoute != null) {
-            navigateTo(pendingRoute);
+            final String route = pendingRoute;
             pendingRoute = null;
+            // ✅ تأخير 2.5 ثانية لضمان اكتمال تحميل الـ session في Next.js
+            new Handler(Looper.getMainLooper()).postDelayed(() -> navigateTo(route), 2500);
         }
     }
 
@@ -53,16 +51,12 @@ public class MainActivity extends BridgeActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         String route = extractRoute(intent);
-        if (route != null) {
-            // التطبيق مفتوح بالفعل — WebView جاهز
-            navigateTo(route);
-        }
+        if (route != null) navigateTo(route);
     }
 
     private void navigateTo(final String route) {
         final String targetUrl = BASE_URL + route;
 
-        // نحاول مباشرة أولاً
         if (getBridge() != null && getBridge().getWebView() != null) {
             getBridge().getWebView().post(() ->
                 getBridge().getWebView().loadUrl(targetUrl)
@@ -70,7 +64,6 @@ public class MainActivity extends BridgeActivity {
             return;
         }
 
-        // إذا لم يكن جاهزاً نحاول كل 200ms حتى 3 ثوانٍ
         final Handler handler = new Handler(Looper.getMainLooper());
         final int[] attempts = {0};
         final Runnable[] retry = {null};
@@ -90,13 +83,11 @@ public class MainActivity extends BridgeActivity {
     private String extractRoute(Intent intent) {
         if (intent == null) return null;
 
-        // Extra مباشر من FCM
         String route = intent.getStringExtra("route");
         if (route != null && !route.isEmpty()) {
             return route.startsWith("/") ? route : "/" + route;
         }
 
-        // fallback: URI
         Uri data = intent.getData();
         if (data != null && "zawaj".equals(data.getScheme()) && "app".equals(data.getHost())) {
             String path  = data.getPath();
