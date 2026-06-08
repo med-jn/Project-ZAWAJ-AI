@@ -100,6 +100,7 @@ export default function ChatWindow({
 
   const {
     messages, loading, convStatus,
+    recipientTyping,
     sendMessage, sendVoiceMessage,
     setTyping, deleteMessage,
     markConversationRead, acceptConversation,
@@ -112,31 +113,22 @@ export default function ChatWindow({
   const [showReport,   setShowReport]   = useState(false);
   const [pressedId,    setPressedId]    = useState<string | null>(null);
   const [sendingVoice, setSendingVoice] = useState(false);
-  const [isTyping,     setIsTyping]     = useState(false);
+  const [isBlocked,    setIsBlocked]    = useState(false);
 
   const scrollRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLInputElement>(null);
 
   const isFemale = recipient.gender === 'female';
 
-  // ── Presence ───────────────────────────────────────────────
+  // ── فحص الحظر عند الفتح ──────────────────────────────────
   useEffect(() => {
-    const ch = supabase.channel(`presence_${conversationId}`, {
-      config: { presence: { key: currentUserId } },
-    });
-    ch
-      .on('presence', { event: 'sync' }, () => {
-        const state = ch.presenceState();
-        const other = (Object.values(state).flat() as any[])
-          .find(u => u.user_id === recipient.id);
-        setIsTyping(!!other?.typing);
-      })
-      .subscribe(async s => {
-        if (s === 'SUBSCRIBED')
-          await ch.track({ user_id: currentUserId, typing: false });
-      });
-    return () => { supabase.removeChannel(ch); };
-  }, [conversationId, recipient.id, currentUserId]);
+    if (!currentUserId || !recipient.id) return;
+    supabase.from('blocks')
+      .select('id')
+      .or(`and(blocker_id.eq.${currentUserId},blocked_id.eq.${recipient.id}),and(blocker_id.eq.${recipient.id},blocked_id.eq.${currentUserId})`)
+      .maybeSingle()
+      .then(({ data }) => setIsBlocked(!!data));
+  }, [currentUserId, recipient.id]);
 
   useEffect(() => {
     if (messages.length > 0) markConversationRead();
@@ -182,10 +174,12 @@ export default function ChatWindow({
 
   const handleBlock = async () => {
     setShowMenu(false);
-    await supabase.from('likes').upsert(
-      { from_user: currentUserId, to_user: recipient.id, action: 'block' },
-      { onConflict: 'from_user,to_user,action' }
+    // ✅ الحظر في جدول blocks المخصص
+    await supabase.from('blocks').upsert(
+      { blocker_id: currentUserId, blocked_id: recipient.id },
+      { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
     );
+    setIsBlocked(true);
     onBlock?.();
     onBack();
   };
@@ -278,7 +272,7 @@ export default function ChatWindow({
             </span>
             {/* ✅ "يكتب الآن" نصي في الهيدر فقط */}
             <AnimatePresence mode="wait">
-              {isTyping && (
+              {recipientTyping && (
                 <motion.span key="typing"
                   initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
@@ -524,7 +518,7 @@ export default function ChatWindow({
 
             {/* ✅ فقاعة "يكتب الآن" في مكان الرسالة القادمة */}
             <AnimatePresence>
-              {isTyping && (
+              {recipientTyping && (
                 <motion.div
                   key="typing-bubble"
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
@@ -541,6 +535,28 @@ export default function ChatWindow({
         <div ref={scrollRef} />
       </div>
 
+      {/* بانر الحظر */}
+      <AnimatePresence>
+        {isBlocked && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            style={{
+              background: 'rgba(239,68,68,0.08)',
+              borderTop: '1px solid rgba(239,68,68,0.2)',
+              padding: '10px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 12, color: '#ef4444', textAlign: 'center' }}>
+              لا يمكنك مراسلة هذا المستخدم
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* شريط الإدخال */}
       <div dir="rtl" style={{
         padding:       '8px 12px',
@@ -549,7 +565,18 @@ export default function ChatWindow({
         borderTop:     '1px solid var(--glass-border)',
         flexShrink:    0,
       }}>
-        {showWaitBanner ? (
+        {isBlocked ? (
+          <div style={{
+            height: 46, borderRadius: 30,
+            background: 'var(--glass-bg)',
+            border: '1px solid rgba(239,68,68,0.3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <span style={{ fontSize: 12, color: '#ef4444' }}>
+              المراسلة محظورة
+            </span>
+          </div>
+        ) : showWaitBanner ? (
           <div style={{
             height: 46, borderRadius: 30,
             background: 'var(--glass-bg)',

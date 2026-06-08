@@ -47,7 +47,8 @@ export function useChat(
     pending_unlock: false,
   });
 
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const channelRef      = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const [recipientTyping, setRecipientTyping] = useState(false);
 
   const fetchConvStatus = async () => {
     if (!conversationId || !userId || !recipientId) return;
@@ -119,7 +120,15 @@ export function useChat(
     fetchConvStatus();
 
     const channel = supabase
-      .channel(`chat_${conversationId}`)
+      .channel(`chat_${conversationId}`, {
+        config: { presence: { key: userId } },
+      })
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const other = (Object.values(state).flat() as any[])
+          .find((u: any) => u.user_id === recipientId);
+        setRecipientTyping(!!other?.typing);
+      })
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages',
@@ -214,7 +223,11 @@ export function useChat(
           }
         }
       )
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({ user_id: userId, typing: false });
+        }
+      });
 
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
@@ -323,7 +336,8 @@ export function useChat(
   };
 
   const setTyping = (isTyping: boolean) => {
-    channelRef.current?.track({ user_id: userId, typing: isTyping });
+    channelRef.current?.track({ user_id: userId, typing: isTyping })
+      .catch(() => {});
   };
 
   const deleteMessage = async (messageId: string) => {
@@ -348,6 +362,7 @@ export function useChat(
     messages,
     loading,
     convStatus,
+    recipientTyping,
     sendMessage,
     sendVoiceMessage,
     setTyping,

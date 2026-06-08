@@ -1,14 +1,15 @@
 'use client';
 /**
  * 📁 hooks/usePushNotifications.ts — ZAWAJ AI
- * ✅ يقرأ الـ route من SharedPreferences بعد اكتمال الـ session
- * ✅ Cold Start: route محفوظ في Java → يُقرأ هنا بعد تسجيل الدخول
- * ✅ Warm Start: pushNotificationActionPerformed يتنقل مباشرة
+ * ✅ @capacitor/preferences للقراءة بعد اكتمال الـ session
+ * ✅ Cold Start: route محفوظ من Java → يُقرأ هنا
+ * ✅ Warm Start: pushNotificationActionPerformed مباشر
  */
 
 import { useEffect, useRef } from 'react';
 import { useRouter }         from 'next/navigation';
 import { Capacitor }         from '@capacitor/core';
+import { Preferences }       from '@capacitor/preferences';
 import {
   PushNotifications,
   type Token,
@@ -32,9 +33,11 @@ const _push = {
   userId:         '',
 };
 
+const ROUTE_KEY = 'pending_route';
+
 export function usePushNotifications(userId?: string) {
-  const router       = useRouter();
-  const consumedRef  = useRef(false); // نستهلك الـ route مرة واحدة فقط
+  const router      = useRouter();
+  const consumedRef = useRef(false);
 
   if (userId) _push.userId = userId;
 
@@ -45,36 +48,32 @@ export function usePushNotifications(userId?: string) {
 
     consumedRef.current = true;
 
-    // نقرأ الـ route من SharedPreferences عبر Capacitor Preferences plugin
-    // أو عبر قراءة localStorage الذي حفظه Java
-    // الحل: نستدعي دالة Java مباشرة عبر WebView JavaScript interface
-    const checkPendingRoute = () => {
+    const checkPending = async () => {
       try {
-        // نستخدم localStorage كجسر بين Java و JS
-        // MainActivity.java يحفظ الـ route في SharedPreferences
-        // نقرأه عبر window.__pendingRoute الذي يُحقن من Java
-        const route = (window as any).__pendingRoute;
-        if (route && typeof route === 'string' && route.startsWith('/')) {
-          delete (window as any).__pendingRoute;
-          router.push(route);
+        const { value } = await Preferences.get({ key: ROUTE_KEY });
+        if (value && value.startsWith('/')) {
+          // ✅ نحذف أولاً ثم ننتقل — لا تكرار
+          await Preferences.remove({ key: ROUTE_KEY });
+          router.push(value);
         }
-      } catch (_) {}
+      } catch (e) {
+        console.error('[Push] checkPending error:', e);
+      }
     };
 
-    // ننتظر قليلاً للتأكد من تحميل كل شيء
-    setTimeout(checkPendingRoute, 500);
-    setTimeout(checkPendingRoute, 1500);
-    setTimeout(checkPendingRoute, 3000);
+    // نحاول مرتين — مرة فوراً ومرة بعد ثانية للتأكد
+    checkPending();
+    const t = setTimeout(checkPending, 1000);
+    return () => clearTimeout(t);
 
   }, [userId]);
 
+  // ✅ تسجيل المستمعات
   useEffect(() => {
     if (!userId) return;
     if (Capacitor.getPlatform() !== 'android') return;
 
-    const navigate = (route: string) => {
-      router.push(route);
-    };
+    const navigate = (route: string) => router.push(route);
 
     const run = async () => {
       let perm = await PushNotifications.checkPermissions();
@@ -121,10 +120,10 @@ export function usePushNotifications(userId?: string) {
           (_n: PushNotificationSchema) => {}
         );
 
-        // ✅ Warm Start: التطبيق في الخلفية — Capacitor يُطلق هذا الحدث
+        // ✅ Warm Start: التطبيق في الخلفية
         PushNotifications.addListener(
           'pushNotificationActionPerformed',
-          (action: ActionPerformed) => {
+          async (action: ActionPerformed) => {
             const data = action.notification.data as FCMData;
 
             if (_push.userId) {
@@ -134,8 +133,11 @@ export function usePushNotifications(userId?: string) {
                 .then(() => {});
             }
 
-            // route من السيرفر مباشرة
-            if (data.route) {
+            // نحذف الـ pending route لأن Warm Start يعالجه هنا
+            await Preferences.remove({ key: ROUTE_KEY });
+
+            // route من السيرفر
+            if (data.route && data.route.startsWith('/')) {
               navigate(data.route);
               return;
             }
