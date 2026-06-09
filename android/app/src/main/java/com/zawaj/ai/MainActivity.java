@@ -1,6 +1,7 @@
 package com.zawaj.ai;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
@@ -9,6 +10,10 @@ import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
+
+    // ✅ نفس اسم الـ SharedPreferences الذي يستخدمه @capacitor/preferences
+    private static final String PREFS_NAME = "CapacitorStorage";
+    private static final String ROUTE_KEY  = "pending_route";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,9 +32,10 @@ public class MainActivity extends BridgeActivity {
             getWindow().setNavigationBarColor(Color.TRANSPARENT);
         }
 
-        // ✅ حفظ الـ route من الإشعار في SharedPreferences
         String route = extractRoute(getIntent());
-        if (route != null) saveRoute(route);
+        if (route != null) {
+            savePendingRoute(route);
+        }
     }
 
     @Override
@@ -37,28 +43,24 @@ public class MainActivity extends BridgeActivity {
         super.onNewIntent(intent);
         setIntent(intent);
         String route = extractRoute(intent);
-        if (route != null) saveRoute(route);
+        if (route != null) {
+            savePendingRoute(route);
+        }
     }
 
-    // ✅ يحفظ الـ route في نفس SharedPreferences التي يقرأها @capacitor/preferences
-    // المفتاح: "CapacitorStorage.pending_route"
-    private void saveRoute(String route) {
-        getSharedPreferences("CapacitorStorage", MODE_PRIVATE)
-            .edit()
-            .putString("pending_route", route)
-            .apply();
+    private void savePendingRoute(String route) {
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        prefs.edit().putString(ROUTE_KEY, route).apply();
     }
 
     private String extractRoute(Intent intent) {
         if (intent == null) return null;
 
-        // Extra من FCM notification
         String route = intent.getStringExtra("route");
         if (route != null && !route.isEmpty()) {
             return route.startsWith("/") ? route : "/" + route;
         }
 
-        // fallback: URI
         Uri data = intent.getData();
         if (data != null && "zawaj".equals(data.getScheme()) && "app".equals(data.getHost())) {
             String path  = data.getPath();

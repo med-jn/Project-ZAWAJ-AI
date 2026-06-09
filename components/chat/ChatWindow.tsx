@@ -136,7 +136,7 @@ export default function ChatWindow({
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isTyping]);
+  }, [messages, recipientTyping]);
 
   const handleSend = async () => {
     const text = inputText.trim();

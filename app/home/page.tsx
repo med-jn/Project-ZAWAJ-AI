@@ -1,140 +1,214 @@
 'use client';
-
 /**
- * 📁 app/home/page.tsx — ZAWAJ AI v2 (UPDATED)
+ * 📁 app/home/page.tsx — ZAWAJ AI v3
+ * ✅ نظام الحظر مدمج (جدول blocks في الاتجاهين)
+ * ✅ like يُستثنى نهائياً | pass يعود في الدورة التالية
+ * ✅ حلقة لا نهائية: بعد آخر بطاقة يبدأ من جديد (cycle++)
+ * ✅ حفظ الموضع في localStorage (فوري) + Supabase (احتياطي)
+ * ✅ استعادة الموضع عند فتح التطبيق بعد الإغلاق
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion }            from 'framer-motion';
 import { SlidersHorizontal } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase/client';
-import { MatchingEngine } from '@/lib/services/MatchingEngine';
-import UserCard from '@/components/cards/usercard';
-
+import { useRouter }         from 'next/navigation';
+import { supabase }          from '@/lib/supabase/client';
+import { MatchingEngine }    from '@/lib/services/MatchingEngine';
+import UserCard              from '@/components/cards/usercard';
 import {
-  loadFilters,
-  filtersAreActive,
-  type DiscoveryFilters,
-  DEFAULT_FILTERS,
+  loadFilters, filtersAreActive,
+  type DiscoveryFilters, DEFAULT_FILTERS,
 } from '@/app/filter/page';
 
-// ── Cache ─────────────────────────────────────────────
-const SEEN_KEY = (uid: string) => `zawaj_seen_${uid}`;
-const QUEUE_KEY = (uid: string) => `zawaj_queue_${uid}`;
-const SEEN_TTL = 24 * 60 * 60 * 1000;
-const QUEUE_TTL = 60 * 60 * 1000;
+// ══════════════════════════════════════════════════════════════
+// ── ثوابت مفاتيح التخزين ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+const LS_INDEX_KEY  = (uid: string) => `zawaj_idx_${uid}`;   // الموضع الحالي
+const LS_CYCLE_KEY  = (uid: string) => `zawaj_cycle_${uid}`; // رقم الدورة
+const LS_QUEUE_KEY  = (uid: string) => `zawaj_queue_${uid}`; // قائمة البطاقات
+const QUEUE_TTL     = 2 * 60 * 60 * 1000; // ساعتان قبل تجديد الكاش
 
-function getSeenIds(uid: string): string[] {
+// ── مفتاح Supabase (عمود في profiles) لحفظ الموضع احتياطياً ──
+// سنحفظ JSON خفيف في حقل ai_feedback مؤقتاً أو يمكن إنشاء جدول مخصص.
+// الأفضل: عمود منفصل — لكن لتجنب migration الآن نستخدم localStorage أساساً
+// وSupa فقط كـ backup عبر دالة مخصصة.
+const SUPABASE_POS_TABLE = 'profiles'; // نحفظ في عمود discovery_position (JSONB)
+// إذا لم يكن العمود موجوداً سيُهمل بصمت
+
+// ══════════════════════════════════════════════════════════════
+// ── helpers: localStorage ────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+
+function lsGet<T>(key: string, fallback: T): T {
   try {
-    const raw = sessionStorage.getItem(SEEN_KEY(uid));
-    if (!raw) return [];
-    const arr: { id: string; ts: number }[] = JSON.parse(raw);
-    return arr.filter(x => Date.now() - x.ts < SEEN_TTL).map(x => x.id);
-  } catch {
-    return [];
-  }
+    const v = localStorage.getItem(key);
+    return v !== null ? JSON.parse(v) : fallback;
+  } catch { return fallback; }
 }
 
-function addSeenId(uid: string, pid: string) {
-  try {
-    const raw = sessionStorage.getItem(SEEN_KEY(uid));
-    const arr: { id: string; ts: number }[] = raw ? JSON.parse(raw) : [];
-    const fresh = arr.filter(x => Date.now() - x.ts < SEEN_TTL && x.id !== pid);
-    fresh.push({ id: pid, ts: Date.now() });
-    sessionStorage.setItem(SEEN_KEY(uid), JSON.stringify(fresh));
-  } catch {}
+function lsSet(key: string, val: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
 }
 
-function getCachedQueue(uid: string): any[] {
+// ── queue cache ───────────────────────────────────────────────
+function getCachedQueue(uid: string): any[] | null {
   try {
-    const raw = sessionStorage.getItem(QUEUE_KEY(uid));
-    if (!raw) return [];
+    const raw = localStorage.getItem(LS_QUEUE_KEY(uid));
+    if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
     if (Date.now() - ts > QUEUE_TTL) {
-      sessionStorage.removeItem(QUEUE_KEY(uid));
-      return [];
+      localStorage.removeItem(LS_QUEUE_KEY(uid));
+      return null;
     }
-    return data ?? [];
-  } catch {
-    return [];
-  }
+    return data ?? null;
+  } catch { return null; }
 }
 
 function saveCachedQueue(uid: string, data: any[]) {
   try {
-    sessionStorage.setItem(QUEUE_KEY(uid), JSON.stringify({ ts: Date.now(), data }));
+    localStorage.setItem(LS_QUEUE_KEY(uid), JSON.stringify({ ts: Date.now(), data }));
   } catch {}
 }
 
 function clearCachedQueue(uid: string) {
-  try {
-    sessionStorage.removeItem(QUEUE_KEY(uid));
-  } catch {}
+  try { localStorage.removeItem(LS_QUEUE_KEY(uid)); } catch {}
 }
 
-// ──────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// ── helpers: Supabase position backup ────────────────────────
+// ══════════════════════════════════════════════════════════════
 
+async function savePositionToSupabase(uid: string, index: number, cycle: number) {
+  try {
+    await supabase
+      .from(SUPABASE_POS_TABLE)
+      .update({ discovery_position: { index, cycle, ts: Date.now() } } as any)
+      .eq('id', uid);
+  } catch { /* عمود غير موجود بعد — يُهمل بصمت */ }
+}
+
+async function loadPositionFromSupabase(uid: string): Promise<{ index: number; cycle: number } | null> {
+  try {
+    const { data } = await supabase
+      .from(SUPABASE_POS_TABLE)
+      .select('discovery_position')
+      .eq('id', uid)
+      .single();
+    if (!data?.discovery_position) return null;
+    const pos = data.discovery_position as { index: number; cycle: number; ts: number };
+    // تجاهل إذا أقدم من 7 أيام
+    if (Date.now() - (pos.ts ?? 0) > 7 * 24 * 60 * 60 * 1000) return null;
+    return { index: pos.index ?? 0, cycle: pos.cycle ?? 0 };
+  } catch { return null; }
+}
+
+// حفظ position بـ debounce (لا نكتب لـ Supabase في كل سوايب)
+let _savePosTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSavePosition(uid: string, index: number, cycle: number) {
+  if (_savePosTimer) clearTimeout(_savePosTimer);
+  _savePosTimer = setTimeout(() => savePositionToSupabase(uid, index, cycle), 4000);
+}
+
+// ══════════════════════════════════════════════════════════════
+// ── الصفحة الرئيسية ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
 export default function HomePage() {
   const router = useRouter();
 
-  const [users, setUsers] = useState<any[]>([]);
+  const [users,        setUsers]        = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState<any>(null);
-  const [filters, setFilters] = useState<DiscoveryFilters>(DEFAULT_FILTERS);
+  const [cycle,        setCycle]        = useState(0);   // رقم الدورة (للحلقة اللانهائية)
+  const [loading,      setLoading]      = useState(true);
+  const [currentUser,  setCurrentUser]  = useState<any>(null);
+  const [filters,      setFilters]      = useState<DiscoveryFilters>(DEFAULT_FILTERS);
 
-  const uidRef = useRef<string | null>(null);
+  const uidRef   = useRef<string | null>(null);
+  const usersRef = useRef<any[]>([]);   // mirror لـ users لتجنب stale closure
 
-  // ── load ─────────────────────────────────────────────
-  const load = useCallback(async (activeFilters: DiscoveryFilters) => {
+  // sync ref مع state
+  useEffect(() => { usersRef.current = users; }, [users]);
+
+  // ══════════════════════════════════════════════════════════
+  // ── تحميل البطاقات ───────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  const load = useCallback(async (
+    activeFilters: DiscoveryFilters,
+    opts: { resetPosition?: boolean } = {}
+  ) => {
     setLoading(true);
-    setCurrentIndex(0);
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return setLoading(false);
-
+    if (!user) { setLoading(false); return; }
     uidRef.current = user.id;
 
     const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile) return setLoading(false);
-
+      .from('profiles').select('*').eq('id', user.id).single();
+    if (!profile) { setLoading(false); return; }
     setCurrentUser(profile);
 
-    const cached = getCachedQueue(user.id);
+    // ── استعادة الموضع ──────────────────────────────────────
+    let savedIndex = 0;
+    let savedCycle = 0;
 
-    if (cached.length) {
+    if (!opts.resetPosition) {
+      // 1. localStorage أولاً (أسرع)
+      const lsIndex = lsGet<number>(LS_INDEX_KEY(user.id), -1);
+      const lsCycle = lsGet<number>(LS_CYCLE_KEY(user.id), 0);
+
+      if (lsIndex >= 0) {
+        savedIndex = lsIndex;
+        savedCycle = lsCycle;
+      } else {
+        // 2. Supabase احتياطياً
+        const supaPos = await loadPositionFromSupabase(user.id);
+        if (supaPos) {
+          savedIndex = supaPos.index;
+          savedCycle = supaPos.cycle;
+          // نسخ للـ localStorage
+          lsSet(LS_INDEX_KEY(user.id), savedIndex);
+          lsSet(LS_CYCLE_KEY(user.id), savedCycle);
+        }
+      }
+    }
+
+    // ── محاولة كاش ──────────────────────────────────────────
+    const cached = getCachedQueue(user.id);
+    if (cached && cached.length > 0 && !opts.resetPosition) {
       setUsers(cached);
+      setCurrentIndex(savedIndex < cached.length ? savedIndex : 0);
+      setCycle(savedCycle);
       setLoading(false);
-      fetchFresh(user.id, profile, activeFilters, true);
+      // تجديد خلفي صامت
+      fetchFresh(user.id, profile, activeFilters, true, savedIndex, savedCycle);
       return;
     }
 
-    await fetchFresh(user.id, profile, activeFilters, false);
-  }, []);
+    await fetchFresh(user.id, profile, activeFilters, false, savedIndex, savedCycle);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ══════════════════════════════════════════════════════════
+  // ── جلب بيانات جديدة ─────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
   const fetchFresh = async (
     uid: string,
     profile: any,
     activeFilters: DiscoveryFilters,
-    silent: boolean
+    silent: boolean,
+    restoreIndex: number = 0,
+    restoreCycle: number = 0,
   ) => {
-
-    const result = await MatchingEngine.getSmartSuggestions(
+    /**
+     * في الدورة اللانهائية لا نمرر excludeIds لـ MatchingEngine
+     * لأننا نريد رؤية من مررناهم (pass) مجدداً.
+     * MatchingEngine يستثني تلقائياً: المحظورين + المُعجَب بهم (like).
+     */
+    const { data: smartUsers } = await MatchingEngine.getSmartSuggestions(
       profile,
-      activeFilters
+      { ...activeFilters }
     );
 
-    const smartUsers = result.data ?? [];
-
-    if (!smartUsers.length) {
-      if (!silent) setUsers([]);
-      if (!silent) setLoading(false);
+    if (!smartUsers?.length) {
+      if (!silent) { setUsers([]); setLoading(false); }
       return;
     }
 
@@ -142,122 +216,208 @@ export default function HomePage() {
 
     if (!silent) {
       setUsers(smartUsers);
+      // استعادة الموضع (تأكد أنه ضمن الحدود)
+      const safeIndex = restoreIndex < smartUsers.length ? restoreIndex : 0;
+      setCurrentIndex(safeIndex);
+      setCycle(restoreCycle);
       setLoading(false);
     }
   };
 
-  // ── mount ───────────────────────────────────────────
+  // ── load عند mount ─────────────────────────────────────────
   useEffect(() => {
     const f = loadFilters();
     setFilters(f);
     load(f);
   }, [load]);
 
-  // ── refresh on focus ────────────────────────────────
+  // ── إعادة load عند العودة من /filter ──────────────────────
   useEffect(() => {
     const handler = () => {
       const f = loadFilters();
       setFilters(f);
       if (uidRef.current) clearCachedQueue(uidRef.current);
-      load(f);
+      load(f, { resetPosition: true });
     };
-
     window.addEventListener('focus', handler);
     return () => window.removeEventListener('focus', handler);
   }, [load]);
 
-  // ── next card ───────────────────────────────────────
+  // ══════════════════════════════════════════════════════════
+  // ── التقدم للبطاقة التالية (الحلقة اللانهائية) ───────────
+  // ══════════════════════════════════════════════════════════
   const handleNext = useCallback(() => {
-    if (!currentUser) return;
+    if (!currentUser || !uidRef.current) return;
 
-    const current = users[currentIndex];
+    setCurrentIndex(prevIdx => {
+      const total     = usersRef.current.length;
+      const nextIdx   = prevIdx + 1;
+      let finalIdx    = nextIdx;
+      let finalCycle  = cycle;
 
-    if (current) addSeenId(currentUser.id, current.id);
+      // ── انتهت الدورة → ابدأ من الصفر ──
+      if (nextIdx >= total) {
+        finalIdx   = 0;
+        finalCycle = cycle + 1;
+        setCycle(finalCycle);
 
-    setCurrentIndex(prev => prev + 1);
-  }, [users, currentIndex, currentUser]);
+        // تجديد القائمة في الخلفية (بصمت) لاصطياد أعضاء جدد
+        if (uidRef.current && currentUser) {
+          const activeFilters = loadFilters();
+          fetchFresh(uidRef.current, currentUser, activeFilters, true, 0, finalCycle);
+        }
+      }
+
+      // ── حفظ الموضع ────────────────────────────────────────
+      lsSet(LS_INDEX_KEY(uidRef.current!), finalIdx);
+      lsSet(LS_CYCLE_KEY(uidRef.current!), finalCycle);
+      scheduleSavePosition(uidRef.current!, finalIdx, finalCycle);
+
+      return finalIdx;
+    });
+  }, [currentUser, cycle]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const active = filtersAreActive(filters);
 
-  // ── loading ─────────────────────────────────────────
-  if (loading) {
+  // ── حالة التحميل ────────────────────────────────────────
+  if (loading) return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      background: 'var(--bg-main)',
+    }}>
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
+        style={{
+          width: 36, height: 36, borderRadius: '50%',
+          border: '3px solid var(--glass-border)',
+          borderTopColor: 'var(--color-primary)',
+        }}
+      />
+    </div>
+  );
+
+  // ── لا نتائج بالمرة (قاعدة فارغة) ─────────────────────
+  if (users.length === 0) {
     return (
       <div style={{
-        position: 'fixed',
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
+        position: 'fixed', inset: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        gap: 'var(--sp-5)', padding: '0 var(--sp-8)',
+        background: 'var(--bg-main)',
+        direction: 'rtl',
       }}>
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: '50%',
-            border: '3px solid rgba(255,255,255,0.2)',
-            borderTopColor: '#ff4d6d',
-          }}
-        />
-      </div>
-    );
-  }
+        <div style={{
+          width: 72, height: 72, borderRadius: '50%',
+          background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <SlidersHorizontal size={28} style={{ color: 'var(--color-primary)', opacity: 0.7 }} />
+        </div>
 
-  // ── empty / finished ────────────────────────────────
-  if (users.length === 0 || currentIndex >= users.length) {
-    const finished = users.length > 0;
-
-    return (
-      <div style={{
-        position: 'fixed',
-        inset: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        gap: 16,
-        textAlign: 'center'
-      }}>
-        <SlidersHorizontal size={32} opacity={0.6} />
-
-        <h3>
-          {finished ? 'شاهدت كل البطاقات المتاحة' : 'لا توجد نتائج'}
-        </h3>
-
-        <p style={{ opacity: 0.6 }}>
-          {active && !finished ? 'جرّب توسيع الفلاتر' : 'عد لاحقاً'}
+        <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-xl)', textAlign: 'center', margin: 0 }}>
+          لا توجد نتائج
+        </p>
+        <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)', textAlign: 'center', margin: 0 }}>
+          {active ? 'جرّب توسيع نطاق الفلاتر' : 'عد لاحقاً لاكتشاف ملفات جديدة'}
         </p>
 
         {active && (
-          <button onClick={() => router.push('/filter')}>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => router.push('/filter')}
+            style={{
+              padding: 'var(--sp-3) var(--sp-6)',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--color-primary-xsoft)',
+              border: '1px solid var(--color-primary-soft)',
+              color: 'var(--color-primary)',
+              fontWeight: 800, fontSize: 'var(--text-sm)',
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}
+          >
             تعديل الفلاتر
-          </button>
+          </motion.button>
         )}
       </div>
     );
   }
 
-  const c = users[currentIndex];
+  // ── في الحلقة اللانهائية لن يصل currentIndex >= users.length أبداً ──
+  // لكن كحماية إضافية:
+  const safeIndex = currentIndex % users.length;
+  const c = users[safeIndex];
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
 
-      {/* filters */}
-      <button onClick={() => router.push('/filter')}>
+      {/* ── زر الفلاتر ─────────────────────────────────────── */}
+      <motion.button
+        whileTap={{ scale: 0.92 }}
+        onClick={() => router.push('/filter')}
+        style={{
+          position: 'fixed',
+          top: 'calc(var(--header-h, 0px) + var(--sp-3))',
+          left: 'var(--sp-4)',
+          zIndex: 200,
+          display: 'flex', alignItems: 'center', gap: 'var(--sp-2)',
+          padding: 'var(--sp-2) var(--sp-3)',
+          borderRadius: 'var(--radius-lg)',
+          background: active
+            ? 'rgba(192,0,42,0.18)'
+            : 'rgba(0,0,0,0.28)',
+          border: `1px solid ${active ? 'rgba(192,0,42,0.4)' : 'rgba(255,255,255,0.12)'}`,
+          backdropFilter: 'blur(14px)',
+          color: active ? '#ff6680' : 'rgba(255,255,255,0.72)',
+          fontSize: 'var(--text-xs)', fontWeight: 700,
+          cursor: 'pointer', fontFamily: 'inherit',
+          boxShadow: active
+            ? '0 4px 16px rgba(192,0,42,0.22)'
+            : '0 4px 12px rgba(0,0,0,0.18)',
+        }}
+      >
+        <SlidersHorizontal size={14} />
         {active ? 'فلاتر نشطة' : 'فلاتر'}
-      </button>
+        {active && (
+          <span style={{
+            width: 6, height: 6, borderRadius: '50%',
+            background: '#ff6680', display: 'inline-block', flexShrink: 0,
+          }} />
+        )}
+      </motion.button>
 
-      {/* card */}
+      {/* ── مؤشر الدورة (اختياري — يُظهر للمستخدم أنه في جولة جديدة) ── */}
+      {cycle > 0 && (
+        <div style={{
+          position: 'fixed',
+          top: 'calc(var(--header-h, 0px) + var(--sp-3))',
+          right: 'var(--sp-4)',
+          zIndex: 200,
+          padding: 'var(--sp-1) var(--sp-3)',
+          borderRadius: 'var(--radius-lg)',
+          background: 'rgba(0,0,0,0.28)',
+          border: '1px solid rgba(255,255,255,0.10)',
+          backdropFilter: 'blur(14px)',
+          color: 'rgba(255,255,255,0.45)',
+          fontSize: 'var(--text-xs)', fontWeight: 600,
+          direction: 'rtl',
+        }}>
+          جولة {cycle + 1}
+        </div>
+      )}
+
+      {/* ── البطاقة ──────────────────────────────────────────── */}
       <UserCard
-        key={c.id}
+        key={`${c.id}-${cycle}`}   // key يتغير مع الدورة أيضاً لإعادة البناء الصحيحة
         userData={{
-          id: c.id,
-          name: c.full_name || '—',
-          age: c.age,
-          city: c.city,
-          gender: c.gender,
-          mainPhoto: c.avatar_url || '/default-avatar.png',
+          id:          c.id,
+          name:        c.full_name?.trim() || '—',
+          age:         c.age,
+          city:        c.city,
+          gender:      c.gender,
+          mainPhoto:   c.avatar_url || '/default-avatar.png',
           prefersBlur: c.is_photos_blurred,
           currentUser,
         }}

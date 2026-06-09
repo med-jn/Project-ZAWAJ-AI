@@ -1,9 +1,8 @@
 'use client';
 /**
  * 📁 hooks/usePushNotifications.ts — ZAWAJ AI
- * ✅ @capacitor/preferences للقراءة بعد اكتمال الـ session
- * ✅ Cold Start: route محفوظ من Java → يُقرأ هنا
- * ✅ Warm Start: pushNotificationActionPerformed مباشر
+ * ✅ يقرأ pending_route من Preferences بعد اكتمال session
+ * ✅ يعيد المحاولة حتى يجد الـ route أو ينتهي الوقت
  */
 
 import { useEffect, useRef } from 'react';
@@ -36,36 +35,41 @@ const _push = {
 const ROUTE_KEY = 'pending_route';
 
 export function usePushNotifications(userId?: string) {
-  const router      = useRouter();
-  const consumedRef = useRef(false);
+  const router         = useRouter();
+  const routeConsumed  = useRef(false);
 
   if (userId) _push.userId = userId;
 
-  // ✅ عند توفر userId (session جاهز) — نتحقق من route معلق
+  // ✅ بمجرد توفر userId — نتحقق من route معلق
+  // نعيد المحاولة 5 مرات بفاصل 600ms لضمان كتابة Java في Preferences
   useEffect(() => {
-    if (!userId || consumedRef.current) return;
+    if (!userId || routeConsumed.current) return;
     if (Capacitor.getPlatform() !== 'android') return;
 
-    consumedRef.current = true;
+    let attempts = 0;
+    const maxAttempts = 5;
 
-    const checkPending = async () => {
+    const check = async () => {
+      attempts++;
       try {
         const { value } = await Preferences.get({ key: ROUTE_KEY });
         if (value && value.startsWith('/')) {
-          // ✅ نحذف أولاً ثم ننتقل — لا تكرار
+          routeConsumed.current = true;
           await Preferences.remove({ key: ROUTE_KEY });
           router.push(value);
+          return; // نجح — نوقف
         }
       } catch (e) {
-        console.error('[Push] checkPending error:', e);
+        console.error('[Push] Preferences.get error:', e);
+      }
+
+      // لم نجد route — نحاول مرة أخرى
+      if (attempts < maxAttempts) {
+        setTimeout(check, 600);
       }
     };
 
-    // نحاول مرتين — مرة فوراً ومرة بعد ثانية للتأكد
-    checkPending();
-    const t = setTimeout(checkPending, 1000);
-    return () => clearTimeout(t);
-
+    check();
   }, [userId]);
 
   // ✅ تسجيل المستمعات
@@ -114,7 +118,6 @@ export function usePushNotifications(userId?: string) {
           console.error('[Push] registration error:', err);
         });
 
-        // التطبيق مفتوح — Realtime يكفي
         PushNotifications.addListener(
           'pushNotificationReceived',
           (_n: PushNotificationSchema) => {}
@@ -133,16 +136,15 @@ export function usePushNotifications(userId?: string) {
                 .then(() => {});
             }
 
-            // نحذف الـ pending route لأن Warm Start يعالجه هنا
+            // نمسح الـ pending route لأننا نعالجه هنا
             await Preferences.remove({ key: ROUTE_KEY });
+            routeConsumed.current = true;
 
-            // route من السيرفر
             if (data.route && data.route.startsWith('/')) {
               navigate(data.route);
               return;
             }
 
-            // fallback محلي
             const route = resolveNotificationRoute({
               type:            data.type as NotificationType,
               conversation_id: data.conversation_id,
