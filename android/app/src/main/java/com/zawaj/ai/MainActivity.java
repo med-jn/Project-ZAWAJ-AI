@@ -1,19 +1,18 @@
 package com.zawaj.ai;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
-    // ✅ نفس اسم الـ SharedPreferences الذي يستخدمه @capacitor/preferences
-    private static final String PREFS_NAME = "CapacitorStorage";
-    private static final String ROUTE_KEY  = "pending_route";
+    private static final String BASE_URL = "https://localhost";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,42 +30,61 @@ public class MainActivity extends BridgeActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setNavigationBarColor(Color.TRANSPARENT);
         }
+    }
 
-        String route = extractRoute(getIntent());
-        if (route != null) {
-            savePendingRoute(route);
-        }
+    @Override
+    public void onStart() {
+        super.onStart();
+        // معالجة الـ Intent بعد جاهزية Bridge
+        handleIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        String route = extractRoute(intent);
-        if (route != null) {
-            savePendingRoute(route);
-        }
+        handleIntent(intent);
     }
 
-    private void savePendingRoute(String route) {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
-        prefs.edit().putString(ROUTE_KEY, route).apply();
+    private void handleIntent(final Intent intent) {
+        if (intent == null) return;
+        final String route = extractRoute(intent);
+        if (route == null) return;
+
+        // ✅ نحمّل URL كاملاً في WebView مباشرة
+        // هذا يتجاوز Next.js router ويحمّل الصفحة مباشرة
+        final String url = BASE_URL + route;
+
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().post(() ->
+                    getBridge().getWebView().loadUrl(url)
+                );
+            }
+        }, 1000);
     }
 
     private String extractRoute(Intent intent) {
         if (intent == null) return null;
 
+        // 1. Extra من FCM
         String route = intent.getStringExtra("route");
         if (route != null && !route.isEmpty()) {
+            // ✅ تأكد من slash قبل ? مثل /view/?id=xxx
+            if (route.contains("?") && !route.contains("/?")) {
+                route = route.replace("?", "/?");
+            }
             return route.startsWith("/") ? route : "/" + route;
         }
 
+        // 2. URI fallback
         Uri data = intent.getData();
         if (data != null && "zawaj".equals(data.getScheme()) && "app".equals(data.getHost())) {
             String path  = data.getPath();
             String query = data.getQuery();
             if (path != null && !path.isEmpty()) {
-                return (query != null && !query.isEmpty()) ? path + "?" + query : path;
+                String r = (query != null && !query.isEmpty()) ? path + "/?" + query : path;
+                return r;
             }
         }
 

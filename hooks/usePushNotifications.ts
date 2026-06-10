@@ -1,8 +1,8 @@
 'use client';
 /**
  * 📁 hooks/usePushNotifications.ts — ZAWAJ AI
- * ✅ يقرأ pending_route من Preferences بعد اكتمال session
- * ✅ يعيد المحاولة حتى يجد الـ route أو ينتهي الوقت
+ * ✅ Cold Start: يقرأ route من Preferences بعد اكتمال session
+ * ✅ Warm Start: pushNotificationActionPerformed
  */
 
 import { useEffect, useRef } from 'react';
@@ -35,41 +35,39 @@ const _push = {
 const ROUTE_KEY = 'pending_route';
 
 export function usePushNotifications(userId?: string) {
-  const router         = useRouter();
-  const routeConsumed  = useRef(false);
+  const router        = useRouter();
+  const routeHandled  = useRef(false);
 
   if (userId) _push.userId = userId;
 
-  // ✅ بمجرد توفر userId — نتحقق من route معلق
-  // نعيد المحاولة 5 مرات بفاصل 600ms لضمان كتابة Java في Preferences
+  // ✅ Cold Start — يقرأ route من Preferences بعد اكتمال session
   useEffect(() => {
-    if (!userId || routeConsumed.current) return;
+    if (!userId || routeHandled.current) return;
     if (Capacitor.getPlatform() !== 'android') return;
 
     let attempts = 0;
-    const maxAttempts = 5;
+    let timer: ReturnType<typeof setTimeout>;
 
     const check = async () => {
       attempts++;
       try {
         const { value } = await Preferences.get({ key: ROUTE_KEY });
         if (value && value.startsWith('/')) {
-          routeConsumed.current = true;
+          routeHandled.current = true;
           await Preferences.remove({ key: ROUTE_KEY });
           router.push(value);
-          return; // نجح — نوقف
+          return;
         }
-      } catch (e) {
-        console.error('[Push] Preferences.get error:', e);
-      }
+      } catch (_) {}
 
-      // لم نجد route — نحاول مرة أخرى
-      if (attempts < maxAttempts) {
-        setTimeout(check, 600);
+      if (attempts < 8) {
+        timer = setTimeout(check, 500);
       }
     };
 
     check();
+    return () => clearTimeout(timer);
+
   }, [userId]);
 
   // ✅ تسجيل المستمعات
@@ -77,7 +75,10 @@ export function usePushNotifications(userId?: string) {
     if (!userId) return;
     if (Capacitor.getPlatform() !== 'android') return;
 
-    const navigate = (route: string) => router.push(route);
+    const navigate = (route: string) => {
+      routeHandled.current = true;
+      router.push(route);
+    };
 
     const run = async () => {
       let perm = await PushNotifications.checkPermissions();
@@ -123,7 +124,7 @@ export function usePushNotifications(userId?: string) {
           (_n: PushNotificationSchema) => {}
         );
 
-        // ✅ Warm Start: التطبيق في الخلفية
+        // ✅ Warm Start
         PushNotifications.addListener(
           'pushNotificationActionPerformed',
           async (action: ActionPerformed) => {
@@ -136,9 +137,7 @@ export function usePushNotifications(userId?: string) {
                 .then(() => {});
             }
 
-            // نمسح الـ pending route لأننا نعالجه هنا
             await Preferences.remove({ key: ROUTE_KEY });
-            routeConsumed.current = true;
 
             if (data.route && data.route.startsWith('/')) {
               navigate(data.route);
