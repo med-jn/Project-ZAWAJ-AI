@@ -1,41 +1,138 @@
 'use client';
 /**
- * app/mediators/page.tsx
- * ✅ حُذف عرض الرصيد تماماً
- * ✅ SubscribeSheet → RequestMediationSheet (طلب وساطة بدون عملات)
- * ✅ "اشتراك الآن" → "طلب وساطة"
+ * app/mediators/page.tsx — ZAWAJ AI v3
+ * ✅ قائمة المشتركين للمشتركين فقط
+ * ✅ الضغط على بروفايل مشترك → /view?id=...
+ * ✅ حظر الوسيط (نفس جدول blocks) مع dialog تأكيد
+ * ✅ البلاغ عبر ReportSheet الموجود
+ * ✅ تضبيب صور is_blurred
  */
 
-import { useState, useEffect }            from 'react';
-import { motion, AnimatePresence }        from 'framer-motion';
+import { useState, useEffect, useCallback }  from 'react';
+import { motion, AnimatePresence }           from 'framer-motion';
+import { useRouter }                         from 'next/navigation';
 import {
   Star, Users, MessageCircle, Flag, ChevronLeft,
-  Crown, Send, X, ShieldCheck, UserX, Loader2,
+  Crown, Send, X, ShieldCheck, UserX, ShieldOff,
+  Lock, ExternalLink,
 } from 'lucide-react';
-import { toast }                          from 'sonner';
-import { MediatorCard }                   from '@/components/mediators/MediatorCard';
-import { RequestMediationSheet }          from '@/components/mediators/RequestMediationSheet';
-import { SuccessScreen }                  from '@/components/mediators/SuccessScreen';
-import { Stars }                          from '@/components/mediators/Stars';
-import { Icon }                           from '@/components/mediators/Icon';
-import { LevelBadge }                     from '@/components/gems';
-import { useMediators }                   from '@/hooks/useMediators';
-import type { MediatorRow, SuccessData }  from '@/components/mediators/types';
+import { toast }                             from 'sonner';
+import { supabase }                          from '@/lib/supabase/client';
+import { MediatorCard }                      from '@/components/mediators/MediatorCard';
+import { RequestMediationSheet }             from '@/components/mediators/RequestMediationSheet';
+import { SuccessScreen }                     from '@/components/mediators/SuccessScreen';
+import { Stars }                             from '@/components/mediators/Stars';
+import { Icon }                              from '@/components/mediators/Icon';
+import { LevelBadge }                        from '@/components/gems';
+import { useMediators }                      from '@/hooks/useMediators';
+import ReportSheet                           from '@/components/security/ReportSheet';
+import type { MediatorRow, SuccessData }     from '@/components/mediators/types';
 
+// ── Spinner ───────────────────────────────────────────────────
 function Spinner({ size = 24 }: { size?: number }) {
   return (
-    <motion.span animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
-      className="inline-block icon-wrap"
-      style={{ width: size, height: size, border: '2px solid rgba(255,255,255,0.15)',
-        borderTopColor: 'var(--color-primary)', borderRadius: '50%' }} />
+    <motion.span animate={{ rotate: 360 }}
+      transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
+      style={{
+        display: 'inline-block', width: size, height: size,
+        border: '2px solid rgba(255,255,255,0.15)',
+        borderTopColor: 'var(--color-primary)', borderRadius: '50%',
+      }} />
   );
 }
 
+// ── Dialog تأكيد الحظر ────────────────────────────────────────
+function BlockConfirmDialog({
+  open, name, onConfirm, onCancel, loading,
+}: {
+  open: boolean; name: string;
+  onConfirm: () => void; onCancel: () => void; loading: boolean;
+}) {
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onCancel}
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9998,
+              background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(4px)',
+            }}
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.88, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.88, y: 20 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+            style={{
+              position: 'fixed', top: '50%', left: '50%',
+              transform: 'translate(-50%,-50%)',
+              zIndex: 9999, width: 'min(88vw,310px)',
+              background: 'var(--bg-elevated,#1a1a2e)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: 24, padding: '28px 22px 20px',
+              boxShadow: '0 32px 80px rgba(0,0,0,0.85)',
+              direction: 'rtl',
+            }}
+          >
+            <div style={{
+              width: 52, height: 52, borderRadius: '50%',
+              background: 'rgba(251,146,60,0.12)',
+              border: '1px solid rgba(251,146,60,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 14px',
+            }}>
+              <ShieldOff size={24} color="#fb923c" />
+            </div>
+            <p style={{ textAlign: 'center', margin: '0 0 6px', color: 'var(--text-main,#fff)', fontWeight: 800, fontSize: 16 }}>
+              حظر {name}؟
+            </p>
+            <p style={{ textAlign: 'center', margin: '0 0 22px', color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 1.6 }}>
+              لن يتمكن من رؤيتك أو التواصل معك، وسيختفي من اقتراحاتك.
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={onCancel} disabled={loading} style={{
+                flex: 1, padding: '12px 0', borderRadius: 13,
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'rgba(255,255,255,0.65)',
+                fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                إلغاء
+              </button>
+              <motion.button whileTap={{ scale: 0.94 }} onClick={onConfirm} disabled={loading}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 13,
+                  background: loading ? 'rgba(251,146,60,0.3)' : 'linear-gradient(145deg,#fb923c,#ea580c)',
+                  border: 'none', color: '#fff', fontWeight: 800, fontSize: 14,
+                  cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit',
+                  boxShadow: loading ? 'none' : '0 4px 16px rgba(251,146,60,0.4)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                }}
+              >
+                {loading
+                  ? <Spinner size={15} />
+                  : <><ShieldOff size={14} /> حظر</>
+                }
+              </motion.button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════
 export default function MediatorsPage() {
+  const router = useRouter();
+
   const {
     mediators, loading, currentUser,
     subscribers, subLoading, load, openMediator,
-    submitRating, reportMediator, unsubscribe,
+    submitRating, unsubscribe,
+    markSubscribed, markUnsubscribed,
   } = useMediators();
 
   const [selected,           setSelected]           = useState<MediatorRow | null>(null);
@@ -45,30 +142,53 @@ export default function MediatorsPage() {
   const [myRating,           setMyRating]           = useState(0);
   const [myComment,          setMyComment]          = useState('');
   const [submitting,         setSubmitting]         = useState(false);
-  const [showReport,         setShowReport]         = useState(false);
   const [showUnsubscribe,    setShowUnsubscribe]    = useState(false);
   const [unsubscribeLoading, setUnsubscribeLoading] = useState(false);
 
+  // حظر الوسيط
+  const [blockDialog,        setBlockDialog]        = useState(false);
+  const [blockLoading,       setBlockLoading]       = useState(false);
+  const [isBlocked,          setIsBlocked]          = useState(false);
+
+  // إبلاغ عبر ReportSheet
+  const [reportOpen,         setReportOpen]         = useState(false);
+
   useEffect(() => { load(); }, [load]);
 
+  // ── فتح التفاصيل ─────────────────────────────────────────
   const openDetail = async (m: MediatorRow) => {
-    setSelected(m); setShowRate(false); setShowReport(false); setShowUnsubscribe(false);
+    setSelected(m);
+    setShowRate(false);
+    setShowUnsubscribe(false);
+    setIsBlocked(false);
+    setBlockDialog(false);
+
+    // فحص هل هو محظور مسبقاً
+    if (currentUser) {
+      const { data } = await supabase.from('blocks').select('id')
+        .eq('blocker_id', currentUser.id).eq('blocked_id', m.id).maybeSingle();
+      setIsBlocked(!!data);
+    }
+
     await openMediator(m);
   };
-  const closeDetail = () => { setSelected(null); setShowUnsubscribe(false); };
 
+  const closeDetail = () => {
+    setSelected(null);
+    setShowUnsubscribe(false);
+    setBlockDialog(false);
+  };
+
+  // ── تقييم ────────────────────────────────────────────────
   const doRating = async () => {
     if (!selected) return;
     setSubmitting(true);
     await submitRating(selected.id, myRating, myComment);
-    setShowRate(false); setMyRating(0); setMyComment(''); setSubmitting(false);
+    setShowRate(false); setMyRating(0); setMyComment('');
+    setSubmitting(false);
   };
 
-  const doReport = async () => {
-    if (!selected) return;
-    await reportMediator(selected.id); setShowReport(false);
-  };
-
+  // ── إلغاء الاشتراك ───────────────────────────────────────
   const doUnsubscribe = async () => {
     if (!selected) return;
     setUnsubscribeLoading(true);
@@ -77,9 +197,37 @@ export default function MediatorsPage() {
     if (ok) { setSelected(null); setShowUnsubscribe(false); }
   };
 
+  // ── حظر الوسيط ───────────────────────────────────────────
+  const doBlock = useCallback(async () => {
+    if (!currentUser || !selected) return;
+    setBlockLoading(true);
+    try {
+      await supabase.from('blocks').upsert(
+        { blocker_id: currentUser.id, blocked_id: selected.id },
+        { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
+      );
+      // حذف أي تفاعلات
+      await Promise.all([
+        supabase.from('likes').delete().eq('from_user', currentUser.id).eq('to_user', selected.id),
+        supabase.from('likes').delete().eq('from_user', selected.id).eq('to_user', currentUser.id),
+      ]);
+      setIsBlocked(true);
+      setBlockDialog(false);
+      toast.success('تم حظر الوسيط');
+      closeDetail();
+    } catch {
+      toast.error('حدث خطأ، حاول مجدداً');
+    } finally {
+      setBlockLoading(false);
+    }
+  }, [currentUser, selected]);
+
+  // ── هل المستخدم مشترك عند الوسيط المحدد ─────────────────
+  const amSubscribed = selected?.isSubscribed ?? false;
+
   if (loading) {
     return (
-      <div className="h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)' }}>
+      <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
         <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}>
           <Icon i={Crown} size={48} color="var(--color-primary)" />
         </motion.div>
@@ -88,25 +236,42 @@ export default function MediatorsPage() {
   }
 
   return (
-    <div className="min-h-full px-4 py-5" dir="rtl" style={{ background: 'var(--bg-main)' }}>
+    <div style={{ minHeight: '100%', padding: '20px 16px', direction: 'rtl', background: 'var(--bg-main)' }}>
 
-      {/* Top bar — بدون رصيد */}
+      {/* ── Dialogs ────────────────────────────────────────── */}
+      <BlockConfirmDialog
+        open={blockDialog}
+        name={selected?.full_name ?? 'هذا الوسيط'}
+        onConfirm={doBlock}
+        onCancel={() => setBlockDialog(false)}
+        loading={blockLoading}
+      />
+
+      <ReportSheet
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        reportedUserId={selected?.id ?? ''}
+        targetType="mediator"
+        targetId={selected?.id ?? null}
+      />
+
+      {/* ── Header ─────────────────────────────────────────── */}
       {currentUser && (
-        <div className="flex items-center justify-between mb-4 px-1">
-          <h1 className="font-black" style={{ fontSize: 'var(--text-md)', color: 'var(--text-main)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '0 4px' }}>
+          <h1 style={{ fontWeight: 900, fontSize: 'var(--text-md)', color: 'var(--text-main)', margin: 0 }}>
             اختار وسيطك المناسب
           </h1>
         </div>
       )}
 
       {mediators.length === 0 && (
-        <div className="text-center py-24 icon-wrap">
-          <Icon i={Crown} size={40} color="var(--text-tertiary)" className="mx-auto mb-3" />
-          <p className="font-bold" style={{ color: 'var(--text-tertiary)' }}>لا يوجد وسطاء</p>
+        <div style={{ textAlign: 'center', padding: '96px 0' }}>
+          <Icon i={Crown} size={40} color="var(--text-tertiary)" />
+          <p style={{ fontWeight: 700, color: 'var(--text-tertiary)', marginTop: 12 }}>لا يوجد وسطاء</p>
         </div>
       )}
 
-      <div className="space-y-4">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {mediators.map((m, i) => (
           <MediatorCard key={m.id} mediator={m} rank={i + 1}
             isAuthenticated={!!currentUser}
@@ -115,7 +280,7 @@ export default function MediatorsPage() {
         ))}
       </div>
 
-      {/* Request Mediation sheet */}
+      {/* ── RequestMediationSheet ──────────────────────────── */}
       <AnimatePresence>
         {requestTarget && !successData && (
           <RequestMediationSheet
@@ -127,229 +292,350 @@ export default function MediatorsPage() {
         )}
       </AnimatePresence>
 
-      {/* Success */}
       <AnimatePresence>
         {successData && <SuccessScreen data={successData} onClose={() => setSuccessData(null)} />}
       </AnimatePresence>
 
-      {/* ══ Detail sheet ══ */}
+      {/* ══ Detail Sheet ══════════════════════════════════════ */}
       <AnimatePresence>
         {selected && (
           <>
-            <motion.div aria-hidden initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[300]"
-              style={{ background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)' }}
-              onClick={closeDetail} />
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 300,
+                background: 'rgba(0,0,0,0.72)', backdropFilter: 'blur(8px)',
+              }}
+              onClick={closeDetail}
+            />
 
-            <motion.div role="dialog" aria-modal="true" dir="rtl"
+            <motion.div
               initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-              className="fixed bottom-0 left-0 right-0 z-[400] rounded-t-[32px] flex flex-col"
-              style={{ background: 'var(--bg-surface)', border: '1px solid var(--glass-border)', maxHeight: '88vh' }}
+              style={{
+                position: 'fixed', bottom: 0, left: 0, right: 0,
+                zIndex: 400, borderRadius: '32px 32px 0 0',
+                display: 'flex', flexDirection: 'column',
+                background: 'var(--bg-surface)',
+                border: '1px solid var(--glass-border)',
+                maxHeight: '88vh',
+              }}
             >
               {/* Handle */}
-              <div className="flex justify-center pt-3">
-                <div className="w-10 h-1 rounded-full" style={{ background: 'var(--glass-border)' }} />
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 12 }}>
+                <div style={{ width: 40, height: 4, borderRadius: 99, background: 'var(--glass-border)' }} />
               </div>
 
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-4"
-                style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-full overflow-hidden"
-                    style={{ border: '1.5px solid var(--border-gold)' }}>
+              {/* ── Sheet Header ─────────────────────────────── */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '12px 20px 14px',
+                borderBottom: '1px solid var(--glass-border)',
+              }}>
+                {/* معلومات الوسيط */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
+                    border: '1.5px solid var(--border-gold,#D4AF37)', flexShrink: 0,
+                  }}>
                     {selected.avatar_url
-                      ? <img src={selected.avatar_url} alt="" className="w-full h-full object-cover" />
-                      : <div className="w-full h-full flex items-center justify-center icon-wrap"
-                          style={{ background: 'var(--bg-soft)' }}>
+                      ? <img src={selected.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-soft)' }}>
                           <Icon i={Crown} size={22} color="var(--text-tertiary)" />
-                        </div>}
+                        </div>
+                    }
                   </div>
                   <div>
-                    <p className="font-black" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
-                      {selected.full_name} <LevelBadge subscribers={selected.total_subscribers} size="sm" />
+                    <p style={{ fontWeight: 900, fontSize: 'var(--text-sm)', color: 'var(--text-main)', margin: '0 0 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {selected.full_name}
+                      <LevelBadge subscribers={selected.total_subscribers} size="sm" />
                     </p>
                     <Stars value={selected.avg_rating} size={11} />
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 icon-wrap">
-                  {currentUser?.mediator_id === selected.id && (
-                    <button onClick={() => setShowRate(v => !v)}
-                      className="w-9 h-9 rounded-xl flex items-center justify-center"
-                      style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                {/* أزرار الإجراءات */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {/* تقييم (للمشتركين فقط) */}
+                  {amSubscribed && (
+                    <motion.button whileTap={{ scale: 0.88 }}
+                      onClick={() => setShowRate(v => !v)}
+                      style={{
+                        width: 36, height: 36, borderRadius: 12,
+                        border: '1px solid rgba(212,175,55,0.25)',
+                        background: showRate ? 'rgba(212,175,55,0.15)' : 'rgba(212,175,55,0.08)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer',
+                      }}
+                    >
                       <Icon i={Star} size={14} color="#D4AF37" />
-                    </button>
+                    </motion.button>
                   )}
-                  <button onClick={() => setShowReport(v => !v)}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)' }}>
+
+                  {/* إبلاغ */}
+                  <motion.button whileTap={{ scale: 0.88 }}
+                    onClick={() => setReportOpen(true)}
+                    style={{
+                      width: 36, height: 36, borderRadius: 12,
+                      border: '1px solid rgba(239,68,68,0.2)',
+                      background: 'rgba(239,68,68,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <Icon i={Flag} size={13} color="#f87171" />
-                  </button>
-                  <button onClick={closeDetail}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+                  </motion.button>
+
+                  {/* حظر */}
+                  <motion.button whileTap={{ scale: 0.88 }}
+                    onClick={() => !isBlocked && setBlockDialog(true)}
+                    disabled={isBlocked}
+                    title={isBlocked ? 'تم الحظر' : 'حظر الوسيط'}
+                    style={{
+                      width: 36, height: 36, borderRadius: 12,
+                      border: isBlocked ? '1px solid rgba(34,197,94,0.3)' : '1px solid rgba(251,146,60,0.25)',
+                      background: isBlocked ? 'rgba(34,197,94,0.08)' : 'rgba(251,146,60,0.08)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: isBlocked ? 'default' : 'pointer',
+                      opacity: isBlocked ? 0.7 : 1,
+                    }}
+                  >
+                    {isBlocked
+                      ? <ShieldCheck size={14} color="#22c55e" />
+                      : <ShieldOff   size={14} color="#fb923c" />
+                    }
+                  </motion.button>
+
+                  {/* إغلاق */}
+                  <motion.button whileTap={{ scale: 0.88 }}
+                    onClick={closeDetail}
+                    style={{
+                      width: 36, height: 36, borderRadius: 12,
+                      border: '1px solid var(--glass-border)',
+                      background: 'var(--glass-bg)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
                     <Icon i={X} size={15} color="var(--text-tertiary)" />
-                  </button>
+                  </motion.button>
                 </div>
               </div>
 
-              {/* Body */}
-              <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+              {/* ── Sheet Body ───────────────────────────────── */}
+              <div style={{ overflowY: 'auto', flex: 1, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-                {/* Rating form */}
+                {/* فورم التقييم */}
                 <AnimatePresence>
                   {showRate && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="rounded-[20px] p-4 space-y-3"
-                      style={{ background: 'rgba(212,175,55,0.07)', border: '1px solid rgba(212,175,55,0.2)' }}>
-                      <p className="font-black" style={{ fontSize: 'var(--text-sm)', color: '#D4AF37' }}>قيّم الوسيط</p>
+                      style={{
+                        borderRadius: 20, padding: 16,
+                        background: 'rgba(212,175,55,0.07)',
+                        border: '1px solid rgba(212,175,55,0.2)',
+                        display: 'flex', flexDirection: 'column', gap: 10,
+                      }}
+                    >
+                      <p style={{ fontWeight: 900, fontSize: 'var(--text-sm)', color: '#D4AF37', margin: 0 }}>قيّم الوسيط</p>
                       <Stars value={myRating} size={28} interactive onChange={setMyRating} />
                       <textarea value={myComment} onChange={e => setMyComment(e.target.value)}
                         placeholder="اكتب تعليقك..." rows={2}
-                        className="w-full rounded-2xl px-4 py-3 outline-none resize-none"
-                        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-                          color: 'var(--text-main)', fontFamily: 'inherit', fontSize: 'var(--text-sm)' }} />
+                        style={{
+                          width: '100%', borderRadius: 16, padding: '10px 14px',
+                          outline: 'none', resize: 'none',
+                          background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                          color: 'var(--text-main)', fontFamily: 'inherit', fontSize: 'var(--text-sm)',
+                          boxSizing: 'border-box',
+                        }} />
                       <button onClick={doRating} disabled={submitting || myRating === 0}
-                        className="w-full py-3 rounded-2xl font-black text-white flex items-center justify-center gap-2 icon-wrap"
-                        style={{ background: 'linear-gradient(135deg, #800020, var(--color-primary))',
-                          opacity: myRating === 0 ? 0.4 : 1, fontSize: 'var(--text-sm)' }}>
+                        style={{
+                          width: '100%', padding: '12px 0', borderRadius: 16,
+                          background: 'linear-gradient(135deg,#800020,var(--color-primary))',
+                          border: 'none', color: '#fff', fontWeight: 900,
+                          fontSize: 'var(--text-sm)', cursor: myRating === 0 ? 'default' : 'pointer',
+                          opacity: myRating === 0 ? 0.4 : 1, fontFamily: 'inherit',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        }}>
                         <Icon i={Send} size={13} color="#fff" />
-                        {submitting ? 'جارٍ...' : 'إرسال التقييم'}
+                        {submitting ? 'جارٍ الإرسال...' : 'إرسال التقييم'}
                       </button>
                     </motion.div>
                   )}
                 </AnimatePresence>
 
-                {/* Report form */}
-                <AnimatePresence>
-                  {showReport && (
-                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }} className="rounded-[20px] p-4"
-                      style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.18)' }}>
-                      <p className="font-black mb-3" style={{ fontSize: 'var(--text-sm)', color: '#f87171' }}>
-                        الإبلاغ عن الوسيط
-                      </p>
-                      <div className="flex gap-2 icon-wrap">
-                        <button onClick={doReport}
-                          className="flex-1 py-3 rounded-2xl font-black flex items-center justify-center gap-2"
-                          style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.22)',
-                            color: '#f87171', fontSize: 'var(--text-sm)' }}>
-                          <Icon i={Flag} size={13} color="#f87171" /> تأكيد البلاغ
-                        </button>
-                        <button onClick={() => setShowReport(false)} className="px-5 py-3 rounded-2xl font-bold"
-                          style={{ background: 'var(--glass-bg)', color: 'var(--text-tertiary)',
-                            border: '1px solid var(--glass-border)', fontSize: 'var(--text-sm)' }}>
-                          إلغاء
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Bio */}
+                {/* نبذة */}
                 {selected.bio && (
-                  <div className="rounded-[20px] p-4"
-                    style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-                    <p className="font-black tracking-widest uppercase mb-2"
-                      style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>نبذة</p>
-                    <p style={{ fontSize: 'var(--text-sm)', lineHeight: 'var(--lh-relaxed)', color: 'var(--text-secondary)' }}>
-                      {selected.bio}
-                    </p>
+                  <div style={{
+                    borderRadius: 20, padding: 16,
+                    background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                  }}>
+                    <p style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--text-tertiary)', margin: '0 0 8px' }}>نبذة</p>
+                    <p style={{ fontSize: 'var(--text-sm)', lineHeight: 1.7, color: 'var(--text-secondary)', margin: 0 }}>{selected.bio}</p>
                   </div>
                 )}
 
-                {/* Subscribers */}
+                {/* ── قائمة المشتركين ─────────────────────── */}
                 <div>
-                  <p className="font-black mb-3" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
-                    الأعضاء ({currentUser?.gender === 'male' ? 'الإناث' : 'الذكور'})
-                  </p>
-                  {subLoading && <div className="flex justify-center py-8"><Spinner /></div>}
-                  {!subLoading && subscribers.length === 0 && (
-                    <div className="text-center py-10 icon-wrap">
-                      <Icon i={Users} size={30} color="var(--text-tertiary)" className="mx-auto mb-2" />
-                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>لا يوجد أعضاء بعد</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, direction: 'rtl' }}>
+                    <Users size={15} color="var(--text-tertiary)" />
+                    <p style={{ fontWeight: 900, fontSize: 'var(--text-sm)', color: 'var(--text-main)', margin: 0 }}>
+                      الأعضاء ({currentUser?.gender === 'male' ? 'الإناث' : 'الذكور'})
+                    </p>
+                  </div>
+
+                  {/* غير مشترك → رسالة قفل */}
+                  {!amSubscribed ? (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+                      style={{
+                        borderRadius: 20, padding: '24px 16px',
+                        background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                        display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center', gap: 10,
+                        textAlign: 'center', direction: 'rtl',
+                      }}
+                    >
+                      <div style={{
+                        width: 52, height: 52, borderRadius: '50%',
+                        background: 'rgba(255,255,255,0.05)',
+                        border: '1px solid var(--glass-border)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        <Lock size={22} color="var(--text-tertiary)" />
+                      </div>
+                      <p style={{ margin: 0, fontWeight: 800, fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
+                        متاح للمشتركين فقط
+                      </p>
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+                        اشترك مع هذا الوسيط لتتمكن من رؤية قائمة الأعضاء والتواصل معهم.
+                      </p>
+                    </motion.div>
+                  ) : subLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+                      <Spinner />
+                    </div>
+                  ) : subscribers.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', direction: 'rtl' }}>
+                      <Icon i={Users} size={30} color="var(--text-tertiary)" />
+                      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)', marginTop: 8 }}>لا يوجد أعضاء بعد</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {subscribers.map(s => (
+                        <motion.div
+                          key={s.id}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => router.push(`/view?id=${s.id}`)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 12,
+                            padding: '12px 14px', borderRadius: 18,
+                            background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                            cursor: 'pointer', direction: 'rtl',
+                          }}
+                        >
+                          {/* صورة المشترك */}
+                          <div style={{ position: 'relative', flexShrink: 0 }}>
+                            <img
+                              src={s.avatar_url || '/default-avatar.png'}
+                              alt={s.full_name}
+                              style={{
+                                width: 44, height: 44, borderRadius: 12,
+                                objectFit: 'cover',
+                                border: '1px solid var(--glass-border)',
+                                // تضبيب الصور التي اختار أصحابها الإخفاء
+                                filter: (s as any).is_blurred ? 'blur(10px)' : 'none',
+                                transform: (s as any).is_blurred ? 'scale(1.06)' : 'none',
+                              }}
+                            />
+                          </div>
+
+                          {/* المعلومات */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{
+                              margin: '0 0 3px', fontWeight: 700,
+                              fontSize: 'var(--text-sm)', color: 'var(--text-main)',
+                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}>
+                              {s.full_name || '—'}
+                            </p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              {s.city && (
+                                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{s.city}</span>
+                              )}
+                              {s.age && (
+                                <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{s.age} سنة</span>
+                              )}
+                            </div>
+                            {s.profile_completion_percent > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 5 }}>
+                                <div style={{ flex: 1, height: 3, borderRadius: 99, overflow: 'hidden', background: 'var(--glass-border)' }}>
+                                  <div style={{
+                                    height: '100%', borderRadius: 99,
+                                    width: `${s.profile_completion_percent}%`,
+                                    background: s.profile_completion_percent >= 80 ? '#22c55e'
+                                      : s.profile_completion_percent >= 50 ? '#D4AF37'
+                                      : 'var(--color-primary)',
+                                  }} />
+                                </div>
+                                <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 700 }}>
+                                  {s.profile_completion_percent}%
+                                </span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* سهم → صفحة الملف */}
+                          <ExternalLink size={14} color="var(--text-tertiary)" style={{ flexShrink: 0 }} />
+                        </motion.div>
+                      ))}
                     </div>
                   )}
-                  <div className="space-y-3">
-                    {subscribers.map(s => (
-                      <div key={s.id} className="flex items-center gap-3 p-3 rounded-[18px]"
-                        style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-                        <div className="w-11 h-11 rounded-[12px] overflow-hidden flex-shrink-0">
-                          {s.avatar_url
-                            ? <img src={s.avatar_url} alt="" className="w-full h-full object-cover" />
-                            : <div className="w-full h-full flex items-center justify-center icon-wrap"
-                                style={{ background: 'var(--bg-soft)' }}>
-                                <Icon i={Crown} size={18} color="var(--text-tertiary)" />
-                              </div>}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-black truncate" style={{ fontSize: 'var(--text-sm)', color: 'var(--text-main)' }}>
-                            {s.full_name || '—'}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            {s.city && <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>{s.city}</span>}
-                            {s.age  && <span style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>{s.age} سنة</span>}
-                          </div>
-                          {s.profile_completion_percent > 0 && (
-                            <div className="flex items-center gap-2 mt-1.5">
-                              <div className="flex-1 h-[3px] rounded-full overflow-hidden"
-                                style={{ background: 'var(--glass-border)' }}>
-                                <div className="h-full rounded-full" style={{
-                                  width: `${s.profile_completion_percent}%`,
-                                  background: s.profile_completion_percent >= 80 ? '#22c55e'
-                                    : s.profile_completion_percent >= 50 ? '#D4AF37' : 'var(--color-primary)',
-                                }} />
-                              </div>
-                              <span className="font-bold" style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)' }}>
-                                {s.profile_completion_percent}%
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <button className="w-9 h-9 rounded-xl flex items-center justify-center icon-wrap"
-                          style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
-                          <Icon i={ChevronLeft} size={14} color="var(--text-tertiary)" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
 
-              {/* Footer */}
-              <div style={{ borderTop: '1px solid var(--glass-border)', paddingBottom: 'var(--nav-h-safe)' }}>
+              {/* ── Sheet Footer ─────────────────────────────── */}
+              <div style={{ borderTop: '1px solid var(--glass-border)', paddingBottom: 'var(--nav-h-safe,16px)' }}>
 
                 {/* Unsubscribe panel */}
                 <AnimatePresence>
                   {showUnsubscribe && (
                     <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }} className="px-5 pt-4">
-                      <div className="rounded-[20px] p-4 mb-3"
-                        style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
-                        <div className="flex items-center gap-2 mb-2 icon-wrap">
+                      exit={{ opacity: 0, height: 0 }} style={{ padding: '14px 20px 0' }}>
+                      <div style={{
+                        borderRadius: 20, padding: 16, marginBottom: 12,
+                        background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                           <Icon i={UserX} size={15} color="#f87171" />
-                          <p className="font-black" style={{ fontSize: 'var(--text-sm)', color: '#f87171' }}>
+                          <p style={{ fontWeight: 900, fontSize: 'var(--text-sm)', color: '#f87171', margin: 0 }}>
                             تأكيد إلغاء الوساطة
                           </p>
                         </div>
-                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 14 }}>
+                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12 }}>
                           ستفقد الوصول إلى قائمة الأعضاء وخدمات الوسيط.
                         </p>
-                        <div className="flex gap-2 icon-wrap">
+                        <div style={{ display: 'flex', gap: 8 }}>
                           <button onClick={doUnsubscribe} disabled={unsubscribeLoading}
-                            className="flex-1 py-3 rounded-2xl font-black flex items-center justify-center gap-2"
-                            style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
-                              color: '#f87171', fontSize: 'var(--text-xs)', opacity: unsubscribeLoading ? 0.6 : 1 }}>
-                            {unsubscribeLoading
-                              ? <Spinner size={16} />
-                              : <><Icon i={UserX} size={13} color="#f87171" /> تأكيد الإلغاء</>}
+                            style={{
+                              flex: 1, padding: '11px 0', borderRadius: 14,
+                              background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)',
+                              color: '#f87171', fontWeight: 900, fontSize: 12,
+                              cursor: unsubscribeLoading ? 'default' : 'pointer',
+                              fontFamily: 'inherit', opacity: unsubscribeLoading ? 0.6 : 1,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            }}>
+                            {unsubscribeLoading ? <Spinner size={15} /> : <><Icon i={UserX} size={13} color="#f87171" /> تأكيد الإلغاء</>}
                           </button>
                           <button onClick={() => setShowUnsubscribe(false)} disabled={unsubscribeLoading}
-                            className="px-5 py-3 rounded-2xl font-bold"
-                            style={{ background: 'var(--glass-bg)', color: 'var(--text-tertiary)',
-                              border: '1px solid var(--glass-border)', fontSize: 'var(--text-xs)' }}>
+                            style={{
+                              padding: '11px 18px', borderRadius: 14,
+                              background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
+                              color: 'var(--text-tertiary)', fontWeight: 700, fontSize: 12,
+                              cursor: 'pointer', fontFamily: 'inherit',
+                            }}>
                             تراجع
                           </button>
                         </div>
@@ -358,37 +644,55 @@ export default function MediatorsPage() {
                   )}
                 </AnimatePresence>
 
-                {/* Primary buttons */}
-                <div className="px-5 pt-3 pb-4 flex gap-2 icon-wrap">
-                  {selected.isSubscribed ? (
-                    <div className="flex-[2] flex gap-2">
-                      <div className="flex-1 py-3.5 rounded-2xl flex items-center justify-center gap-1.5 font-black"
-                        style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid var(--border-gold)',
-                          fontSize: 'var(--text-xs)', color: '#D4AF37' }}>
+                {/* الأزرار الرئيسية */}
+                <div style={{ padding: '12px 20px 16px', display: 'flex', gap: 8, direction: 'rtl' }}>
+                  {amSubscribed ? (
+                    <div style={{ flex: 2, display: 'flex', gap: 8 }}>
+                      <div style={{
+                        flex: 1, padding: '14px 0', borderRadius: 16,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.25)',
+                        fontSize: 12, color: '#D4AF37', fontWeight: 900,
+                      }}>
                         <Icon i={ShieldCheck} size={14} color="#D4AF37" /> بانتظار الوسيط ✓
                       </div>
-                      <button onClick={() => setShowUnsubscribe(v => !v)}
-                        className="w-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-                        style={{ background: showUnsubscribe ? 'rgba(239,68,68,0.12)' : 'var(--glass-bg)',
-                          border: showUnsubscribe ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--glass-border)' }}>
+                      <motion.button whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowUnsubscribe(v => !v)}
+                        style={{
+                          width: 44, borderRadius: 16, flexShrink: 0,
+                          background: showUnsubscribe ? 'rgba(239,68,68,0.12)' : 'var(--glass-bg)',
+                          border: showUnsubscribe ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--glass-border)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}>
                         <Icon i={UserX} size={14} color={showUnsubscribe ? '#f87171' : 'var(--text-tertiary)'} />
-                      </button>
+                      </motion.button>
                     </div>
                   ) : (
                     <motion.button whileTap={{ scale: 0.97 }}
                       onClick={() => { setSelected(null); setRequestTarget(selected); }}
                       disabled={!currentUser}
-                      className="flex-[2] py-3.5 rounded-2xl font-black text-white flex items-center justify-center gap-2"
-                      style={{ background: 'linear-gradient(135deg, #800020, var(--color-primary))',
-                        boxShadow: '0 8px 24px var(--shadow-red-glow)', fontSize: 'var(--text-sm)' }}>
+                      style={{
+                        flex: 2, padding: '14px 0', borderRadius: 16,
+                        background: 'linear-gradient(135deg,#800020,var(--color-primary))',
+                        boxShadow: '0 8px 24px rgba(192,0,42,0.3)',
+                        border: 'none', color: '#fff', fontWeight: 900,
+                        fontSize: 'var(--text-sm)', cursor: currentUser ? 'pointer' : 'default',
+                        fontFamily: 'inherit',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      }}>
                       <Icon i={ShieldCheck} size={14} color="#fff" /> طلب وساطة
                     </motion.button>
                   )}
 
                   <motion.button whileTap={{ scale: 0.9 }}
-                    className="flex-1 py-3.5 rounded-2xl font-black flex items-center justify-center gap-2"
-                    style={{ background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
-                      fontSize: 'var(--text-sm)', color: '#38BDF8' }}>
+                    style={{
+                      flex: 1, padding: '14px 0', borderRadius: 16,
+                      background: 'rgba(56,189,248,0.08)', border: '1px solid rgba(56,189,248,0.2)',
+                      color: '#38BDF8', fontWeight: 900, fontSize: 'var(--text-sm)',
+                      cursor: 'pointer', fontFamily: 'inherit',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                    }}>
                     <Icon i={MessageCircle} size={14} color="#38BDF8" /> رسالة
                   </motion.button>
                 </div>

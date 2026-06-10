@@ -1,8 +1,8 @@
 'use client';
 /**
- * hooks/useMediators.ts — ZAWAJ AI
- * ✅ isSubscribed يشمل tier='pending' و status='active'
- * ✅ حُذف balance تماماً
+ * hooks/useMediators.ts — ZAWAJ AI v2
+ * ✅ جلب is_photos_blurred مع المشتركين للتضبيب
+ * ✅ isSubscribed يشمل pending و active
  */
 
 import { useState, useCallback, useRef } from 'react';
@@ -32,7 +32,6 @@ export function useMediators(): UseMediatorsReturn {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [subLoading,  setSubLoading]  = useState(false);
 
-  // معرّفات الوسطاء الذين لدى المستخدم طلب معهم (pending أو active)
   const activeSubIds = useRef<Set<string>>(new Set());
 
   /* ── load ── */
@@ -47,7 +46,6 @@ export function useMediators(): UseMediatorsReturn {
           .select('id,full_name,gender,mediator_id')
           .eq('id', user.id).single(),
 
-        // ✅ نجلب كل السجلات — pending (طلب من التطبيق) و active (مفعّل من الموقع)
         supabase.from('mediator_subscriptions')
           .select('mediator_id, tier, status')
           .eq('id', user.id)
@@ -91,11 +89,11 @@ export function useMediators(): UseMediatorsReturn {
   /* ── openMediator ── */
   const openMediator = useCallback(async (m: MediatorRow) => {
     if (!currentUser) return;
-    setSubLoading(true); setSubscribers([]);
+    setSubLoading(true);
+    setSubscribers([]);
 
     const oppGender = currentUser.gender === 'male' ? 'female' : 'male';
 
-    // نجلب الأعضاء النشطين فقط (status=active) للعرض
     const { data: activeSubs } = await supabase
       .from('mediator_subscriptions')
       .select('id')
@@ -105,15 +103,19 @@ export function useMediators(): UseMediatorsReturn {
 
     const subUserIds = (activeSubs ?? []).map((s: { id: string }) => s.id);
 
-    if (subUserIds.length === 0) { setSubscribers([]); setSubLoading(false); return; }
+    if (subUserIds.length === 0) {
+      setSubscribers([]);
+      setSubLoading(false);
+      return;
+    }
 
     const { data } = await supabase
       .from('profiles')
-      .select('id,full_name,avatar_url,age,city,gender,profile_completion_percent')
+      .select('id, full_name, avatar_url, age, city, gender, profile_completion_percent, is_photos_blurred')
       .in('id', subUserIds)
       .eq('gender', oppGender);
 
-    setSubscribers(data ?? []);
+    setSubscribers((data ?? []) as Subscriber[]);
     setSubLoading(false);
   }, [currentUser]);
 
@@ -131,7 +133,7 @@ export function useMediators(): UseMediatorsReturn {
     await load();
   }, [currentUser, load]);
 
-  /* ── reportMediator ── */
+  /* ── reportMediator (احتياطي — الصفحة تستخدم ReportSheet) ── */
   const reportMediator = useCallback(async (mediatorId: string) => {
     if (!currentUser) return;
     const { error } = await supabase.from('reports')
@@ -140,7 +142,7 @@ export function useMediators(): UseMediatorsReturn {
     toast.success('تم إرسال البلاغ');
   }, [currentUser]);
 
-  /* ── unsubscribe — يلغي حتى طلبات pending ── */
+  /* ── unsubscribe ── */
   const unsubscribe = useCallback(async (mediator: MediatorRow): Promise<boolean> => {
     if (!currentUser) return false;
     const now = new Date().toISOString();
@@ -149,21 +151,18 @@ export function useMediators(): UseMediatorsReturn {
       markUnsubscribed(mediator.id);
 
       await Promise.all([
-        // إلغاء في mediator_subscriptions (pending أو active)
         supabase.from('mediator_subscriptions')
           .update({ status: 'cancelled' })
           .eq('id', currentUser.id)
           .eq('mediator_id', mediator.id)
           .in('status', ['pending', 'active']),
 
-        // mediator_clients إن وُجد
         supabase.from('mediator_clients')
           .update({ status: 'cancelled' })
           .eq('user_id', currentUser.id)
           .eq('mediator_id', mediator.id)
           .eq('status', 'active'),
 
-        // profiles.mediator_id
         supabase.from('profiles')
           .update({ mediator_id: null, updated_at: now })
           .eq('id', currentUser.id)

@@ -1,9 +1,6 @@
 'use client';
 /**
- * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.6
- * ✅ "يكتب الآن" — 3 نقاط متموجة في مكان الرسالة القادمة
- * ✅ VoiceMessageBubble مع messageId
- * ✅ كل التفاعلات realtime
+ * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.7
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -31,37 +28,34 @@ function msgTime(dateStr: string): string {
   if (m < 60)  return `${m} د`;
   const h = Math.floor(m / 60);
   if (h < 24) {
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm  = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
+    return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
   }
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
 }
 
-// ── 3 نقاط متموجة "يكتب الآن" ────────────────────────────────
-function TypingBubble({ isFemale }: { isFemale: boolean }) {
+// ── 3 نقاط أفقية متموجة ──────────────────────────────────────
+function TypingBubble() {
   return (
-    <div dir="rtl" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+    <div dir="rtl" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
       <div style={{
-        padding: '10px 14px', borderRadius: 18,
+        padding: '10px 16px', borderRadius: 18,
         borderBottomLeftRadius: 4,
         background: 'var(--bg-elevated)',
         border: '1px solid var(--glass-border)',
-        display: 'flex', alignItems: 'center', gap: 5,
-        minWidth: 60,
+        display: 'flex', alignItems: 'center', gap: 4,
       }}>
         {[0, 1, 2].map(i => (
           <motion.div
             key={i}
-            animate={{ y: [0, -5, 0] }}
+            animate={{ scale: [1, 1.5, 1], opacity: [0.4, 1, 0.4] }}
             transition={{
               repeat: Infinity,
-              duration: 0.7,
-              delay: i * 0.15,
+              duration: 0.8,
+              delay: i * 0.18,
               ease: 'easeInOut',
             }}
             style={{
-              width: 7, height: 7, borderRadius: '50%',
+              width: 6, height: 6, borderRadius: '50%',
               background: 'var(--text-tertiary)',
             }}
           />
@@ -117,10 +111,12 @@ export default function ChatWindow({
 
   const scrollRef  = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLInputElement>(null);
+  // long press timer
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isFemale = recipient.gender === 'female';
 
-  // ── فحص الحظر عند الفتح ──────────────────────────────────
+  // ── فحص الحظر — يمنع الطرفين ──────────────────────────────
   useEffect(() => {
     if (!currentUserId || !recipient.id) return;
     supabase.from('blocks')
@@ -140,7 +136,7 @@ export default function ChatWindow({
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || isBlocked) return;
     const needsCoins = !convStatus.is_free && !convStatus.is_unlocked;
     if (needsCoins) {
       if (!canAfford('message')) return;
@@ -152,6 +148,7 @@ export default function ChatWindow({
   };
 
   const handleVoiceSend = useCallback(async (blob: Blob) => {
+    if (isBlocked) return;
     setSendingVoice(true);
     const needsCoins = !convStatus.is_free && !convStatus.is_unlocked;
     if (needsCoins) {
@@ -161,20 +158,29 @@ export default function ChatWindow({
     }
     await sendVoiceMessage(blob);
     setSendingVoice(false);
-  }, [convStatus, canAfford, deduct, recipient.id, sendVoiceMessage]);
+  }, [convStatus, canAfford, deduct, recipient.id, sendVoiceMessage, isBlocked]);
 
   const handleChange = (val: string) => {
     setInputText(val);
     setTyping(val.length > 0);
   };
 
-  const handleMsgTouch = (msgId: string) => {
-    setPressedId(prev => prev === msgId ? null : msgId);
+  // ── Long press 0.5s → يظهر خيار الحذف ────────────────────
+  const handlePressStart = (msgId: string) => {
+    longPressTimer.current = setTimeout(() => {
+      setPressedId(msgId);
+    }, 500);
+  };
+
+  const handlePressEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
   };
 
   const handleBlock = async () => {
     setShowMenu(false);
-    // ✅ الحظر في جدول blocks المخصص
     await supabase.from('blocks').upsert(
       { blocker_id: currentUserId, blocked_id: recipient.id },
       { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
@@ -200,82 +206,47 @@ export default function ChatWindow({
     >
 
       {/* HEADER */}
-      <header
-        dir="rtl"
-        style={{
-          position:      'fixed',
-          top: 0, right: 0, left: 0,
-          zIndex:        1001,
-          height:        'var(--header-h-safe)',
-          display:       'flex',
-          alignItems:    'flex-end',
-          paddingBottom: '8px',
-          paddingLeft:   '4px',
-          paddingRight:  '4px',
-          gap:           4,
-          background:    'var(--bg-surface)',
-          borderBottom:  '1px solid var(--glass-border)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-        }}
-      >
-        {/* أفاتار + اسم */}
-        <button
-          onClick={() => onOpenProfile?.(recipient.id)}
-          style={{
-            flex: 1, minWidth: 0,
-            display: 'flex', alignItems: 'center',
-            flexDirection: 'row',
-            gap: 10,
-            background: 'transparent', border: 'none', cursor: 'pointer',
-            padding: '0 4px', textAlign: 'right',
-          }}
-        >
+      <header dir="rtl" style={{
+        position: 'fixed', top: 0, right: 0, left: 0, zIndex: 1001,
+        height: 'var(--header-h-safe)',
+        display: 'flex', alignItems: 'flex-end',
+        paddingBottom: '8px', paddingLeft: '4px', paddingRight: '4px', gap: 4,
+        background: 'var(--bg-surface)',
+        borderBottom: '1px solid var(--glass-border)',
+        backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+      }}>
+        <button onClick={() => onOpenProfile?.(recipient.id)} style={{
+          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center',
+          flexDirection: 'row', gap: 10,
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          padding: '0 4px', textAlign: 'right',
+        }}>
           <div style={{ position: 'relative', width: AVATAR, height: AVATAR, flexShrink: 0 }}>
             <div style={{
               width: AVATAR, height: AVATAR, borderRadius: '50%',
-              overflow: 'hidden',
-              border: '1.5px solid var(--glass-border)',
+              overflow: 'hidden', border: '1.5px solid var(--glass-border)',
               background: 'var(--glass-bg)',
             }}>
-              <img
-                src={recipient.avatar || '/default-avatar.png'}
-                alt=""
-                style={{
-                  width: '100%', height: '100%', objectFit: 'cover', display: 'block',
-                  filter:    recipient.is_photos_blurred ? 'blur(8px)'   : 'none',
-                  transform: recipient.is_photos_blurred ? 'scale(1.15)' : 'none',
-                  transition: 'filter 0.3s',
-                }}
-              />
+              <img src={recipient.avatar || '/default-avatar.png'} alt="" style={{
+                width: '100%', height: '100%', objectFit: 'cover', display: 'block',
+                filter:    recipient.is_photos_blurred ? 'blur(8px)'   : 'none',
+                transform: recipient.is_photos_blurred ? 'scale(1.15)' : 'none',
+                transition: 'filter 0.3s',
+              }} />
             </div>
-            <div style={{
-              position: 'absolute',
-              bottom: -(DOT / 2), right: -(DOT / 2),
-              width: DOT, height: DOT,
-            }}>
-              <OnlineDot
-                userId={recipient.id}
-                initialLastActive={recipient.last_seen}
-                size={DOT}
-              />
+            <div style={{ position: 'absolute', bottom: -(DOT/2), right: -(DOT/2), width: DOT, height: DOT }}>
+              <OnlineDot userId={recipient.id} initialLastActive={recipient.last_seen} size={DOT} />
             </div>
           </div>
-
           <div style={{ minWidth: 0, flex: 1 }}>
             <span style={{
               color: 'var(--text-main)', fontWeight: 700, fontSize: 15,
-              display: 'block', overflow: 'hidden',
-              textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            }}>
-              {recipient.name}
-            </span>
-            {/* ✅ "يكتب الآن" نصي في الهيدر فقط */}
+              display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            }}>{recipient.name}</span>
             <AnimatePresence mode="wait">
               {recipientTyping && (
                 <motion.span key="typing"
-                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
+                  initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
                   style={{ fontSize: 11, color: 'var(--color-gold-hover)', display: 'block' }}
                 >
                   {isFemale ? 'تكتب الآن...' : 'يكتب الآن...'}
@@ -285,45 +256,34 @@ export default function ChatWindow({
           </div>
         </button>
 
-        {/* ثلاث نقاط */}
         <div style={{ position: 'relative', flexShrink: 0 }}>
           <button onClick={() => setShowMenu(v => !v)} style={{
             background: 'transparent', border: 'none', cursor: 'pointer',
-            width: 44, height: 44,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'var(--text-tertiary)',
           }}>
             <MoreVertical size={20} />
           </button>
-
           <AnimatePresence>
             {showMenu && (
               <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }}
-                  onClick={() => setShowMenu(false)} />
+                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowMenu(false)} />
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.88, y: -8 }}
-                  animate={{ opacity: 1, scale: 1,    y: 0  }}
-                  exit={{    opacity: 0, scale: 0.88, y: -8 }}
-                  transition={{ duration: 0.15 }}
-                  dir="rtl"
-                  style={{
+                  initial={{ opacity: 0, scale: 0.88, y: -8 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.88, y: -8 }} transition={{ duration: 0.15 }}
+                  dir="rtl" style={{
                     position: 'absolute', top: 46, left: 0, zIndex: 20,
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--glass-border)',
+                    background: 'var(--bg-elevated)', border: '1px solid var(--glass-border)',
                     borderRadius: 16, overflow: 'hidden', width: 150,
                     boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
                   }}
                 >
                   {[
-                    { label: 'إبلاغ', color: '#f87171',
-                      action: () => { setShowMenu(false); setShowReport(true); } },
-                    { label: 'حظر', icon: <ShieldOff size={13}/>, color: '#fb923c',
-                      action: handleBlock },
+                    { label: 'إبلاغ', color: '#f87171', action: () => { setShowMenu(false); setShowReport(true); } },
+                    { label: 'حظر', icon: <ShieldOff size={13}/>, color: '#fb923c', action: handleBlock },
                   ].map((item, i) => (
                     <button key={item.label} onClick={item.action} style={{
-                      width: '100%', padding: '12px 14px',
-                      display: 'flex', alignItems: 'center', gap: 8,
+                      width: '100%', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8,
                       background: 'transparent', border: 'none', cursor: 'pointer',
                       borderBottom: i === 0 ? '1px solid var(--glass-border)' : 'none',
                       color: item.color, fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
@@ -337,7 +297,6 @@ export default function ChatWindow({
           </AnimatePresence>
         </div>
 
-        {/* سهم الرجوع */}
         <button onClick={onBack} style={{
           background: 'transparent', border: 'none', cursor: 'pointer',
           width: 44, height: 44, flexShrink: 0,
@@ -356,24 +315,18 @@ export default function ChatWindow({
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }} dir="rtl"
             style={{
-              background: 'rgba(164,22,26,0.10)',
-              borderBottom: '1px solid var(--border-soft)',
+              background: 'rgba(164,22,26,0.10)', borderBottom: '1px solid var(--border-soft)',
               padding: '10px 14px', flexShrink: 0,
-              display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', gap: 10, overflow: 'hidden',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, overflow: 'hidden',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
               <MessageCircle size={14} color="var(--color-primary)" />
-              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                هل تريد قبول هذه المحادثة؟
-              </span>
+              <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>هل تريد قبول هذه المحادثة؟</span>
             </div>
             <button onClick={acceptConversation} style={{
-              padding: '5px 14px', borderRadius: 20,
-              background: 'var(--color-accent)', border: 'none',
-              color: '#fff', fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', flexShrink: 0,
+              padding: '5px 14px', borderRadius: 20, background: 'var(--color-accent)',
+              border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0,
             }}>قبول</button>
           </motion.div>
         )}
@@ -385,8 +338,7 @@ export default function ChatWindow({
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }} dir="rtl"
             style={{
-              background: 'rgba(234,179,8,0.08)',
-              borderBottom: '1px solid rgba(234,179,8,0.2)',
+              background: 'rgba(234,179,8,0.08)', borderBottom: '1px solid rgba(234,179,8,0.2)',
               padding: '8px 14px', flexShrink: 0,
               display: 'flex', alignItems: 'center', gap: 7, overflow: 'hidden',
             }}
@@ -401,15 +353,12 @@ export default function ChatWindow({
 
       {/* الرسائل */}
       <div style={{
-        flex: 1, overflowY: 'auto',
-        padding: '12px 12px 8px',
+        flex: 1, overflowY: 'auto', padding: '12px 12px 8px',
         display: 'flex', flexDirection: 'column', gap: 6,
       }}>
         {loading ? (
-          <div style={{
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flex: 1, color: 'var(--text-tertiary)', fontSize: 13,
-          }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flex: 1, color: 'var(--text-tertiary)', fontSize: 13 }}>
             جارٍ التحميل...
           </div>
         ) : (
@@ -420,30 +369,28 @@ export default function ChatWindow({
 
               return (
                 <div key={msg.id} dir="rtl"
-                  style={{
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: isMine ? 'flex-start' : 'flex-end',
-                    gap: 2,
-                  }}
-                  onClick={e => { e.stopPropagation(); handleMsgTouch(msg.id); }}
+                  style={{ display: 'flex', flexDirection: 'column',
+                    alignItems: isMine ? 'flex-start' : 'flex-end', gap: 2 }}
+                  // ✅ long press 500ms فقط يُظهر خيار الحذف
+                  onTouchStart={() => handlePressStart(msg.id)}
+                  onTouchEnd={handlePressEnd}
+                  onMouseDown={() => handlePressStart(msg.id)}
+                  onMouseUp={handlePressEnd}
+                  onMouseLeave={handlePressEnd}
                 >
                   <div style={{
                     maxWidth: '78%', position: 'relative',
                     padding: '9px 13px', borderRadius: 18,
-                    borderBottomRightRadius: isMine ? 4  : 18,
+                    borderBottomRightRadius: isMine ? 4 : 18,
                     borderBottomLeftRadius:  isMine ? 18 : 4,
                     background: isMine ? '#8B1A1A' : 'var(--bg-elevated)',
                     border: `1px solid ${isMine ? 'rgba(139,26,26,0.6)' : 'var(--glass-border)'}`,
                     opacity: msg.is_optimistic ? 0.7 : 1,
                     transition: 'opacity 0.2s',
+                    userSelect: 'none', WebkitUserSelect: 'none',
                   }}>
-
                     {msg.message_type === 'voice' && msg.audio_url ? (
-                      <VoiceMessageBubble
-                        audioUrl={msg.audio_url}
-                        isMine={isMine}
-                        messageId={msg.id}
-                      />
+                      <VoiceMessageBubble audioUrl={msg.audio_url} isMine={isMine} messageId={msg.id} />
                     ) : msg.message_type === 'voice' ? (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 120, opacity: 0.7 }}>
                         <div style={{
@@ -464,13 +411,12 @@ export default function ChatWindow({
                         margin: 0, fontSize: 14, lineHeight: 1.6,
                         color: isMine ? '#ffffff' : 'var(--text-main)',
                         wordBreak: 'break-word',
-                      }}>
-                        {msg.content}
-                      </p>
+                      }}>{msg.content}</p>
                     )}
 
+                    {/* ✅ زر الحذف — يظهر عند long press للطرفين */}
                     <AnimatePresence>
-                      {isMine && isPressed && (
+                      {isPressed && (
                         <motion.button
                           initial={{ opacity: 0, scale: 0.7 }}
                           animate={{ opacity: 1, scale: 1   }}
@@ -493,12 +439,12 @@ export default function ChatWindow({
                     </AnimatePresence>
                   </div>
 
+                  {/* وقت + حالة القراءة عند long press */}
                   <AnimatePresence>
                     {isPressed && (
                       <motion.div
-                        initial={{ opacity: 0, y: -4 }}
-                        animate={{ opacity: 1, y: 0   }}
-                        exit={{    opacity: 0, y: -4   }}
+                        initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -4 }}
                         style={{ display: 'flex', alignItems: 'center', gap: 4, paddingInline: 6 }}
                       >
                         {isMine && (
@@ -516,17 +462,16 @@ export default function ChatWindow({
               );
             })}
 
-            {/* ✅ فقاعة "يكتب الآن" في مكان الرسالة القادمة */}
+            {/* ✅ 3 نقاط أفقية متموجة */}
             <AnimatePresence>
               {recipientTyping && (
-                <motion.div
-                  key="typing-bubble"
+                <motion.div key="typing-bubble"
                   initial={{ opacity: 0, y: 8, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0,  scale: 1    }}
                   exit={{    opacity: 0, y: 8,  scale: 0.95 }}
                   transition={{ duration: 0.2 }}
                 >
-                  <TypingBubble isFemale={isFemale} />
+                  <TypingBubble />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -538,16 +483,12 @@ export default function ChatWindow({
       {/* بانر الحظر */}
       <AnimatePresence>
         {isBlocked && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             style={{
-              background: 'rgba(239,68,68,0.08)',
-              borderTop: '1px solid rgba(239,68,68,0.2)',
-              padding: '10px 16px',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              flexShrink: 0,
+              background: 'rgba(239,68,68,0.08)', borderTop: '1px solid rgba(239,68,68,0.2)',
+              padding: '10px 16px', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', flexShrink: 0,
             }}
           >
             <span style={{ fontSize: 12, color: '#ef4444', textAlign: 'center' }}>
@@ -559,60 +500,44 @@ export default function ChatWindow({
 
       {/* شريط الإدخال */}
       <div dir="rtl" style={{
-        padding:       '8px 12px',
+        padding: '8px 12px',
         paddingBottom: 'max(var(--safe-bottom, env(safe-area-inset-bottom, 0px)), 8px)',
-        background:    'var(--bg-surface)',
-        borderTop:     '1px solid var(--glass-border)',
-        flexShrink:    0,
+        background: 'var(--bg-surface)', borderTop: '1px solid var(--glass-border)', flexShrink: 0,
       }}>
         {isBlocked ? (
           <div style={{
-            height: 46, borderRadius: 30,
-            background: 'var(--glass-bg)',
+            height: 46, borderRadius: 30, background: 'var(--glass-bg)',
             border: '1px solid rgba(239,68,68,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 12, color: '#ef4444' }}>
-              المراسلة محظورة
-            </span>
+            <span style={{ fontSize: 12, color: '#ef4444' }}>المراسلة محظورة</span>
           </div>
         ) : showWaitBanner ? (
           <div style={{
-            height: 46, borderRadius: 30,
-            background: 'var(--glass-bg)',
+            height: 46, borderRadius: 30, background: 'var(--glass-bg)',
             border: '1px solid var(--glass-border)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>
-              في انتظار الطرف الآخر...
-            </span>
+            <span style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>في انتظار الطرف الآخر...</span>
           </div>
         ) : (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 6,
-            background: 'var(--glass-bg)',
-            border: '1px solid var(--glass-border)',
+            background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
             borderRadius: 30, padding: '4px',
           }}>
-            <motion.button
-              whileTap={{ scale: 0.82 }}
-              onClick={handleSend}
-              style={{
-                width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
-                background: hasText ? 'var(--color-accent)' : 'rgba(255,255,255,0.06)',
-                border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'background 0.2s',
-              }}
-            >
+            <motion.button whileTap={{ scale: 0.82 }} onClick={handleSend} style={{
+              width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+              background: hasText ? 'var(--color-accent)' : 'rgba(255,255,255,0.06)',
+              border: 'none', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'background 0.2s',
+            }}>
               <Send size={15} color={hasText ? '#ffffff' : 'var(--text-tertiary)'} />
             </motion.button>
 
-            <input
-              ref={inputRef}
-              type="text" dir="rtl"
-              placeholder="اكتب رسالتك..."
-              value={inputText}
+            <input ref={inputRef} type="text" dir="rtl"
+              placeholder="اكتب رسالتك..." value={inputText}
               onChange={e => handleChange(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSend()}
               style={{
@@ -622,21 +547,13 @@ export default function ChatWindow({
               }}
             />
 
-            <VoiceRecorder
-              onSend={handleVoiceSend}
-              disabled={sendingVoice || showWaitBanner}
-            />
+            <VoiceRecorder onSend={handleVoiceSend} disabled={sendingVoice || showWaitBanner || isBlocked} />
           </div>
         )}
       </div>
 
-      <ReportSheet
-        open={showReport}
-        onClose={() => setShowReport(false)}
-        reportedUserId={recipient.id}
-        targetType="conversation"
-        targetId={conversationId}
-      />
+      <ReportSheet open={showReport} onClose={() => setShowReport(false)}
+        reportedUserId={recipient.id} targetType="conversation" targetId={conversationId} />
     </div>
   );
 }

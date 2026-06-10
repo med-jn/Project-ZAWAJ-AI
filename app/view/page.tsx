@@ -1,13 +1,14 @@
 'use client';
 /**
- * 📁 app/view/page.tsx — ZAWAJ AI
- * ✅ تحقق من الرصيد قبل فتح الصفحة (view)
- * ✅ خصم view في الخلفية فور الفتح
- * ✅ خصم like محلي فوري ثم خادم في الخلفية
- * ✅ خصم message عند أول محادثة فقط
+ * 📁 app/view/page.tsx — ZAWAJ AI v4
+ * ✅ كل المنطق هنا — ProfileActions مجرد UI
+ * ✅ إعجاب toggle (like → pass) | خصم 5 نقاط للـ like فقط
+ * ✅ رسالة: فتح مباشر بدون خصم (الخصم داخل ChatWindow عند أول إرسال)
+ * ✅ حظر: يحذف كل العلاقات + يرجع للهوم
+ * ✅ مشاركة: تُنفذها ProfileActions (Capacitor Share)
  */
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams, useRouter }    from 'next/navigation';
 import { motion, AnimatePresence }       from 'framer-motion';
 import {
@@ -27,7 +28,7 @@ import { getSpecialtyLabel } from '@/constants/occupations';
 import ChatWindow           from '@/components/chat/ChatWindow';
 import { useGiftCoins }     from '@/hooks/useGiftCoins';
 
-// ── مكونات العرض ──────────────────────────────────────────────
+// ── مكونات العرض ─────────────────────────────────────────────
 function Row({ icon, label, value }: {
   icon: React.ReactNode; label: string; value?: string | number | null;
 }) {
@@ -90,20 +91,20 @@ function ViewContent() {
 
   const { deduct, deductBackground, canAfford } = useGiftCoins();
 
-  const [profile,   setProfile]   = useState<any>(null);
-  const [myProfile, setMyProfile] = useState<any>(null);
-  const [me,        setMe]        = useState<any>(null);
-  const [liked,     setLiked]     = useState(false);
-  const [liking,    setLiking]    = useState(false);
-  const [loading,   setLoading]   = useState(true);
-  const [chatOpen,  setChatOpen]  = useState(false);
-  const [convId,    setConvId]    = useState<string | null>(null);
-  const [shared,    setShared]    = useState(false);
-  const [blocked,   setBlocked]   = useState(false);
-  const [msgFlash,  setMsgFlash]  = useState(false);
-  const [lightbox,  setLightbox]  = useState(false);
+  const [profile,  setProfile]  = useState<any>(null);
+  const [myProfile,setMyProfile]= useState<any>(null);
+  const [me,       setMe]       = useState<any>(null);
+  const [liked,    setLiked]    = useState(false);
+  const [liking,   setLiking]   = useState(false);
+  const [blocked,  setBlocked]  = useState(false);
+  const [loading,  setLoading]  = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [convId,   setConvId]   = useState<string | null>(null);
+  const [shared,   setShared]   = useState(false);
+  const [msgFlash, setMsgFlash] = useState(false);
+  const [lightbox, setLightbox] = useState(false);
 
-  // ── جلب المستخدم الحالي ───────────────────────────────────
+  // ── جلب المستخدم الحالي ──────────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
@@ -114,7 +115,7 @@ function ViewContent() {
     });
   }, []);
 
-  // ── جلب بيانات الملف ─────────────────────────────────────
+  // ── جلب بيانات الملف ────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
     (async () => {
@@ -125,16 +126,21 @@ function ViewContent() {
     })();
   }, [userId]);
 
-  // ── حالة الإعجاب + خصم view عند الفتح ───────────────────
+  // ── حالة الإعجاب + فحص الحظر + خصم view ────────────────
   useEffect(() => {
     if (!me || !userId || me.id === userId) return;
 
-    // فحص حالة الإعجاب
+    // فحص الإعجاب الحالي
     supabase.from('likes').select('id')
       .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like').maybeSingle()
       .then(({ data }) => { if (data) setLiked(true); });
 
-    // ① تحقق محلي من رصيد view قبل الفتح
+    // فحص الحظر
+    supabase.from('blocks').select('id')
+      .eq('blocker_id', me.id).eq('blocked_id', userId).maybeSingle()
+      .then(({ data }) => { if (data) setBlocked(true); });
+
+    // تحقق من الرصيد قبل الفتح
     if (!canAfford('view')) {
       import('sonner').then(({ toast }) => {
         toast.error('نقاطك لا تكفي لفتح الملف', {
@@ -147,7 +153,7 @@ function ViewContent() {
       return;
     }
 
-    // ② خصم في الخلفية فوراً + تسجيل في likes
+    // خصم view في الخلفية + تسجيل
     deductBackground({ action: 'view', target_id: userId, notes: 'فتح الملف الشخصي' });
     supabase.from('likes').upsert(
       { from_user: me.id, to_user: userId, action: 'view' },
@@ -157,37 +163,42 @@ function ViewContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me?.id, userId]);
 
-  // ── إعجاب ─────────────────────────────────────────────────
-  const handleLike = async () => {
+  // ── إعجاب toggle (like ↔ pass) ──────────────────────────
+  const handleLike = useCallback(async () => {
     if (!me || liking) return;
     setLiking(true);
 
     if (liked) {
-      // إلغاء — بدون خصم
+      // إلغاء الإعجاب → تسجيل pass (بدون خصم)
       setLiked(false);
-      await supabase.from('likes').delete()
-        .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like');
+      await Promise.all([
+        supabase.from('likes').delete()
+          .eq('from_user', me.id).eq('to_user', userId).eq('action', 'like'),
+        supabase.from('likes').upsert(
+          { from_user: me.id, to_user: userId, action: 'pass' },
+          { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
+        ),
+      ]);
     } else {
-      // تحقق محلي أولاً
-      if (!canAfford('like')) {
-        setLiking(false);
-        return; // Sonner يظهر من deduct نفسه
-      }
-      // optimistic: أظهر الإعجاب فوراً
-      setLiked(true);
-      // الخصم + التسجيل في الخلفية
-      deduct({ action: 'like', target_id: userId, notes: 'إعجاب بملف شخصي' })
-        .then(ok => { if (!ok) setLiked(false); }); // تراجع إن فشل
-      supabase.from('likes').upsert(
-        { from_user: me.id, to_user: userId, action: 'like' },
-        { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
-      );
+      // إعجاب → خصم 5 نقاط
+      if (!canAfford('like')) { setLiking(false); return; }
+      setLiked(true); // optimistic
+      const ok = await deduct({ action: 'like', target_id: userId, notes: 'إعجاب بملف شخصي' });
+      if (!ok) { setLiked(false); setLiking(false); return; }
+      await Promise.all([
+        supabase.from('likes').delete()
+          .eq('from_user', me.id).eq('to_user', userId).eq('action', 'pass'),
+        supabase.from('likes').upsert(
+          { from_user: me.id, to_user: userId, action: 'like' },
+          { onConflict: 'from_user,to_user,action', ignoreDuplicates: true }
+        ),
+      ]);
     }
     setLiking(false);
-  };
+  }, [me, liked, liking, userId, canAfford, deduct]);
 
-  // ── رسالة ─────────────────────────────────────────────────
-  const handleMessage = async () => {
+  // ── رسالة: فتح مباشر — الخصم داخل ChatWindow ────────────
+  const handleMessage = useCallback(async () => {
     if (!me) return;
     setMsgFlash(true);
     setTimeout(() => setMsgFlash(false), 500);
@@ -197,49 +208,44 @@ function ViewContent() {
       .maybeSingle();
 
     if (ex) {
-      // محادثة موجودة — فتح مباشرة بدون خصم
       setConvId(ex.id);
       setChatOpen(true);
       return;
     }
 
-    // محادثة جديدة — تحقق محلي
-    if (!canAfford('message')) return; // Sonner يظهر من deduct
-
-    // optimistic: افتح نافذة الدردشة فوراً بعد إنشاء المحادثة
-    const ok = await deduct({ action: 'message', target_id: userId, notes: 'بدء محادثة جديدة' });
-    if (!ok) return;
-
+    // إنشاء محادثة جديدة — بدون خصم هنا (الخصم عند إرسال أول رسالة في ChatWindow)
     const { data: nc } = await supabase.from('conversations')
       .insert({ user_1: me.id, user_2: userId }).select('id').single();
     setConvId(nc?.id ?? null);
     setChatOpen(true);
-  };
+  }, [me, userId]);
 
-  // ── مشاركة ────────────────────────────────────────────────
-  const handleShare = async () => {
-    const url = `${window.location.origin}/view?id=${userId}`;
-    if (navigator.share) {
-      try { await navigator.share({ title: profile?.full_name ?? 'ZAWAJ AI', url }); }
-      catch (_) { await navigator.clipboard.writeText(url); }
-    } else {
-      await navigator.clipboard.writeText(url);
-    }
+  // ── مشاركة: ProfileActions تتولى Capacitor Share ────────
+  const handleShare = useCallback(() => {
     setShared(true);
-    setTimeout(() => setShared(false), 2200);
-  };
+    setTimeout(() => setShared(false), 2500);
+  }, []);
 
-  // ── حظر ───────────────────────────────────────────────────
-  const handleBlock = async () => {
+  // ── حظر حقيقي: المنطق الكامل هنا ──────────────────────
+  const handleBlock = useCallback(async (): Promise<void> => {
     if (!me) return;
+    // 1. إدراج في جدول blocks
     await supabase.from('blocks').upsert(
       { blocker_id: me.id, blocked_id: userId },
       { onConflict: 'blocker_id,blocked_id', ignoreDuplicates: true }
     );
+    // 2. حذف كل التفاعلات في الاتجاهين
+    await Promise.all([
+      supabase.from('likes').delete().eq('from_user', me.id).eq('to_user', userId),
+      supabase.from('likes').delete().eq('from_user', userId).eq('to_user', me.id),
+    ]);
+    // 3. تحديث الحالة المحلية
     setBlocked(true);
-    setTimeout(() => router.back(), 1200);
-  };
+    // 4. الانتقال فوراً للهوم
+    router.replace('/home');
+  }, [me, userId, router]);
 
+  // ── التحميل ──────────────────────────────────────────────
   if (!userId || loading || !profile) return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.85, ease: 'linear' }}
@@ -247,13 +253,13 @@ function ViewContent() {
     </div>
   );
 
-  const isMale      = profile.gender === 'male';
-  const gender      = isMale ? 'male' : 'female';
-  const committed   = COMMITTED_LEVELS.includes(profile.religious_commitment ?? -1);
-  const pct         = profile.profile_completion_percent ?? 0;
-  const name        = profile.full_name ?? '—';
-  const loc         = [profile.country, profile.city].filter(Boolean).join(' — ');
-  const hw          = [profile.height ? `${profile.height} سم` : null, profile.weight ? `${profile.weight} كغ` : null].filter(Boolean).join(' · ') || null;
+  const isMale        = profile.gender === 'male';
+  const gender        = isMale ? 'male' : 'female';
+  const committed     = COMMITTED_LEVELS.includes(profile.religious_commitment ?? -1);
+  const pct           = profile.profile_completion_percent ?? 0;
+  const name          = profile.full_name ?? '—';
+  const loc           = [profile.country, profile.city].filter(Boolean).join(' — ');
+  const hw            = [profile.height ? `${profile.height} سم` : null, profile.weight ? `${profile.weight} كغ` : null].filter(Boolean).join(' · ') || null;
   const maritalLabel  = profile.marital_status       ? getMaritalLabel(profile.marital_status, gender)         : null;
   const eduLabel      = profile.education_level      ? getEducationLabel(profile.education_level)              : null;
   const religionLabel = profile.religious_commitment ? getReligiousLabel(profile.religious_commitment, gender) : null;
@@ -303,15 +309,16 @@ function ViewContent() {
             <ProfileActions
               userId={userId}
               currentUserId={me.id}
+              targetName={profile.full_name?.trim() || 'هذا المستخدم'}
               liked={liked}
               liking={liking}
+              blocked={blocked}
+              msgFlash={msgFlash}
+              shared={shared}
               onLike={handleLike}
               onMessage={handleMessage}
               onShare={handleShare}
               onBlock={handleBlock}
-              msgFlash={msgFlash}
-              shared={shared}
-              blocked={blocked}
             />
           )}
         </div>
@@ -402,6 +409,7 @@ function ViewContent() {
         </div>
       </motion.div>
 
+      {/* Lightbox */}
       <AnimatePresence>
         {lightbox && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -416,6 +424,7 @@ function ViewContent() {
         )}
       </AnimatePresence>
 
+      {/* Chat */}
       <AnimatePresence>
         {chatOpen && convId && profile && (
           <ChatWindow
