@@ -1,7 +1,7 @@
 'use client';
 /**
  * 📁 components/chat/ChatPage.tsx — ZAWAJ AI v2
- * يجلب بيانات المحادثة ويمرر recipientId لـ ChatWindow
+ * ✅ فحص الحظر realtime — يُغلق النافذة فوراً عند الحظر
  */
 
 import ChatWindow    from '@/components/chat/ChatWindow';
@@ -27,8 +27,10 @@ export default function ChatPage({
   currentUserId:  string;
 }) {
   const router = useRouter();
-  const [recipient, setRecipient] = useState<Recipient | null>(null);
+  const [recipient,  setRecipient]  = useState<Recipient | null>(null);
+  const [isBlocked,  setIsBlocked]  = useState<boolean | null>(null); // null = جاري الفحص
 
+  // ── جلب بيانات المحادثة ────────────────────────────────────
   useEffect(() => {
     const load = async () => {
       const { data: conv } = await supabase
@@ -63,7 +65,63 @@ export default function ChatPage({
     load();
   }, [conversationId, currentUserId]);
 
-  if (!recipient) return null;
+  // ── فحص الحظر + مراقبة realtime ──────────────────────────
+  useEffect(() => {
+    if (!recipient) return;
+
+    const checkBlock = async () => {
+      const { data } = await supabase
+        .from('blocks')
+        .select('id')
+        .or(`and(blocker_id.eq.${currentUserId},blocked_id.eq.${recipient.id}),and(blocker_id.eq.${recipient.id},blocked_id.eq.${currentUserId})`)
+        .maybeSingle();
+      setIsBlocked(!!data);
+    };
+
+    checkBlock();
+
+    // ✅ realtime — يُغلق النافذة فوراً عند الحظر بدون ريفرش
+    const channel = supabase
+      .channel(`blocks_${currentUserId}_${recipient.id}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'blocks' },
+        payload => {
+          const { blocker_id, blocked_id } = payload.new;
+          const involved =
+            (blocker_id === currentUserId && blocked_id === recipient.id) ||
+            (blocker_id === recipient.id   && blocked_id === currentUserId);
+          if (involved) {
+            setIsBlocked(true);
+            // ✅ نُغلق النافذة فوراً وننتقل للخلف
+            router.back();
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'blocks' },
+        payload => {
+          const { blocker_id, blocked_id } = payload.old;
+          const involved =
+            (blocker_id === currentUserId && blocked_id === recipient.id) ||
+            (blocker_id === recipient.id   && blocked_id === currentUserId);
+          if (involved) setIsBlocked(false);
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [recipient, currentUserId]);
+
+  // جاري الفحص — لا نعرض شيئاً حتى نعرف الحالة
+  if (!recipient || isBlocked === null) return null;
+
+  // محظور — لا نعرض النافذة
+  if (isBlocked) {
+    router.back();
+    return null;
+  }
 
   return (
     <ChatWindow

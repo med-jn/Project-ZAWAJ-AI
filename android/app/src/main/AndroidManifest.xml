@@ -87,6 +87,14 @@
                 <data android:scheme="https" android:host="zawaj.orcaup.com" android:pathPrefix="/reset-password" />
             </intent-filter>
 
+            <!-- ✅ صفحة share الوسيطة — تفتح التطبيق مباشرة -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="zawaj.orcaup.com" android:pathPrefix="/share" />
+            </intent-filter>
+
             <!-- Payment success -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -112,7 +120,7 @@
             </intent-filter>
 
             <!--
-                Deep Links للإشعارات: zawaj://app/...
+                Deep Links للإشعارات والمشاركة: zawaj://app/...
                 يستقبل: zawaj://app/chat?id=xxx
                          zawaj://app/view?id=xxx
                          zawaj://app/notifications
