@@ -27,7 +27,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/mediators':    'الوسطاء',
   '/dash':         'لوحة التحكم',
   '/subscribers':  'المشتركون',
-  '/points':       'نقاطي',
+  '/points':       'رصيد النقاط',
   '/help':         'المساعدة',
   '/terms':        'الشروط والسياسات',
 };

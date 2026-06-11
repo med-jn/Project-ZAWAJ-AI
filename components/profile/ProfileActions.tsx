@@ -228,7 +228,7 @@ export default function ProfileActions({
   const handleShare = async () => {
     playSound('share');
     // ✅ رابط الصفحة الوسيطة بدلاً من view مباشرة
-    const shareLink = `https://zawaj.orcaup.com/share?id=${userId}`;
+    const shareLink = `https://zawaj.orcaup.com/share/?id=${userId}`;
     try {
       await Share.share({
         title: 'ملف زواج على تطبيق زواج AI',

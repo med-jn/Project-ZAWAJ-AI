@@ -27,7 +27,7 @@ export function resolveNotificationRoute(
 
   // رسالة أو وسيط → صفحة الدردشة
   if ((type === 'message' || type === 'mediator') && payload.conversation_id) {
-    return `/chat?id=${payload.conversation_id}`;
+    return `/chat/?id=${payload.conversation_id}`;
   }
 
   // إعجاب أو زيارة أو توافق → ملف صاحب الإشعار
