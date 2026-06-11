@@ -257,7 +257,6 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
 function Btn3D({ variant, size, active, busy, onClick, icon }: {
   variant: 'like' | 'pass';
   size:    number;
-  color:   '#ffffff';
   active:  boolean;
   busy?:   boolean;
   onClick: () => void;
@@ -296,6 +295,7 @@ function Btn3D({ variant, size, active, busy, onClick, icon }: {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         position: 'relative', overflow: 'hidden',
         background: faceColor,
+        color: '#fff',
         boxShadow,
         transition: 'box-shadow 0.18s, background 0.18s',
       }}
