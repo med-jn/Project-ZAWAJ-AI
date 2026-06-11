@@ -257,7 +257,7 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
 function Btn3D({ variant, size, active, busy, onClick, icon }: {
   variant: 'like' | 'pass';
   size:    number;
-  color:   '#ffffff'
+  color:   '#ffffff';
   active:  boolean;
   busy?:   boolean;
   onClick: () => void;
