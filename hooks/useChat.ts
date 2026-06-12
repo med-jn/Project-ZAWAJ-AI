@@ -1,15 +1,18 @@
 /**
- * 📁 hooks/useChat.ts — ZAWAJ AI v2
+ * 📁 hooks/useChat.ts — ZAWAJ AI v2.1
  *
  * ✅ دعم الرسائل الصوتية (message_type + audio_url)
  * ✅ نظام فتح المحادثة (is_unlocked)
  * ✅ sendVoiceMessage مُصدَّرة
  * ✅ FIX: جلب آخر 80 رسالة (DESC ثم عكس) لضمان ظهور الجديدة
+ * ✅ FIX: إعادة جلب الرسائل عند رجوع التطبيق من الخلفية (Android)
  */
 
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import { uploadVoiceMessage } from '@/lib/supabase/chatStorage';
+import { App } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 export interface ChatMessage {
   id:              string;
@@ -111,6 +114,20 @@ export function useChat(
       setMessages([...data].reverse()); // ← نعكس للترتيب الصحيح
     }
     setLoading(false);
+  };
+
+  // ✅ إعادة جلب صامتة (بدون إظهار "جارٍ التحميل") عند رجوع التطبيق للمقدمة
+  const refreshMessagesSilently = async () => {
+    if (!conversationId) return;
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id, conversation_id, sender_id, content, message_type, audio_url, is_read, created_at')
+      .eq('conversation_id', conversationId)
+      .order('created_at', { ascending: false })
+      .limit(80);
+    if (!error && data) {
+      setMessages([...data].reverse());
+    }
   };
 
   useEffect(() => {
@@ -231,6 +248,24 @@ export function useChat(
 
     channelRef.current = channel;
     return () => { supabase.removeChannel(channel); };
+  }, [conversationId, userId, recipientId]);
+
+  // ✅ FIX: عند رجوع التطبيق من الخلفية (Android) — أعد جلب الرسائل
+  // لتعويض أي أحداث realtime فُقدت أثناء قطع الاتصال
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || !conversationId) return;
+
+    const listenerPromise = App.addListener('appStateChange', ({ isActive }) => {
+      if (isActive) {
+        supabase.realtime.connect();
+        refreshMessagesSilently();
+        fetchConvStatus();
+      }
+    });
+
+    return () => {
+      listenerPromise.then(handle => handle.remove());
+    };
   }, [conversationId, userId, recipientId]);
 
   const unlockConversation = async () => {

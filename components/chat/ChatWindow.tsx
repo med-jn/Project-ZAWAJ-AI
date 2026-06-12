@@ -1,6 +1,6 @@
 'use client';
 /**
- * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.7
+ * 📁 components/chat/ChatWindow.tsx — ZAWAJ AI v2.8
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -414,9 +414,9 @@ export default function ChatWindow({
                       }}>{msg.content}</p>
                     )}
 
-                    {/* ✅ زر الحذف — يظهر عند long press للطرفين */}
+                    {/* ✅ زر الحذف — فقط لرسائلي أنا (isMine) */}
                     <AnimatePresence>
-                      {isPressed && (
+                      {isPressed && isMine && (
                         <motion.button
                           initial={{ opacity: 0, scale: 0.7 }}
                           animate={{ opacity: 1, scale: 1   }}
