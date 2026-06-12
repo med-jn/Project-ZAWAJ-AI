@@ -172,8 +172,8 @@ export default function LandingPage() {
         </div>
 
         <p style={{ marginTop: 'var(--sp-8)', fontSize: 'var(--text-2xs)',
-          color: 'var(--text-tertiary)', opacity: 0.4, lineHeight: 'var(--lh-relaxed)' }}>
-          بتسجيل دخولك توافق على سياسة الخصوصية وشروط الاستخدام
+          color: 'var(--text-tertiary)', opacity: 0.6, lineHeight: 'var(--lh-relaxed)' }}>
+         بتسجيل دخولك توافق على سياسات الخصوصية وشروط الاستخدام
         </p>
         <Footer />
       </section>

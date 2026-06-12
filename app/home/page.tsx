@@ -1,9 +1,9 @@
 'use client';
 /**
- * 📁 app/home/page.tsx — ZAWAJ AI v4
- * ✅ متوافق مع filter_page v3 (DiscoveryFilters الجديدة)
- * ✅ حلقة لا نهائية (cycle)
- * ✅ حفظ الموضع في localStorage + Supabase
+ * 📁 app/home/page.tsx — ZAWAJ AI v5
+ * ✅ الفلاتر تُقرأ من sessionStorage عند كل load وعند العودة من /filter
+ * ✅ تغيير الفلاتر يُعيد تحميل النتائج من الصفر (reset position)
+ * ✅ حلقة لا نهائية + حفظ الموضع
  * ✅ استثناء المحظورين تلقائياً عبر MatchingEngine
  */
 
@@ -15,25 +15,37 @@ import { supabase }          from '@/lib/supabase/client';
 import { MatchingEngine }    from '@/lib/services/MatchingEngine';
 import UserCard              from '@/components/cards/usercard';
 import {
-  loadFilters, filtersAreActive,
-  type DiscoveryFilters, DEFAULT_FILTERS,
+  loadFilters,
+  saveFilters,
+  filtersAreActive,
+  FILTER_STORAGE_KEY,
+  type DiscoveryFilters,
+  DEFAULT_FILTERS,
 } from '@/app/filter/page';
 
-// ── مفاتيح التخزين ───────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// Storage helpers
+// ══════════════════════════════════════════════════════════════
 const LS_INDEX_KEY = (uid: string) => `zawaj_idx_${uid}`;
 const LS_CYCLE_KEY = (uid: string) => `zawaj_cycle_${uid}`;
 const LS_QUEUE_KEY = (uid: string) => `zawaj_queue_${uid}`;
-const QUEUE_TTL    = 2 * 60 * 60 * 1000; // ساعتان
+const LS_FHASH_KEY = (uid: string) => `zawaj_fhash_${uid}`; // hash الفلاتر المُطبَّقة
+const QUEUE_TTL    = 2 * 60 * 60 * 1000;
 
-// ── localStorage helpers ──────────────────────────────────────
 function lsGet<T>(key: string, fallback: T): T {
-  try {
-    const v = localStorage.getItem(key);
-    return v !== null ? JSON.parse(v) : fallback;
-  } catch { return fallback; }
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; }
+  catch { return fallback; }
 }
 function lsSet(key: string, val: unknown) {
   try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+function lsDel(key: string) {
+  try { localStorage.removeItem(key); } catch {}
+}
+
+// hash بسيط للفلاتر لمعرفة إذا تغيرت
+function hashFilters(f: DiscoveryFilters): string {
+  return JSON.stringify(f);
 }
 
 function getCachedQueue(uid: string): any[] | null {
@@ -41,23 +53,16 @@ function getCachedQueue(uid: string): any[] | null {
     const raw = localStorage.getItem(LS_QUEUE_KEY(uid));
     if (!raw) return null;
     const { ts, data } = JSON.parse(raw);
-    if (Date.now() - ts > QUEUE_TTL) {
-      localStorage.removeItem(LS_QUEUE_KEY(uid));
-      return null;
-    }
+    if (Date.now() - ts > QUEUE_TTL) { lsDel(LS_QUEUE_KEY(uid)); return null; }
     return data ?? null;
   } catch { return null; }
 }
 function saveCachedQueue(uid: string, data: any[]) {
-  try {
-    localStorage.setItem(LS_QUEUE_KEY(uid), JSON.stringify({ ts: Date.now(), data }));
-  } catch {}
+  try { localStorage.setItem(LS_QUEUE_KEY(uid), JSON.stringify({ ts: Date.now(), data })); } catch {}
 }
-function clearCachedQueue(uid: string) {
-  try { localStorage.removeItem(LS_QUEUE_KEY(uid)); } catch {}
-}
+function clearCachedQueue(uid: string) { lsDel(LS_QUEUE_KEY(uid)); }
 
-// ── Supabase position backup ──────────────────────────────────
+// Supabase position backup
 async function savePositionToSupabase(uid: string, index: number, cycle: number) {
   try {
     await supabase.from('profiles')
@@ -93,15 +98,52 @@ export default function HomePage() {
   const [currentUser,  setCurrentUser]  = useState<any>(null);
   const [filters,      setFilters]      = useState<DiscoveryFilters>(DEFAULT_FILTERS);
 
-  const uidRef   = useRef<string | null>(null);
-  const usersRef = useRef<any[]>([]);
-  useEffect(() => { usersRef.current = users; }, [users]);
+  const uidRef     = useRef<string | null>(null);
+  const usersRef   = useRef<any[]>([]);
+  const cycleRef   = useRef(0);
+  const profileRef = useRef<any>(null);
 
-  // ── تحميل البطاقات ───────────────────────────────────────
-  const load = useCallback(async (
+  useEffect(() => { usersRef.current = users;  }, [users]);
+  useEffect(() => { cycleRef.current = cycle;  }, [cycle]);
+
+  // ══════════════════════════════════════════════════════════
+  // fetchFresh — جلب نتائج جديدة من Supabase
+  // ══════════════════════════════════════════════════════════
+  const fetchFresh = useCallback(async (
+    uid: string,
+    profile: any,
     activeFilters: DiscoveryFilters,
-    opts: { resetPosition?: boolean } = {}
+    opts: { silent?: boolean; restoreIndex?: number; restoreCycle?: number } = {}
   ) => {
+    const { silent = false, restoreIndex = 0, restoreCycle = 0 } = opts;
+
+    const { data: smartUsers } = await MatchingEngine.getSmartSuggestions(
+      profile,
+      activeFilters
+    );
+
+    if (!smartUsers?.length) {
+      if (!silent) { setUsers([]); setLoading(false); }
+      return;
+    }
+
+    // حفظ الكاش + hash الفلاتر
+    saveCachedQueue(uid, smartUsers);
+    lsSet(LS_FHASH_KEY(uid), hashFilters(activeFilters));
+
+    if (!silent) {
+      setUsers(smartUsers);
+      const safeIdx = restoreIndex < smartUsers.length ? restoreIndex : 0;
+      setCurrentIndex(safeIdx);
+      setCycle(restoreCycle);
+      setLoading(false);
+    }
+  }, []);
+
+  // ══════════════════════════════════════════════════════════
+  // load — نقطة الدخول الرئيسية
+  // ══════════════════════════════════════════════════════════
+  const load = useCallback(async (opts: { forceRefresh?: boolean } = {}) => {
     setLoading(true);
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -112,107 +154,112 @@ export default function HomePage() {
       .from('profiles').select('*').eq('id', user.id).single();
     if (!profile) { setLoading(false); return; }
     setCurrentUser(profile);
+    profileRef.current = profile;
 
-    // استعادة الموضع
+    // ── قراءة الفلاتر الحالية ──────────────────────────────
+    const activeFilters = loadFilters();
+    setFilters(activeFilters);
+
+    const uid = user.id;
+
+    // ── هل تغيرت الفلاتر؟ ────────────────────────────────
+    const savedHash    = lsGet<string>(LS_FHASH_KEY(uid), '');
+    const currentHash  = hashFilters(activeFilters);
+    const filtersChanged = savedHash !== currentHash;
+
+    if (filtersChanged || opts.forceRefresh) {
+      // فلاتر جديدة → امسح الكاش وابدأ من الصفر
+      clearCachedQueue(uid);
+      lsDel(LS_INDEX_KEY(uid));
+      lsDel(LS_CYCLE_KEY(uid));
+      await fetchFresh(uid, profile, activeFilters, { restoreIndex: 0, restoreCycle: 0 });
+      return;
+    }
+
+    // ── استعادة الموضع ────────────────────────────────────
     let savedIndex = 0, savedCycle = 0;
-    if (!opts.resetPosition) {
-      const lsIdx = lsGet<number>(LS_INDEX_KEY(user.id), -1);
-      if (lsIdx >= 0) {
-        savedIndex = lsIdx;
-        savedCycle = lsGet<number>(LS_CYCLE_KEY(user.id), 0);
-      } else {
-        const supaPos = await loadPositionFromSupabase(user.id);
-        if (supaPos) {
-          savedIndex = supaPos.index;
-          savedCycle = supaPos.cycle;
-          lsSet(LS_INDEX_KEY(user.id), savedIndex);
-          lsSet(LS_CYCLE_KEY(user.id), savedCycle);
-        }
+    const lsIdx = lsGet<number>(LS_INDEX_KEY(uid), -1);
+    if (lsIdx >= 0) {
+      savedIndex = lsIdx;
+      savedCycle = lsGet<number>(LS_CYCLE_KEY(uid), 0);
+    } else {
+      const supaPos = await loadPositionFromSupabase(uid);
+      if (supaPos) {
+        savedIndex = supaPos.index;
+        savedCycle = supaPos.cycle;
+        lsSet(LS_INDEX_KEY(uid), savedIndex);
+        lsSet(LS_CYCLE_KEY(uid), savedCycle);
       }
     }
 
-    // الكاش
-    const cached = getCachedQueue(user.id);
-    if (cached && cached.length > 0 && !opts.resetPosition) {
+    // ── محاولة الكاش ──────────────────────────────────────
+    const cached = getCachedQueue(uid);
+    if (cached && cached.length > 0) {
       setUsers(cached);
       setCurrentIndex(savedIndex < cached.length ? savedIndex : 0);
       setCycle(savedCycle);
       setLoading(false);
-      fetchFresh(user.id, profile, activeFilters, true, savedIndex, savedCycle);
+      // تجديد خلفي صامت
+      fetchFresh(uid, profile, activeFilters, { silent: true, restoreIndex: savedIndex, restoreCycle: savedCycle });
       return;
     }
 
-    await fetchFresh(user.id, profile, activeFilters, false, savedIndex, savedCycle);
-  }, []); // eslint-disable-line
-
-  const fetchFresh = async (
-    uid: string, profile: any,
-    activeFilters: DiscoveryFilters,
-    silent: boolean,
-    restoreIndex = 0, restoreCycle = 0,
-  ) => {
-    const { data: smartUsers } = await MatchingEngine.getSmartSuggestions(
-      profile, activeFilters
-    );
-    if (!smartUsers?.length) {
-      if (!silent) { setUsers([]); setLoading(false); }
-      return;
-    }
-    saveCachedQueue(uid, smartUsers);
-    if (!silent) {
-      setUsers(smartUsers);
-      setCurrentIndex(restoreIndex < smartUsers.length ? restoreIndex : 0);
-      setCycle(restoreCycle);
-      setLoading(false);
-    }
-  };
+    await fetchFresh(uid, profile, activeFilters, { restoreIndex: savedIndex, restoreCycle: savedCycle });
+  }, [fetchFresh]);
 
   // ── mount ─────────────────────────────────────────────────
-  useEffect(() => {
-    const f = loadFilters();
-    setFilters(f);
-    load(f);
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
-  // ── العودة من /filter ─────────────────────────────────────
+  // ── العودة من /filter أو أي صفحة أخرى ───────────────────
   useEffect(() => {
     const handler = () => {
-      const f = loadFilters();
-      setFilters(f);
-      if (uidRef.current) clearCachedQueue(uidRef.current);
-      load(f, { resetPosition: true });
+      // نتحقق إذا تغيرت الفلاتر
+      if (!uidRef.current) return;
+      const newFilters    = loadFilters();
+      const savedHash     = lsGet<string>(LS_FHASH_KEY(uidRef.current), '');
+      const currentHash   = hashFilters(newFilters);
+      if (savedHash !== currentHash) {
+        // الفلاتر تغيرت → إعادة تحميل كاملة
+        load({ forceRefresh: false });
+      }
     };
     window.addEventListener('focus', handler);
     return () => window.removeEventListener('focus', handler);
   }, [load]);
 
-  // ── التقدم للبطاقة التالية (حلقة لا نهائية) ─────────────
+  // ══════════════════════════════════════════════════════════
+  // handleNext — التقدم للبطاقة التالية (حلقة لا نهائية)
+  // ══════════════════════════════════════════════════════════
   const handleNext = useCallback(() => {
     if (!currentUser || !uidRef.current) return;
 
     setCurrentIndex(prevIdx => {
-      const total   = usersRef.current.length;
-      const nextIdx = prevIdx + 1;
-      let finalIdx  = nextIdx;
-      let finalCycle = cycle;
+      const total     = usersRef.current.length;
+      const nextIdx   = prevIdx + 1;
+      let   finalIdx  = nextIdx;
+      let   finalCycle = cycleRef.current;
 
       if (nextIdx >= total) {
         finalIdx   = 0;
-        finalCycle = cycle + 1;
+        finalCycle = cycleRef.current + 1;
         setCycle(finalCycle);
-        // تجديد خلفي
-        const activeFilters = loadFilters();
-        if (uidRef.current && currentUser) {
-          fetchFresh(uidRef.current, currentUser, activeFilters, true, 0, finalCycle);
+
+        // تجديد خلفي صامت عند بداية دورة جديدة
+        if (uidRef.current && profileRef.current) {
+          const activeFilters = loadFilters();
+          fetchFresh(uidRef.current, profileRef.current, activeFilters, {
+            silent: true, restoreIndex: 0, restoreCycle: finalCycle,
+          });
         }
       }
 
       lsSet(LS_INDEX_KEY(uidRef.current!), finalIdx);
       lsSet(LS_CYCLE_KEY(uidRef.current!), finalCycle);
       scheduleSavePosition(uidRef.current!, finalIdx, finalCycle);
+
       return finalIdx;
     });
-  }, [currentUser, cycle]); // eslint-disable-line
+  }, [currentUser, fetchFresh]);
 
   const active = filtersAreActive(filters);
 
@@ -251,10 +298,16 @@ export default function HomePage() {
       }}>
         <SlidersHorizontal size={28} style={{ color: 'var(--color-primary)', opacity: 0.7 }} />
       </div>
-      <p style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-xl)', textAlign: 'center', margin: 0 }}>
+      <p style={{
+        color: 'var(--text-main)', fontWeight: 900,
+        fontSize: 'var(--text-xl)', textAlign: 'center', margin: 0,
+      }}>
         لا توجد نتائج
       </p>
-      <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)', textAlign: 'center', margin: 0 }}>
+      <p style={{
+        color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)',
+        textAlign: 'center', margin: 0,
+      }}>
         {active ? 'جرّب توسيع نطاق الفلاتر' : 'عد لاحقاً لاكتشاف ملفات جديدة'}
       </p>
       {active && (
@@ -276,7 +329,7 @@ export default function HomePage() {
   );
 
   const safeIndex = currentIndex % users.length;
-  const c = users[safeIndex];
+  const c         = users[safeIndex];
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>

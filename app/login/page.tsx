@@ -3,7 +3,6 @@ import { useState }  from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase }  from '@/lib/supabase/client';
 import { Brand }     from '@/components/ui/brand';
-import Footer        from '@/components/layout/Footer';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, LogIn, KeyRound, CheckCircle } from 'lucide-react';
 
 export default function LoginPage() {
@@ -359,9 +358,8 @@ export default function LoginPage() {
         </div>
 
         <p style={{ marginTop: 'var(--sp-8)', fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', opacity: 0.4, lineHeight: 'var(--lh-relaxed)' }}>
-          بتسجيل دخولك توافق على سياسة الخصوصية وشروط الاستخدام
+          بتسجيل دخولك توافق على سياسات الخصوصية وشروط الاستخدام
         </p>
-        <Footer />
       </section>
     </main>
   );

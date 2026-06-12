@@ -3,7 +3,6 @@ import { useState }  from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase }  from '@/lib/supabase/client';
 import { Brand }     from '@/components/ui/brand';
-import Footer        from '@/components/layout/Footer';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, UserPlus } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -280,9 +279,8 @@ export default function RegisterPage() {
           marginTop: 'var(--sp-8)', fontSize: 'var(--text-2xs)',
           color: 'var(--text-tertiary)', opacity: 0.4, lineHeight: 'var(--lh-relaxed)',
         }}>
-          بإنشاء حسابك توافق على سياسة الخصوصية وشروط الاستخدام
+          بإنشاء حسابك توافق على سياسات الخصوصية وشروط الاستخدام
         </p>
-        <Footer />
       </section>
     </main>
   );

@@ -12,7 +12,7 @@ export default function Footer() {
         right: 0, 
         left: 0,
         zIndex: 1000,
-        height: 'var(--header-h)', // نفس ارتفاع الهيدر ليتناسق التصميم
+        height: 'var(--header-h-safe)', // نفس ارتفاع الهيدر ليتناسق التصميم
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

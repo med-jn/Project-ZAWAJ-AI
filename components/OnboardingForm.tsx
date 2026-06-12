@@ -1579,7 +1579,7 @@ export default function OnboardingForm() {
           color: agreed ? 'var(--text-main)' : 'var(--text-secondary)',
           textAlign:'right', flex:1, transition:'color 0.2s',
         }}>
-          أقر بصحة المعلومات وأتعهد بالجدية والصدق، وغرضي الزواج الشرعي.
+         أنا أوافق على جميع سياسات الخصوصية وشروط الإستخدام وأتعهّد بالصدق والجديّة التامّة وتحمّل المسؤولية الأخلاقيّة أمام الله وأمام الجميع.
         </p>
       </motion.button>
       {errs.bio && (
