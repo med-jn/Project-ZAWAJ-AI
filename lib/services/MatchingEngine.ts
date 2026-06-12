@@ -1,12 +1,12 @@
 /**
- * 🧠 MatchingEngine — ZAWAJ AI
- * ✅ دمج نظام الحظر الحقيقي (جدول blocks)
- * ✅ استثناء من أعجبنا بهم (like) نهائياً
- * ✅ من مررناهم (pass) يعودون في الدورة التالية
- * ✅ الحلقة اللانهائية مدارة من home/page.tsx
+ * 🧠 MatchingEngine — ZAWAJ AI v4
+ * ✅ تطبيق كل فلاتر filter_page v3
+ * ✅ استثناء المحظورين (blocks في الاتجاهين + likes)
+ * ✅ فلتر الطول والوزن والحالة المدنية والدين وكل الحقول
  */
-import { supabase } from '@/lib/supabase/client';
-import { READINESS_LEVEL_NOW } from '@/constants/constants';
+import { supabase }              from '@/lib/supabase/client';
+import { READINESS_LEVEL_NOW }   from '@/constants/constants';
+import type { DiscoveryFilters } from '@/app/filter/page';
 
 export interface UserProfile {
   id:                          string;
@@ -19,20 +19,11 @@ export interface UserProfile {
   occupation_id?:              number | null;
 }
 
-export interface DiscoveryFilters {
-  ageMin:      number;
-  ageMax:      number;
-  country:     string;
-  city:        string;
-  excludeIds?: string[]; // ← يُمرَّر من home لاستثناء الـ seen في sessionStorage
-}
-
 export interface DiscoveryResult {
   data:     any[];
   strategy: number;
 }
 
-// ✅ فقط الأعمدة الموجودة فعلاً في جدول profiles
 const SELECT_COLS = [
   'id', 'gender', 'age', 'country', 'city',
   'full_name', 'avatar_url', 'images_data',
@@ -63,38 +54,19 @@ export class MatchingEngine {
   ): Promise<DiscoveryResult> {
 
     if (!user.gender) {
-      console.error('[MatchingEngine] gender مفقود في البروفايل');
+      console.error('[MatchingEngine] gender مفقود');
       return { data: [], strategy: 0 };
     }
 
-    // ── جلب IDs المحظورة (من جدول blocks في الاتجاهين + likes نوع like) ──
+    // ── IDs المستثناة (محظورون + مُعجَب بهم) ────────────────
     const blockedIds = await this.getBlockedIds(user.id);
 
-    // ── IDs إضافية يمررها home (seen في sessionStorage) ──
-    const extraExclude = filters?.excludeIds ?? [];
-
-    // دمج كل IDs المستثناة بدون تكرار
-    const allExcluded = [...new Set([...blockedIds, ...extraExclude])];
-
-    // فلتر موقع صريح من المستخدم
-    if (filters?.country || filters?.city) {
-      const results = await this.query(user, allExcluded, {
-        country: filters.country,
-        city:    filters.city,
-        ageMin:  filters.ageMin,
-        ageMax:  filters.ageMax,
-      });
-      return { data: this.rank(results, user), strategy: filters.city ? 1 : 2 };
-    }
-
-    // جلب الكل ثم ترتيب بالأولوية
-    const all = await this.query(user, allExcluded, {
-      ageMin: filters?.ageMin,
-      ageMax: filters?.ageMax,
-    });
+    // ── استعلام قاعدة البيانات مع كل الفلاتر ────────────────
+    const all = await this.query(user, blockedIds, filters);
 
     if (all.length === 0) return { data: [], strategy: 4 };
 
+    // ── تحديد الاستراتيجية ───────────────────────────────────
     const sameCity    = all.filter(p => p.city === user.city && p.country === user.country);
     const sameCountry = all.filter(p => p.country === user.country);
     const strategy    = sameCity.length > 0 ? 1 : sameCountry.length > 0 ? 2 : 4;
@@ -103,53 +75,30 @@ export class MatchingEngine {
   }
 
   /**
-   * يجلب IDs التي يجب استثناؤها نهائياً:
-   * 1. من حظرناهم (blocker_id = نحن)
-   * 2. من حظرونا  (blocked_id = نحن)
-   * 3. من أعجبنا بهم (action = 'like') — لأنهم في صفحة الإعجابات
-   *
-   * ملاحظة: pass لا يُستثنى هنا — يعود في الدورة التالية
+   * يُرجع IDs يجب استثناؤها:
+   * - من حظرناهم
+   * - من حظرونا
+   * - من أعجبنا بهم (like) — يظهرون في صفحة الإعجابات
+   * - pass لا يُستثنى — يعود في الدورة التالية
    */
   private static async getBlockedIds(userId: string): Promise<string[]> {
-    const [blocksOut, blocksIn, likedUsers] = await Promise.all([
-      // من حظرناهم
-      supabase
-        .from('blocks')
-        .select('blocked_id')
-        .eq('blocker_id', userId),
-
-      // من حظرونا
-      supabase
-        .from('blocks')
-        .select('blocker_id')
-        .eq('blocked_id', userId),
-
-      // من أعجبنا بهم (لا يعودون في أي دورة)
-      supabase
-        .from('likes')
-        .select('to_user')
-        .eq('from_user', userId)
-        .eq('action', 'like'),
+    const [blocksOut, blocksIn, liked] = await Promise.all([
+      supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
+      supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
+      supabase.from('likes').select('to_user').eq('from_user', userId).eq('action', 'like'),
     ]);
 
     const ids: string[] = [];
-
     (blocksOut.data ?? []).forEach((r: any) => r.blocked_id && ids.push(r.blocked_id));
     (blocksIn.data  ?? []).forEach((r: any) => r.blocker_id && ids.push(r.blocker_id));
-    (likedUsers.data ?? []).forEach((r: any) => r.to_user   && ids.push(r.to_user));
-
+    (liked.data     ?? []).forEach((r: any) => r.to_user    && ids.push(r.to_user));
     return [...new Set(ids)];
   }
 
   private static async query(
     user: UserProfile,
     excludedIds: string[],
-    opts: {
-      country?: string | null;
-      city?:    string | null;
-      ageMin?:  number;
-      ageMax?:  number;
-    }
+    filters?: Partial<DiscoveryFilters>
   ): Promise<any[]> {
 
     const opp = user.gender === 'male' ? 'female' : 'male';
@@ -162,34 +111,133 @@ export class MatchingEngine {
       .not('gender', 'is', null)
       .or('role.is.null,role.eq.user');
 
-    // فلتر العمر — فقط إذا طُلب صراحةً
-    if (opts.ageMin !== undefined && opts.ageMax !== undefined) {
-      q = q.gte('age', opts.ageMin).lte('age', opts.ageMax);
+    if (!filters) {
+      const { data, error } = await q.limit(200);
+      if (error) { console.error('[MatchingEngine]', error.message); return []; }
+      return data ?? [];
     }
 
-    // فلتر الموقع
-    if (opts.city && opts.country) {
-      q = q.eq('country', opts.country).eq('city', opts.city);
-    } else if (opts.country) {
-      q = q.eq('country', opts.country);
+    // ── العمر ─────────────────────────────────────────────────
+    if (filters.ageMin !== undefined && filters.ageMax !== undefined) {
+      if (filters.ageMin !== 18 || filters.ageMax !== 60) {
+        q = q.gte('age', filters.ageMin).lte('age', filters.ageMax);
+      }
     }
 
-    // استبعاد المحظورين + المُعجَب بهم
+    // ── الموقع ───────────────────────────────────────────────
+    if (filters.city && filters.country) {
+      q = q.eq('country', filters.country).eq('city', filters.city);
+    } else if (filters.country) {
+      q = q.eq('country', filters.country);
+    }
+
+    // ── الجنسية ──────────────────────────────────────────────
+    if (filters.nationality) q = q.eq('nationality', filters.nationality);
+
+    // ── الحالة المدنية ───────────────────────────────────────
+    if (filters.marital_status?.length) {
+      q = q.in('marital_status', filters.marital_status);
+    }
+
+    // ── التعليم ───────────────────────────────────────────────
+    if (filters.education_level?.length) {
+      q = q.in('education_level', filters.education_level);
+    }
+
+    // ── المجال المهني ─────────────────────────────────────────
+    if (filters.occupation_cat?.length) {
+      q = q.in('occupation_category_id', filters.occupation_cat);
+    }
+
+    // ── الوضع المادي ─────────────────────────────────────────
+    if (filters.financial_status?.length) {
+      q = q.in('financial_status', filters.financial_status);
+    }
+
+    // ── الالتزام الديني ──────────────────────────────────────
+    if (filters.religious_commitment?.length) {
+      q = q.in('religious_commitment', filters.religious_commitment);
+    }
+
+    // ── جاهزية الزواج ────────────────────────────────────────
+    if (filters.readiness_level?.length) {
+      q = q.in('readiness_level', filters.readiness_level);
+    }
+
+    // ── الطول ────────────────────────────────────────────────
+    if (filters.heightMin !== undefined && filters.heightMax !== undefined) {
+      if (filters.heightMin !== 140 || filters.heightMax !== 210) {
+        q = q.gte('height', filters.heightMin).lte('height', filters.heightMax);
+      }
+    }
+
+    // ── الوزن ────────────────────────────────────────────────
+    if (filters.weightMin !== undefined && filters.weightMax !== undefined) {
+      if (filters.weightMin !== 40 || filters.weightMax !== 150) {
+        q = q.gte('weight', filters.weightMin).lte('weight', filters.weightMax);
+      }
+    }
+
+    // ── لون البشرة ───────────────────────────────────────────
+    if (filters.skin_color?.length)     q = q.in('skin_color',     filters.skin_color);
+
+    // ── الحجاب ───────────────────────────────────────────────
+    if (filters.hijab_style?.length)    q = q.in('hijab_style',    filters.hijab_style);
+
+    // ── اللحية ───────────────────────────────────────────────
+    if (filters.beard_style?.length)    q = q.in('beard_style',    filters.beard_style);
+
+    // ── صلاة المسجد ──────────────────────────────────────────
+    if (filters.prayer_commitment?.length) q = q.in('prayer_commitment', filters.prayer_commitment);
+
+    // ── حفظ القرآن ───────────────────────────────────────────
+    if (filters.quran_memorization?.length) q = q.in('quran_memorization', filters.quran_memorization);
+
+    // ── قبول التعدد ──────────────────────────────────────────
+    if (filters.polygamy_acceptance?.length) q = q.in('polygamy_acceptance', filters.polygamy_acceptance);
+
+    // ── العمل بعد الزواج ─────────────────────────────────────
+    if (filters.work_after_marriage?.length) q = q.in('work_after_marriage', filters.work_after_marriage);
+
+    // ── السكن الحالي ─────────────────────────────────────────
+    if (filters.housing_type?.length)   q = q.in('housing_type',   filters.housing_type);
+
+    // ── السكن بعد الزواج ─────────────────────────────────────
+    if (filters.preferred_housing?.length) q = q.in('preferred_housing', filters.preferred_housing);
+
+    // ── الانتقال ─────────────────────────────────────────────
+    if (filters.travel_willingness?.length) q = q.in('travel_willingness', filters.travel_willingness);
+
+    // ── الرغبة في الإنجاب ────────────────────────────────────
+    if (filters.desire_for_children?.length) q = q.in('desire_for_children', filters.desire_for_children);
+
+    // ── الحالة الصحية ────────────────────────────────────────
+    if (filters.health_status?.length)  q = q.in('health_status',  filters.health_status);
+
+    // ── التدخين ──────────────────────────────────────────────
+    if (filters.smoking?.length)        q = q.in('smoking',        filters.smoking);
+
+    // ── الشخصية ──────────────────────────────────────────────
+    if (filters.social_type?.length)    q = q.in('social_type',    filters.social_type);
+    if (filters.morning_evening?.length) q = q.in('morning_evening', filters.morning_evening);
+    if (filters.conflict_style?.length) q = q.in('conflict_style', filters.conflict_style);
+    if (filters.affection_style?.length) q = q.in('affection_style', filters.affection_style);
+    if (filters.life_priority?.length)  q = q.in('life_priority',  filters.life_priority);
+    if (filters.parenting_style?.length) q = q.in('parenting_style', filters.parenting_style);
+    if (filters.relationship_with_family?.length) {
+      q = q.in('relationship_with_family', filters.relationship_with_family);
+    }
+
+    // ── استثناء المحظورين ────────────────────────────────────
     if (excludedIds.length > 0) {
       q = q.not('id', 'in', `(${excludedIds.join(',')})`);
     }
 
     const { data, error } = await q.limit(200);
-
-    if (error) {
-      console.error('[MatchingEngine] خطأ:', error.message);
-      return [];
-    }
-
+    if (error) { console.error('[MatchingEngine]', error.message); return []; }
     return data ?? [];
   }
 
-  // استخراج badge_type من wallets (array أو object)
   static extractBadge(wallets: any): string | undefined {
     if (!wallets) return undefined;
     if (Array.isArray(wallets)) {
@@ -201,27 +249,22 @@ export class MatchingEngine {
 
   private static rank(profiles: any[], user: UserProfile): any[] {
     return [...profiles].sort((a, b) => {
-      // 1. نفس المدينة
-      const aCity = (a.city === user.city && a.country === user.country) ? 3 : 0;
-      const bCity = (b.city === user.city && b.country === user.country) ? 3 : 0;
+      const aCity    = (a.city === user.city && a.country === user.country) ? 3 : 0;
+      const bCity    = (b.city === user.city && b.country === user.country) ? 3 : 0;
       if (bCity !== aCity) return bCity - aCity;
 
-      // 2. نفس الدولة
       const aCountry = a.country === user.country ? 2 : 0;
       const bCountry = b.country === user.country ? 2 : 0;
       if (bCountry !== aCountry) return bCountry - aCountry;
 
-      // 3. جاهز الآن
-      const aReady = a.readiness_level === READINESS_LEVEL_NOW ? 2 : 0;
-      const bReady = b.readiness_level === READINESS_LEVEL_NOW ? 2 : 0;
+      const aReady   = a.readiness_level === READINESS_LEVEL_NOW ? 2 : 0;
+      const bReady   = b.readiness_level === READINESS_LEVEL_NOW ? 2 : 0;
       if (bReady !== aReady) return bReady - aReady;
 
-      // 4. اكتمال الملف
       const aPct = a.profile_completion_percent ?? 0;
       const bPct = b.profile_completion_percent ?? 0;
       if (bPct !== aPct) return bPct - aPct;
 
-      // 5. عنده صورة
       return (b.avatar_url ? 1 : 0) - (a.avatar_url ? 1 : 0);
     });
   }
