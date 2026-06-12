@@ -548,8 +548,8 @@ export default function FilterPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
           <SlidersHorizontal size={16} color="var(--color-primary)" strokeWidth={2} />
-          <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-base)' }}>
-            البحث المتقدم
+          <span style={{ color: 'var(--text-main)', fontWeight: 800, fontSize: 'var(--text-base)' }}>
+            حدد المواصفات
           </span>
           {active && <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-primary)' }} />}
         </div>

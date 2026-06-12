@@ -17,19 +17,20 @@ const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
 
 const PAGE_TITLES: Record<string, string> = {
   '/about':        'حول التطبيق',
+  '/filter':        'البحث المتقدم',
   '/likes':        'الإعجابات',
   '/notifications':'الإشعارات',
   '/profile':      'الملف الشخصي',
-  '/view':         'البيانات',
+  '/view':         'عرض البيانات',
   '/profile/edit': 'تعديل الملف',
   '/settings':     'الإعدادات',
-  '/privacy':      'الخصوصية',
+  '/privacy':      'سياسات الخصوصية',
   '/mediators':    'الوسطاء',
   '/dash':         'لوحة التحكم',
   '/subscribers':  'المشتركون',
   '/points':       'رصيد النقاط',
   '/help':         'المساعدة',
-  '/terms':        'الشروط والسياسات',
+  '/terms':        'شروط الاستخدام',
 };
 
 function getTitle(path: string) {
