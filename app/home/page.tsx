@@ -1,10 +1,9 @@
 'use client';
 /**
- * 📁 app/home/page.tsx — ZAWAJ AI v5
- * ✅ الفلاتر تُقرأ من sessionStorage عند كل load وعند العودة من /filter
- * ✅ تغيير الفلاتر يُعيد تحميل النتائج من الصفر (reset position)
- * ✅ حلقة لا نهائية + حفظ الموضع
- * ✅ استثناء المحظورين تلقائياً عبر MatchingEngine
+ * 📁 app/home/page.tsx — ZAWAJ AI v6
+ * ✅ الاستيرادات من @/components/filter/types (لا من app/filter/page)
+ * ✅ يدعم فلتر المسافة الجغرافية (radiusKm / searchLat / searchLon)
+ * ✅ باقي المنطق محافظ عليه بالكامل
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -14,6 +13,8 @@ import { useRouter }         from 'next/navigation';
 import { supabase }          from '@/lib/supabase/client';
 import { MatchingEngine }    from '@/lib/services/MatchingEngine';
 import UserCard              from '@/components/cards/usercard';
+
+// ✅ الاستيراد الجديد — من components/filter/types
 import {
   loadFilters,
   saveFilters,
@@ -21,7 +22,7 @@ import {
   FILTER_STORAGE_KEY,
   type DiscoveryFilters,
   DEFAULT_FILTERS,
-} from '@/app/filter/page';
+} from '@/components/filter/types';
 
 // ══════════════════════════════════════════════════════════════
 // Storage helpers
@@ -29,7 +30,7 @@ import {
 const LS_INDEX_KEY = (uid: string) => `zawaj_idx_${uid}`;
 const LS_CYCLE_KEY = (uid: string) => `zawaj_cycle_${uid}`;
 const LS_QUEUE_KEY = (uid: string) => `zawaj_queue_${uid}`;
-const LS_FHASH_KEY = (uid: string) => `zawaj_fhash_${uid}`; // hash الفلاتر المُطبَّقة
+const LS_FHASH_KEY = (uid: string) => `zawaj_fhash_${uid}`;
 const QUEUE_TTL    = 2 * 60 * 60 * 1000;
 
 function lsGet<T>(key: string, fallback: T): T {
@@ -43,7 +44,6 @@ function lsDel(key: string) {
   try { localStorage.removeItem(key); } catch {}
 }
 
-// hash بسيط للفلاتر لمعرفة إذا تغيرت
 function hashFilters(f: DiscoveryFilters): string {
   return JSON.stringify(f);
 }
@@ -62,7 +62,6 @@ function saveCachedQueue(uid: string, data: any[]) {
 }
 function clearCachedQueue(uid: string) { lsDel(LS_QUEUE_KEY(uid)); }
 
-// Supabase position backup
 async function savePositionToSupabase(uid: string, index: number, cycle: number) {
   try {
     await supabase.from('profiles')
@@ -107,8 +106,6 @@ export default function HomePage() {
   useEffect(() => { cycleRef.current = cycle;  }, [cycle]);
 
   // ══════════════════════════════════════════════════════════
-  // fetchFresh — جلب نتائج جديدة من Supabase
-  // ══════════════════════════════════════════════════════════
   const fetchFresh = useCallback(async (
     uid: string,
     profile: any,
@@ -119,7 +116,7 @@ export default function HomePage() {
 
     const { data: smartUsers } = await MatchingEngine.getSmartSuggestions(
       profile,
-      activeFilters
+      activeFilters,
     );
 
     if (!smartUsers?.length) {
@@ -127,7 +124,6 @@ export default function HomePage() {
       return;
     }
 
-    // حفظ الكاش + hash الفلاتر
     saveCachedQueue(uid, smartUsers);
     lsSet(LS_FHASH_KEY(uid), hashFilters(activeFilters));
 
@@ -140,8 +136,6 @@ export default function HomePage() {
     }
   }, []);
 
-  // ══════════════════════════════════════════════════════════
-  // load — نقطة الدخول الرئيسية
   // ══════════════════════════════════════════════════════════
   const load = useCallback(async (opts: { forceRefresh?: boolean } = {}) => {
     setLoading(true);
@@ -156,19 +150,16 @@ export default function HomePage() {
     setCurrentUser(profile);
     profileRef.current = profile;
 
-    // ── قراءة الفلاتر الحالية ──────────────────────────────
     const activeFilters = loadFilters();
     setFilters(activeFilters);
 
     const uid = user.id;
 
-    // ── هل تغيرت الفلاتر؟ ────────────────────────────────
-    const savedHash    = lsGet<string>(LS_FHASH_KEY(uid), '');
-    const currentHash  = hashFilters(activeFilters);
+    const savedHash   = lsGet<string>(LS_FHASH_KEY(uid), '');
+    const currentHash = hashFilters(activeFilters);
     const filtersChanged = savedHash !== currentHash;
 
     if (filtersChanged || opts.forceRefresh) {
-      // فلاتر جديدة → امسح الكاش وابدأ من الصفر
       clearCachedQueue(uid);
       lsDel(LS_INDEX_KEY(uid));
       lsDel(LS_CYCLE_KEY(uid));
@@ -176,7 +167,6 @@ export default function HomePage() {
       return;
     }
 
-    // ── استعادة الموضع ────────────────────────────────────
     let savedIndex = 0, savedCycle = 0;
     const lsIdx = lsGet<number>(LS_INDEX_KEY(uid), -1);
     if (lsIdx >= 0) {
@@ -192,51 +182,45 @@ export default function HomePage() {
       }
     }
 
-    // ── محاولة الكاش ──────────────────────────────────────
     const cached = getCachedQueue(uid);
     if (cached && cached.length > 0) {
       setUsers(cached);
       setCurrentIndex(savedIndex < cached.length ? savedIndex : 0);
       setCycle(savedCycle);
       setLoading(false);
-      // تجديد خلفي صامت
-      fetchFresh(uid, profile, activeFilters, { silent: true, restoreIndex: savedIndex, restoreCycle: savedCycle });
+      fetchFresh(uid, profile, activeFilters, {
+        silent: true, restoreIndex: savedIndex, restoreCycle: savedCycle,
+      });
       return;
     }
 
-    await fetchFresh(uid, profile, activeFilters, { restoreIndex: savedIndex, restoreCycle: savedCycle });
+    await fetchFresh(uid, profile, activeFilters, {
+      restoreIndex: savedIndex, restoreCycle: savedCycle,
+    });
   }, [fetchFresh]);
 
-  // ── mount ─────────────────────────────────────────────────
   useEffect(() => { load(); }, [load]);
 
-  // ── العودة من /filter أو أي صفحة أخرى ───────────────────
   useEffect(() => {
     const handler = () => {
-      // نتحقق إذا تغيرت الفلاتر
       if (!uidRef.current) return;
-      const newFilters    = loadFilters();
-      const savedHash     = lsGet<string>(LS_FHASH_KEY(uidRef.current), '');
-      const currentHash   = hashFilters(newFilters);
-      if (savedHash !== currentHash) {
-        // الفلاتر تغيرت → إعادة تحميل كاملة
-        load({ forceRefresh: false });
-      }
+      const newFilters  = loadFilters();
+      const savedHash   = lsGet<string>(LS_FHASH_KEY(uidRef.current), '');
+      const currentHash = hashFilters(newFilters);
+      if (savedHash !== currentHash) load({ forceRefresh: false });
     };
     window.addEventListener('focus', handler);
     return () => window.removeEventListener('focus', handler);
   }, [load]);
 
   // ══════════════════════════════════════════════════════════
-  // handleNext — التقدم للبطاقة التالية (حلقة لا نهائية)
-  // ══════════════════════════════════════════════════════════
   const handleNext = useCallback(() => {
     if (!currentUser || !uidRef.current) return;
 
     setCurrentIndex(prevIdx => {
-      const total     = usersRef.current.length;
-      const nextIdx   = prevIdx + 1;
-      let   finalIdx  = nextIdx;
+      const total      = usersRef.current.length;
+      const nextIdx    = prevIdx + 1;
+      let   finalIdx   = nextIdx;
       let   finalCycle = cycleRef.current;
 
       if (nextIdx >= total) {
@@ -244,7 +228,6 @@ export default function HomePage() {
         finalCycle = cycleRef.current + 1;
         setCycle(finalCycle);
 
-        // تجديد خلفي صامت عند بداية دورة جديدة
         if (uidRef.current && profileRef.current) {
           const activeFilters = loadFilters();
           fetchFresh(uidRef.current, profileRef.current, activeFilters, {
@@ -256,7 +239,6 @@ export default function HomePage() {
       lsSet(LS_INDEX_KEY(uidRef.current!), finalIdx);
       lsSet(LS_CYCLE_KEY(uidRef.current!), finalCycle);
       scheduleSavePosition(uidRef.current!, finalIdx, finalCycle);
-
       return finalIdx;
     });
   }, [currentUser, fetchFresh]);
@@ -301,9 +283,7 @@ export default function HomePage() {
       <p style={{
         color: 'var(--text-main)', fontWeight: 900,
         fontSize: 'var(--text-xl)', textAlign: 'center', margin: 0,
-      }}>
-        لا توجد نتائج
-      </p>
+      }}>لا توجد نتائج</p>
       <p style={{
         color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)',
         textAlign: 'center', margin: 0,
@@ -321,6 +301,7 @@ export default function HomePage() {
             color: 'var(--color-primary)',
             fontWeight: 800, fontSize: 'var(--text-sm)',
             cursor: 'pointer', fontFamily: 'inherit',
+            WebkitTapHighlightColor: 'transparent',
           }}>
           تعديل الفلاتر
         </motion.button>
@@ -330,6 +311,9 @@ export default function HomePage() {
 
   const safeIndex = currentIndex % users.length;
   const c         = users[safeIndex];
+
+  // ── عرض استراتيجية البحث الجغرافي ───────────────────────
+  const isGeoSearch = !!(filters.radiusKm && filters.searchLat);
 
   return (
     <div style={{ position: 'fixed', inset: 0 }}>
@@ -355,10 +339,14 @@ export default function HomePage() {
           boxShadow: active
             ? '0 4px 16px rgba(192,0,42,0.22)'
             : '0 4px 12px rgba(0,0,0,0.18)',
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
         <SlidersHorizontal size={14} />
-        {active ? 'فلاتر نشطة' : 'فلاتر'}
+        {isGeoSearch
+          ? `${filters.radiusKm} كم`
+          : active ? 'فلاتر نشطة' : 'فلاتر'
+        }
         {active && (
           <span style={{
             width: 6, height: 6, borderRadius: '50%',
@@ -399,6 +387,8 @@ export default function HomePage() {
           mainPhoto:   c.avatar_url || '/default-avatar.png',
           prefersBlur: c.is_photos_blurred,
           currentUser,
+          // ✅ تمرير المسافة للبطاقة إذا توفرت (من RPC)
+          distanceKm:  (c as any).distance_km ?? null,
         }}
         onNext={handleNext}
       />

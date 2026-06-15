@@ -1,13 +1,13 @@
 /**
- * 🧠 MatchingEngine — ZAWAJ AI v5
- * ✅ الفلاتر تُطبَّق بشكل صارم (strict mode)
- * ✅ الدولة/المدينة تُطبَّق دائماً إذا وُجدت في الفلاتر
- * ✅ استثناء المحظورين + المُعجَب بهم
- * ✅ pass يعود في الدورة التالية
+ * 🧠 MatchingEngine — ZAWAJ AI v6
+ * ✅ يستورد DiscoveryFilters من @/components/filter/types
+ * ✅ البحث الجغرافي عبر RPC nearby_profiles (ST_DWithin + PostGIS)
+ * ✅ fallback للاستعلام العادي إذا لم يكن هناك موقع
+ * ✅ الفلاتر تُطبَّق بشكل صارم في الحالتين
  */
-import { supabase }              from '@/lib/supabase/client';
-import { READINESS_LEVEL_NOW }   from '@/constants/constants';
-import type { DiscoveryFilters } from '@/app/filter/page';
+import { supabase }            from '@/lib/supabase/client';
+import { READINESS_LEVEL_NOW } from '@/constants/constants';
+import type { DiscoveryFilters } from '@/components/filter/types';
 
 export interface UserProfile {
   id:                          string;
@@ -22,7 +22,7 @@ export interface UserProfile {
 
 export interface DiscoveryResult {
   data:     any[];
-  strategy: number;
+  strategy: number; // 1=نفس المدينة 2=نفس الدولة 3=جغرافي 4=عام
 }
 
 const SELECT_COLS = [
@@ -38,20 +38,27 @@ const SELECT_COLS = [
   'nationality', 'bio', 'partner_requirements',
   'quran_memorization', 'beard_style', 'prayer_commitment',
   'hijab_style', 'polygamy_acceptance', 'work_after_marriage',
-  'wife_number', 'smoking', 'has_children',
+  'smoking', 'has_children',
   'social_type', 'morning_evening', 'home_time',
   'conflict_style', 'affection_style', 'life_priority',
   'parenting_style', 'relationship_with_family',
-  'marriage_type', 'interests', 'health_habits',
+  'interests', 'health_habits',
   'birth_date', 'is_completed', 'role',
   'wallets(badge_type)',
 ].join(', ');
+
+// القيم الافتراضية للنطاقات
+const D = {
+  ageMin: 18, ageMax: 60,
+  heightMin: 140, heightMax: 210,
+  weightMin: 40,  weightMax: 150,
+};
 
 export class MatchingEngine {
 
   static async getSmartSuggestions(
     user: UserProfile,
-    filters?: Partial<DiscoveryFilters>
+    filters?: Partial<DiscoveryFilters>,
   ): Promise<DiscoveryResult> {
 
     if (!user.gender) {
@@ -60,11 +67,21 @@ export class MatchingEngine {
     }
 
     const blockedIds = await this.getBlockedIds(user.id);
-    const results    = await this.query(user, blockedIds, filters);
+    const opp        = user.gender === 'male' ? 'female' : 'male';
 
+    // ── مسار البحث الجغرافي (RPC) ─────────────────────────
+    if (filters?.radiusKm && filters.searchLat && filters.searchLon) {
+      const results = await this.queryNearby(user, opp, blockedIds, filters);
+      if (results.length > 0) {
+        return { data: results, strategy: 3 }; // strategy 3 = جغرافي
+      }
+      // إذا لم تكن هناك نتائج قريبة → fallback للاستعلام العادي
+    }
+
+    // ── مسار الاستعلام العادي ─────────────────────────────
+    const results = await this.queryNormal(user, opp, blockedIds, filters);
     if (results.length === 0) return { data: [], strategy: 4 };
 
-    // تحديد الاستراتيجية للعرض فقط (لا تؤثر على الفلترة)
     const sameCity    = results.filter(p => p.city === user.city && p.country === user.country);
     const sameCountry = results.filter(p => p.country === user.country);
     const strategy    = sameCity.length > 0 ? 1 : sameCountry.length > 0 ? 2 : 4;
@@ -88,24 +105,89 @@ export class MatchingEngine {
     return [...new Set(ids)];
   }
 
-  // ── الاستعلام الرئيسي ──────────────────────────────────────
-  private static async query(
+  // ── الاستعلام الجغرافي عبر RPC ───────────────────────────
+  private static async queryNearby(
     user: UserProfile,
+    opp: string,
     excludedIds: string[],
-    filters?: Partial<DiscoveryFilters>
+    filters: Partial<DiscoveryFilters>,
   ): Promise<any[]> {
+    try {
+      const { data, error } = await supabase.rpc('nearby_profiles', {
+        user_lat:      filters.searchLat,
+        user_lon:      filters.searchLon,
+        radius_km:     filters.radiusKm,
+        target_gender: opp,
 
-    const opp = user.gender === 'male' ? 'female' : 'male';
+        excluded_ids: excludedIds.length > 0 ? excludedIds : [],
+
+        // فلاتر رقمية
+        p_marital_status:       filters.marital_status       ?? [],
+        p_education_level:      filters.education_level      ?? [],
+        p_religious_commitment: filters.religious_commitment ?? [],
+        p_readiness_level:      filters.readiness_level      ?? [],
+        p_occupation_cat:       filters.occupation_cat       ?? [],
+        p_housing_type:         filters.housing_type         ?? [],
+
+        // نطاقات
+        p_age_min:    filters.ageMin    ?? D.ageMin,
+        p_age_max:    filters.ageMax    ?? D.ageMax,
+        p_height_min: filters.heightMin ?? D.heightMin,
+        p_height_max: filters.heightMax ?? D.heightMax,
+        p_weight_min: filters.weightMin ?? D.weightMin,
+        p_weight_max: filters.weightMax ?? D.weightMax,
+
+        // فلاتر نصية
+        p_financial_status:         filters.financial_status         ?? [],
+        p_skin_color:               filters.skin_color               ?? [],
+        p_travel_willingness:       filters.travel_willingness       ?? [],
+        p_desire_for_children:      filters.desire_for_children      ?? [],
+        p_health_status:            filters.health_status            ?? [],
+        p_smoking:                  filters.smoking                  ?? [],
+        p_hijab_style:              filters.hijab_style              ?? [],
+        p_beard_style:              filters.beard_style              ?? [],
+        p_prayer_commitment:        filters.prayer_commitment        ?? [],
+        p_quran_memorization:       filters.quran_memorization       ?? [],
+        p_polygamy_acceptance:      filters.polygamy_acceptance      ?? [],
+        p_work_after_marriage:      filters.work_after_marriage      ?? [],
+        p_preferred_housing:        filters.preferred_housing        ?? [],
+        p_social_type:              filters.social_type              ?? [],
+        p_morning_evening:          filters.morning_evening          ?? [],
+        p_conflict_style:           filters.conflict_style           ?? [],
+        p_affection_style:          filters.affection_style          ?? [],
+        p_life_priority:            filters.life_priority            ?? [],
+        p_parenting_style:          filters.parenting_style          ?? [],
+        p_relationship_with_family: filters.relationship_with_family ?? [],
+      });
+
+      if (error) {
+        console.error('[MatchingEngine] RPC error:', error.message);
+        return [];
+      }
+
+      return data ?? [];
+    } catch (e) {
+      console.error('[MatchingEngine] queryNearby exception:', e);
+      return [];
+    }
+  }
+
+  // ── الاستعلام العادي (بدون موقع) ─────────────────────────
+  private static async queryNormal(
+    user: UserProfile,
+    opp: string,
+    excludedIds: string[],
+    filters?: Partial<DiscoveryFilters>,
+  ): Promise<any[]> {
 
     let q = supabase
       .from('profiles')
       .select(SELECT_COLS)
       .eq('gender', opp)
       .neq('id', user.id)
-      .not('gender', 'is', null)
+      .eq('is_completed', true)
       .or('role.is.null,role.eq.user');
 
-    // ── بدون فلاتر: إرجاع الكل ────────────────────────────
     if (!filters) {
       if (excludedIds.length > 0)
         q = q.not('id', 'in', `(${excludedIds.join(',')})`);
@@ -114,98 +196,74 @@ export class MatchingEngine {
       return data ?? [];
     }
 
-    // ══════════════════════════════════════════════════════
-    // تطبيق الفلاتر بشكل صارم — كل فلتر محدد يُطبَّق فوراً
-    // ══════════════════════════════════════════════════════
-
-    // العمر
-    const D = { ageMin: 18, ageMax: 60, heightMin: 140, heightMax: 210, weightMin: 40, weightMax: 150 };
-    if (filters.ageMin !== undefined && filters.ageMax !== undefined) {
-      if (filters.ageMin !== D.ageMin || filters.ageMax !== D.ageMax) {
-        q = q.gte('age', filters.ageMin).lte('age', filters.ageMax);
-      }
+    // ── العمر ─────────────────────────────────────────────
+    if (filters.ageMin !== D.ageMin || filters.ageMax !== D.ageMax) {
+      q = q.gte('age', filters.ageMin ?? D.ageMin)
+           .lte('age', filters.ageMax ?? D.ageMax);
     }
 
-    // ✅ الدولة والمدينة — صارمة: إذا حدد المستخدم دولة تُطبَّق دائماً
+    // ── الموقع ────────────────────────────────────────────
     if (filters.city && filters.country) {
       q = q.eq('country', filters.country).eq('city', filters.city);
     } else if (filters.country) {
       q = q.eq('country', filters.country);
     }
 
-    // الجنسية
+    // ── الجنسية ───────────────────────────────────────────
     if (filters.nationality) q = q.eq('nationality', filters.nationality);
 
-    // الحالة المدنية
+    // ── الطول والوزن ──────────────────────────────────────
+    if (filters.heightMin !== D.heightMin || filters.heightMax !== D.heightMax) {
+      q = q.gte('height', filters.heightMin ?? D.heightMin)
+           .lte('height', filters.heightMax ?? D.heightMax);
+    }
+    if (filters.weightMin !== D.weightMin || filters.weightMax !== D.weightMax) {
+      q = q.gte('weight', filters.weightMin ?? D.weightMin)
+           .lte('weight', filters.weightMax ?? D.weightMax);
+    }
+
+    // ── فلاتر رقمية ───────────────────────────────────────
     if (filters.marital_status?.length)
       q = q.in('marital_status', filters.marital_status);
-
-    // التعليم
     if (filters.education_level?.length)
       q = q.in('education_level', filters.education_level);
-
-    // المجال المهني
     if (filters.occupation_cat?.length)
       q = q.in('occupation_category_id', filters.occupation_cat);
-
-    // الوضع المادي
-    if (filters.financial_status?.length)
-      q = q.in('financial_status', filters.financial_status);
-
-    // الالتزام الديني
     if (filters.religious_commitment?.length)
       q = q.in('religious_commitment', filters.religious_commitment);
-
-    // جاهزية الزواج
     if (filters.readiness_level?.length)
       q = q.in('readiness_level', filters.readiness_level);
+    if (filters.housing_type?.length)
+      q = q.in('housing_type', filters.housing_type);
 
-    // الطول
-    if (filters.heightMin !== undefined && filters.heightMax !== undefined) {
-      if (filters.heightMin !== D.heightMin || filters.heightMax !== D.heightMax) {
-        q = q.gte('height', filters.heightMin).lte('height', filters.heightMax);
-      }
-    }
-
-    // الوزن
-    if (filters.weightMin !== undefined && filters.weightMax !== undefined) {
-      if (filters.weightMin !== D.weightMin || filters.weightMax !== D.weightMax) {
-        q = q.gte('weight', filters.weightMin).lte('weight', filters.weightMax);
-      }
-    }
-
-    // باقي الحقول النصية
+    // ── فلاتر نصية ────────────────────────────────────────
     const strFilters: Array<[string, string[] | undefined]> = [
-      ['skin_color',              filters.skin_color],
-      ['hijab_style',             filters.hijab_style],
-      ['beard_style',             filters.beard_style],
-      ['prayer_commitment',       filters.prayer_commitment],
-      ['quran_memorization',      filters.quran_memorization],
-      ['polygamy_acceptance',     filters.polygamy_acceptance],
-      ['work_after_marriage',     filters.work_after_marriage],
-      ['preferred_housing',       filters.preferred_housing],
-      ['travel_willingness',      filters.travel_willingness],
-      ['desire_for_children',     filters.desire_for_children],
-      ['health_status',           filters.health_status],
-      ['smoking',                 filters.smoking],
-      ['social_type',             filters.social_type],
-      ['morning_evening',         filters.morning_evening],
-      ['conflict_style',          filters.conflict_style],
-      ['affection_style',         filters.affection_style],
-      ['life_priority',           filters.life_priority],
-      ['parenting_style',         filters.parenting_style],
-      ['relationship_with_family',filters.relationship_with_family],
+      ['financial_status',         filters.financial_status],
+      ['skin_color',               filters.skin_color],
+      ['hijab_style',              filters.hijab_style],
+      ['beard_style',              filters.beard_style],
+      ['prayer_commitment',        filters.prayer_commitment],
+      ['quran_memorization',       filters.quran_memorization],
+      ['polygamy_acceptance',      filters.polygamy_acceptance],
+      ['work_after_marriage',      filters.work_after_marriage],
+      ['preferred_housing',        filters.preferred_housing],
+      ['travel_willingness',       filters.travel_willingness],
+      ['desire_for_children',      filters.desire_for_children],
+      ['health_status',            filters.health_status],
+      ['smoking',                  filters.smoking],
+      ['social_type',              filters.social_type],
+      ['morning_evening',          filters.morning_evening],
+      ['conflict_style',           filters.conflict_style],
+      ['affection_style',          filters.affection_style],
+      ['life_priority',            filters.life_priority],
+      ['parenting_style',          filters.parenting_style],
+      ['relationship_with_family', filters.relationship_with_family],
     ];
-
     for (const [col, vals] of strFilters) {
       if (vals?.length) q = q.in(col, vals);
     }
 
-    // السكن الحالي (رقمي)
-    if (filters.housing_type?.length)
-      q = q.in('housing_type', filters.housing_type);
-
-    // استثناء المحظورين
+    // ── استثناء المحظورين ─────────────────────────────────
     if (excludedIds.length > 0)
       q = q.not('id', 'in', `(${excludedIds.join(',')})`);
 
@@ -224,7 +282,8 @@ export class MatchingEngine {
     return wallets.badge_type !== 'none' ? wallets.badge_type : undefined;
   }
 
-  // ── الترتيب ───────────────────────────────────────────────
+  // ── الترتيب (للاستعلام العادي فقط) ───────────────────────
+  // البحث الجغرافي يرجع مرتباً بالمسافة من قاعدة البيانات
   private static rank(profiles: any[], user: UserProfile): any[] {
     return [...profiles].sort((a, b) => {
       const aCity    = (a.city === user.city && a.country === user.country) ? 3 : 0;

@@ -581,3 +581,32 @@ html.light .chat-bg {
   stroke-width: unset !important;
 }
 
+/* ══════════════════════════════════════════════════════════════
+   CHAT — متغيرات أحجام النصوص
+   يمكن تعديلها لاحقاً من JS أو من لوحة الإعدادات
+══════════════════════════════════════════════════════════════ */
+:root {
+  --chat-msg-size:   var(--text-sm);   /* حجم نص الرسالة */
+  --chat-quote-size: var(--text-2xs);  /* حجم نص الاقتباس */
+  --chat-input-size: var(--text-sm);   /* حجم نص حقل الإدخال */
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SVG FIX — إصلاح شامل لـ Lucide داخل الشات
+   المشكلة: القاعدة العامة svg { fill: none } تمنع بعض الأيقونات
+   الحل: نُعيد التحكم صراحةً للأيقونات التي تحتاج fill
+══════════════════════════════════════════════════════════════ */
+
+/* أيقونات Lucide الممتلئة (Play, Pause, CheckCheck...) */
+.lucide-filled svg,
+.lucide-filled {
+  fill: currentColor !important;
+  stroke: none !important;
+}
+
+/* باقي أيقونات Lucide — stroke فقط */
+.lucide svg {
+  fill: none !important;
+  stroke: currentColor !important;
+  stroke-width: 2px !important;
+}
