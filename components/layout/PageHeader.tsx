@@ -36,7 +36,7 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
       <span style={{
         flex: 1,
         color:      'var(--text-main)',
-        fontSize:   'var(--text-xl)',
+        fontSize:   'var(--text-lg)',
         fontWeight: 800,
         paddingRight: 'var(--sp-2)',
       }}>

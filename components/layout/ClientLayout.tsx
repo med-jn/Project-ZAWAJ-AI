@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
-import Navbar      from '@/components/layout/Navbar';
-import PageHeader  from '@/components/layout/PageHeader';
-import TopBar      from '@/components/layout/TopBar';
+import Navbar        from '@/components/layout/Navbar';
+import PageHeader    from '@/components/layout/PageHeader';
+import TopBar        from '@/components/layout/TopBar';
 import MatchListener from '@/components/MatchListener';
 
 import { useNativeAndroid }     from '@/hooks/useNativeAndroid';
@@ -13,11 +13,13 @@ import { useSystemScale }       from '@/hooks/useSystemScale';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { supabase }             from '@/lib/supabase/client';
 
-const AUTH_PAGES = ['/', '/login', '/register', '/onboarding'];
+// ✅ /onboarding مُزال من AUTH_PAGES — ClientLayout يعرض له PageHeader تلقائياً
+const AUTH_PAGES = ['/', '/login', '/register'];
 
 const PAGE_TITLES: Record<string, string> = {
+  '/onboarding':   'إعداد الملف',      // ✅ مضاف
   '/about':        'حول التطبيق',
-  '/filter':        'البحث المتقدم',
+  '/filter':       'البحث المتقدم',
   '/likes':        'الإعجابات',
   '/notifications':'الإشعارات',
   '/profile':      'الملف الشخصي',
@@ -43,52 +45,34 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const router   = useRouter();
 
-  // =========================================
-  // userId
-  // =========================================
-
   const [userId, setUserId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user?.id) setUserId(data.user.id);
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
       setUserId(session?.user?.id ?? undefined);
     });
-
     return () => subscription.unsubscribe();
   }, []);
-
-  // =========================================
-  // Hooks
-  // =========================================
 
   useNativeAndroid();
   useSystemScale();
   usePushNotifications(userId);
-
-  // =========================================
-  // Current Path
-  // =========================================
 
   const path =
     pathname.endsWith('/') && pathname !== '/'
       ? pathname.slice(0, -1)
       : pathname;
 
-  const isAuth = AUTH_PAGES.includes(path);
-  const isHome = path === '/home';
-
-  // ✅ صفحة الشات تدير هيدرها وشريطها بنفسها — لا تدخّل من ClientLayout
-  const isChat = path === '/chat' || path.startsWith('/chat');
+  const isAuth       = AUTH_PAGES.includes(path);
+  const isHome       = path === '/home';
+  const isChat       = path === '/chat' || path.startsWith('/chat');
+  // ✅ onboarding يدير StickySubHeader خاصاً به — نخفي فقط Navbar
+  const isOnboarding = path === '/onboarding';
 
   const title = getTitle(path);
-
-  // =========================================
-  // Active Tab
-  // =========================================
 
   const getActiveTab = () => {
     if (path.startsWith('/home'))          return 'home';
@@ -101,27 +85,23 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
     return 'home';
   };
 
-  // =========================================
-  // Navbar visibility
-  // =========================================
-
   const showNavbar =
-    path.startsWith('/home')          ||
-    path.startsWith('/mediators')     ||
-    path.startsWith('/dash')          ||
-    path.startsWith('/subscribers')   ||
-    path.startsWith('/likes')         ||
-    path.startsWith('/notifications') ||
-    path.startsWith('/profile')       ||
-    path.startsWith('/points');
+    !isOnboarding &&
+    (path.startsWith('/home')          ||
+     path.startsWith('/mediators')     ||
+     path.startsWith('/dash')          ||
+     path.startsWith('/subscribers')   ||
+     path.startsWith('/likes')         ||
+     path.startsWith('/notifications') ||
+     path.startsWith('/profile')       ||
+     path.startsWith('/points'));
 
   return (
     <>
       {!isAuth && <MatchListener />}
 
-      {/* ✅ الشات يدير هيدره بنفسه — لا TopBar ولا PageHeader */}
-      {!isAuth && !isChat && isHome  && <TopBar />}
-      {!isAuth && !isChat && !isHome && (
+      {!isAuth && !isChat && isHome      && <TopBar />}
+      {!isAuth && !isChat && !isHome     && (
         <PageHeader
           title={title}
           onBack={() => router.back()}

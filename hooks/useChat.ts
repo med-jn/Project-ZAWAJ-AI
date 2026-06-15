@@ -1,11 +1,12 @@
 /**
- * 📁 hooks/useChat.ts — ZAWAJ AI v2.1
+ * 📁 hooks/useChat.ts — ZAWAJ AI v2.2
  *
  * ✅ دعم الرسائل الصوتية (message_type + audio_url)
  * ✅ نظام فتح المحادثة (is_unlocked)
  * ✅ sendVoiceMessage مُصدَّرة
  * ✅ FIX: جلب آخر 80 رسالة (DESC ثم عكس) لضمان ظهور الجديدة
  * ✅ FIX: إعادة جلب الرسائل عند رجوع التطبيق من الخلفية (Android)
+ * ✅ FIX: deleteMessage يتحقق من RLS ويعيد الرسالة إن فشل الحذف
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -50,7 +51,7 @@ export function useChat(
     pending_unlock: false,
   });
 
-  const channelRef      = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const channelRef        = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const [recipientTyping, setRecipientTyping] = useState(false);
 
   const fetchConvStatus = async () => {
@@ -100,7 +101,7 @@ export function useChat(
     });
   };
 
-  // ✅ FIX: نجلب آخر 80 رسالة (DESC) ثم نعكسها للعرض الصحيح
+  // ✅ جلب الرسائل مع loading
   const fetchMessages = async () => {
     if (!conversationId) return;
     setLoading(true);
@@ -108,15 +109,15 @@ export function useChat(
       .from('messages')
       .select('id, conversation_id, sender_id, content, message_type, audio_url, is_read, created_at')
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: false }) // ← أحدث أولاً
+      .order('created_at', { ascending: false })
       .limit(80);
     if (!error && data) {
-      setMessages([...data].reverse()); // ← نعكس للترتيب الصحيح
+      setMessages([...data].reverse());
     }
     setLoading(false);
   };
 
-  // ✅ إعادة جلب صامتة (بدون إظهار "جارٍ التحميل") عند رجوع التطبيق للمقدمة
+  // ✅ جلب صامت عند رجوع التطبيق من الخلفية
   const refreshMessagesSilently = async () => {
     if (!conversationId) return;
     const { data, error } = await supabase
@@ -153,12 +154,8 @@ export function useChat(
         payload => {
           const raw = payload.new as ChatMessage;
 
-          // ── رسالة صوتية من المُرسِل نفسه ──────────────────
-          // sendVoiceMessage تحدّثها مباشرة — نتجاهل الـ realtime
           if (raw.message_type === 'voice' && raw.sender_id === userId) return;
 
-          // ── رسالة صوتية من الطرف الآخر ────────────────────
-          // payload.new لا يحمل audio_url — نجلب الكاملة
           if (raw.message_type === 'voice' && raw.sender_id !== userId) {
             void (async () => {
               const { data: fullMsg } = await supabase
@@ -178,7 +175,6 @@ export function useChat(
             return;
           }
 
-          // ── رسالة نصية ────────────────────────────────────
           setMessages(prev => {
             if (prev.some(m => m.id === raw.id)) return prev;
             const tempIdx = prev.findIndex(m =>
@@ -206,12 +202,9 @@ export function useChat(
         { event: 'DELETE', schema: 'public', table: 'messages',
           filter: `conversation_id=eq.${conversationId}` },
         payload => {
-          // ✅ حذف فوري للطرفين في الوقت الحقيقي
           setMessages(prev => prev.filter(m => m.id !== payload.old.id));
         }
       )
-      // ✅ مراقبة is_read في الوقت الفعلي
-      // عند أي UPDATE نحدّث كل الرسائل المرسلة مني دفعة واحدة
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'messages',
@@ -219,7 +212,6 @@ export function useChat(
         payload => {
           const updated = payload.new as ChatMessage;
           if (updated.is_read) {
-            // الطرف الآخر قرأ — نعلّم كل رسائلي كمقروءة
             setMessages(prev =>
               prev.map(m =>
                 m.sender_id === userId && !m.is_read
@@ -250,8 +242,7 @@ export function useChat(
     return () => { supabase.removeChannel(channel); };
   }, [conversationId, userId, recipientId]);
 
-  // ✅ FIX: عند رجوع التطبيق من الخلفية (Android) — أعد جلب الرسائل
-  // لتعويض أي أحداث realtime فُقدت أثناء قطع الاتصال
+  // ✅ إعادة الاتصال وجلب الرسائل عند رجوع التطبيق من الخلفية (Android)
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !conversationId) return;
 
@@ -375,10 +366,26 @@ export function useChat(
       .catch(() => {});
   };
 
+  // ✅ FIX v2.2: حذف رسائلي فقط — إن فشل الـ DB (RLS) أعد الرسالة للقائمة
   const deleteMessage = async (messageId: string) => {
-    // ✅ حذف للطرفين — بدون قيد sender_id
+    // احذف محلياً فوراً (optimistic)
+    const backup = messages.find(m => m.id === messageId);
     setMessages(prev => prev.filter(m => m.id !== messageId));
-    await supabase.from('messages').delete().eq('id', messageId);
+
+    const { error } = await supabase
+      .from('messages')
+      .delete()
+      .eq('id', messageId);
+
+    // إن فشل الحذف (RLS منعه لأنها رسالة الطرف الآخر) — أعدها
+    if (error && backup) {
+      setMessages(prev => {
+        if (prev.some(m => m.id === messageId)) return prev;
+        return [...prev, backup].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+      });
+    }
   };
 
   const markConversationRead = async () => {

@@ -1,9 +1,5 @@
-import OnboardingForm from '@/components/OnboardingForm';
+import OnboardingForm from '@/components/onboarding';
 
 export default function OnboardingPage() {
-  return (
-    <main style={{ minHeight: '100vh', padding: '20px' }}>
-      <OnboardingForm />
-    </main>
-  );
+  return <OnboardingForm />;
 }
