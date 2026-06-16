@@ -597,16 +597,3 @@ html.light .chat-bg {
    الحل: نُعيد التحكم صراحةً للأيقونات التي تحتاج fill
 ══════════════════════════════════════════════════════════════ */
 
-/* أيقونات Lucide الممتلئة (Play, Pause, CheckCheck...) */
-.lucide-filled svg,
-.lucide-filled {
-  fill: currentColor !important;
-  stroke: none !important;
-}
-
-/* باقي أيقونات Lucide — stroke فقط */
-.lucide svg {
-  fill: none !important;
-  stroke: currentColor !important;
-  stroke-width: 2px !important;
-}
