@@ -1,10 +1,13 @@
 'use client';
 /**
- * 📁 app/profile/page.tsx — ZAWAJ AI
- * الملف الشخصي للمستخدم الحالي
+ * 📁 app/profile/page.tsx — ZAWAJ AI v2
+ * ✅ يستخدم CropModal المشترك من onboarding (لا تكرار كود)
+ * ✅ فحص Gemini للصورة قبل الرفع (كان مفقوداً في النسخة السابقة!)
+ * ✅ تنظيف URL.createObjectURL (memory leak)
+ * ✅ ضغط الصورة عبر دالة محلية موحّدة
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -13,7 +16,9 @@ import {
   Users, BookOpen, ShieldCheck, Smile, Ruler, Activity,
   Flame, Globe, HandHeart, LogOut,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
+import { moderateImage } from '@/lib/moderate';
 import {
   COMMITTED_LEVELS,
   getMaritalLabel, getEducationLabel, getReligiousLabel, getHousingLabel,
@@ -21,10 +26,12 @@ import {
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
 
+// ✅ نعيد استخدام CropModal المشترك بدل تكراره
+import CropModal from '@/components/onboarding/CropModal';
+
 // ── حالة التواجد ────────────────────────────────────────────────
 function getOnlineStatus(last?: string, gender?: string) {
   const f = gender === 'female';
-
   return { text: f ? '' : '', color: 'var(--text-tertiary)' };
 }
 
@@ -73,7 +80,7 @@ function Block({ title, icon, children }: {
   );
 }
 
-// ── ضغط الصورة ─────────────────────────────────────────────────
+// ── أدوات الصورة — موحّدة ──────────────────────────────────────
 async function compressToMax(canvas: HTMLCanvasElement, maxKB = 200): Promise<Blob> {
   const maxBytes = maxKB * 1024;
   let quality = 0.85, blob: Blob | null = null;
@@ -85,166 +92,32 @@ async function compressToMax(canvas: HTMLCanvasElement, maxKB = 200): Promise<Bl
   return blob ?? (await new Promise(res => canvas.toBlob(res, 'image/webp', 0.20)) as Blob);
 }
 
-async function cropAndCompress(src: string, cropX: number, cropY: number, cropSize: number): Promise<File> {
-  return new Promise(resolve => {
+async function cropAndCompress(
+  src: string, cropX: number, cropY: number, cropSize: number,
+): Promise<File> {
+  return new Promise((resolve, reject) => {
     const img = new Image();
     img.src = src;
+    img.onerror = () => reject(new Error('فشل تحميل الصورة'));
     img.onload = async () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 600; canvas.height = 600;
-      canvas.getContext('2d')!.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, 600, 600);
-      const blob = await compressToMax(canvas, 200);
-      resolve(new File([blob], 'avatar.webp', { type: 'image/webp' }));
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 600; canvas.height = 600;
+        canvas.getContext('2d')!.drawImage(img, cropX, cropY, cropSize, cropSize, 0, 0, 600, 600);
+        const blob = await compressToMax(canvas, 200);
+        resolve(new File([blob], 'avatar.webp', { type: 'image/webp' }));
+      } catch (e) { reject(e); }
     };
   });
 }
 
-// ── CropModal ─────────────────────────────────────────────────────
-function CropModal({ src, onConfirm, onCancel }: {
-  src: string;
-  onConfirm: (x: number, y: number, s: number) => void;
-  onCancel: () => void;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef    = useRef<HTMLImageElement | null>(null);
-  const [ready,  setReady]  = useState(false);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [scale,  setScale]  = useState(1);
-  const [drag,   setDrag]   = useState(false);
-  const last = useRef<{ x: number; y: number; dist?: number } | null>(null);
-  const SIZE = 300;
-
-  useEffect(() => {
-    const img = new Image();
-    img.src = src;
-    img.onload = () => {
-      imgRef.current = img;
-      const s = Math.max(SIZE / img.width, SIZE / img.height);
-      setScale(s);
-      setOffset({ x: (SIZE - img.width * s) / 2, y: (SIZE - img.height * s) / 2 });
-      setReady(true);
-    };
-  }, [src]);
-
-  useEffect(() => {
-    if (!ready || !imgRef.current || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext('2d')!;
-    const img = imgRef.current;
-    ctx.fillStyle = '#0a0a0a';
-    ctx.fillRect(0, 0, SIZE, SIZE);
-    ctx.drawImage(img, offset.x, offset.y, img.width * scale, img.height * scale);
-    ctx.save();
-    ctx.fillStyle = 'rgba(0,0,0,0.65)';
-    ctx.beginPath();
-    ctx.rect(0, 0, SIZE, SIZE);
-    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2 - 3, 0, Math.PI * 2, true);
-    ctx.fill('evenodd');
-    ctx.restore();
-    ctx.save();
-    ctx.strokeStyle = '#B3334B';
-    ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2 - 3, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-  }, [ready, offset, scale]);
-
-  const clamp = (o: { x: number; y: number }) => {
-    const img = imgRef.current!;
-    return {
-      x: Math.min(0, Math.max(SIZE - img.width  * scale, o.x)),
-      y: Math.min(0, Math.max(SIZE - img.height * scale, o.y)),
-    };
-  };
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, zIndex: 3000,
-      background: 'rgba(0,0,0,0.92)',
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      padding: 'var(--sp-4)',
-    }}>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--sp-4)', textAlign: 'center' }}>
-        اسحب لتحديد موضع الوجه
-      </p>
-      <canvas ref={canvasRef} width={SIZE} height={SIZE}
-        style={{
-          borderRadius: '50%', touchAction: 'none',
-          cursor: drag ? 'grabbing' : 'grab',
-          maxWidth: '85vw', maxHeight: '85vw', background: '#0a0a0a',
-        }}
-        onTouchStart={e => {
-          e.preventDefault();
-          if (e.touches.length === 1) {
-            setDrag(true);
-            last.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-          } else {
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            last.current = { x: 0, y: 0, dist: Math.sqrt(dx * dx + dy * dy) };
-          }
-        }}
-        onTouchMove={e => {
-          e.preventDefault();
-          if (!last.current || !imgRef.current) return;
-          if (e.touches.length === 1 && drag) {
-            const dx = e.touches[0].clientX - last.current.x;
-            const dy = e.touches[0].clientY - last.current.y;
-            setOffset(o => clamp({ x: o.x + dx, y: o.y + dy }));
-            last.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-          } else if (e.touches.length === 2 && last.current.dist) {
-            const dx = e.touches[0].clientX - e.touches[1].clientX;
-            const dy = e.touches[0].clientY - e.touches[1].clientY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            const minS = SIZE / Math.max(imgRef.current.width, imgRef.current.height);
-            const ns = Math.min(4, Math.max(minS, scale * (dist / last.current.dist)));
-            setScale(ns);
-            last.current = { ...last.current, dist };
-          }
-        }}
-        onTouchEnd={() => { setDrag(false); last.current = null; }}
-        onMouseDown={e => { setDrag(true); last.current = { x: e.clientX, y: e.clientY }; }}
-        onMouseMove={e => {
-          if (!drag || !imgRef.current) return;
-          setOffset(o => clamp({ x: o.x + e.movementX, y: o.y + e.movementY }));
-        }}
-        onMouseUp={() => { setDrag(false); last.current = null; }}
-        onMouseLeave={() => { setDrag(false); last.current = null; }}
-        onWheel={e => {
-          if (!imgRef.current) return;
-          const minS = SIZE / Math.max(imgRef.current.width, imgRef.current.height);
-          setScale(s => Math.min(4, Math.max(minS, s - e.deltaY * 0.001)));
-        }}
-      />
-      <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-2xs)', margin: 'var(--sp-3) 0', textAlign: 'center', opacity: 0.5 }}>
-        قرّب أو بعّد بالأصبعين
-      </p>
-      <div style={{ display: 'flex', gap: 'var(--sp-3)', width: '100%', maxWidth: 300 }}>
-        <button onClick={onCancel} style={{
-          flex: 1, height: 'var(--btn-h)', borderRadius: 'var(--radius-md)',
-          background: 'var(--bg-soft)', border: '1px solid var(--glass-border)',
-          color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', fontWeight: 600,
-          fontFamily: 'inherit', cursor: 'pointer',
-        }}>إلغاء</button>
-        <button
-          onClick={() => {
-            if (!imgRef.current) return;
-            const im = imgRef.current;
-            const cropX = Math.max(0, -offset.x / scale);
-            const cropY = Math.max(0, -offset.y / scale);
-            const cropSz = Math.min(SIZE / scale, Math.min(im.width - cropX, im.height - cropY));
-            onConfirm(cropX, cropY, cropSz);
-          }}
-          style={{
-            flex: 2, height: 'var(--btn-h)', borderRadius: 'var(--radius-md)',
-            background: 'var(--color-primary)', border: 'none', color: '#fff',
-            fontSize: 'var(--text-base)', fontWeight: 800,
-            fontFamily: 'inherit', cursor: 'pointer',
-          }}>تأكيد</button>
-      </div>
-    </div>
-  );
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve((reader.result as string).split(',')[1]);
+    reader.onerror = () => reject(new Error('فشل قراءة الملف'));
+    reader.readAsDataURL(file);
+  });
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -253,10 +126,11 @@ function CropModal({ src, onConfirm, onCancel }: {
 export default function ProfilePage() {
   const router = useRouter();
 
-  const [profile,   setProfile]   = useState<any>(null);
-  const [loading,   setLoading]   = useState(true);
-  const [uploading, setUploading] = useState(false);
-  const [cropSrc,   setCropSrc]   = useState('');
+  const [profile,    setProfile]    = useState<any>(null);
+  const [loading,    setLoading]    = useState(true);
+  const [uploading,  setUploading]  = useState(false);
+  const [validating, setValidating] = useState(false);
+  const [cropSrc,    setCropSrc]    = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -269,6 +143,7 @@ export default function ProfilePage() {
     load();
   }, [router]);
 
+  // ── رفع الصورة بعد الموافقة ───────────────────────────────
   const uploadAvatar = async (file: File) => {
     if (!profile?.id) return;
     setUploading(true);
@@ -277,11 +152,53 @@ export default function ProfilePage() {
       const { error } = await supabase.storage
         .from('Avatars').upload(path, file, { upsert: true, cacheControl: '3600' });
       if (error) throw error;
+
       const url = supabase.storage.from('Avatars').getPublicUrl(path).data.publicUrl;
       await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id);
       setProfile((p: any) => ({ ...p, avatar_url: url }));
-    } catch (e) { console.error(e); }
-    setUploading(false);
+
+      toast.success('تم تحديث صورتك ✅');
+    } catch (e: any) {
+      console.error('[profile] uploadAvatar:', e);
+      toast.error('فشل رفع الصورة، حاول مجدداً');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // ── تأكيد الاقتصاص → فحص Gemini → رفع ────────────────────
+  const handleCropConfirm = async (cropX: number, cropY: number, cropSize: number) => {
+    setValidating(true);
+    try {
+      const file = await cropAndCompress(cropSrc, cropX, cropY, cropSize);
+
+      // ✅ فحص Gemini — كان مفقوداً في النسخة القديمة
+      const base64 = await fileToBase64(file);
+      const check  = await moderateImage(profile?.id ?? 'anonymous', base64, 'image/webp');
+
+      if (!check.valid) {
+        toast.error(check.reason || 'الصورة لا تلبي معايير المنصة');
+        URL.revokeObjectURL(cropSrc);
+        setCropSrc('');
+        return;
+      }
+
+      URL.revokeObjectURL(cropSrc);
+      setCropSrc('');
+      await uploadAvatar(file);
+
+    } catch (e: any) {
+      toast.error(e?.message || 'حدث خطأ في معالجة الصورة');
+      URL.revokeObjectURL(cropSrc);
+      setCropSrc('');
+    } finally {
+      setValidating(false);
+    }
+  };
+
+  const handleCropCancel = () => {
+    if (cropSrc) URL.revokeObjectURL(cropSrc);
+    setCropSrc('');
   };
 
   if (loading || !profile) return (
@@ -538,15 +455,13 @@ export default function ProfilePage() {
         <LogOut size={16} /> تسجيل الخروج
       </motion.button>
 
+      {/* ✅ CropModal المشترك — يدعم validating prop لعرض حالة فحص Gemini */}
       {cropSrc && (
         <CropModal
           src={cropSrc}
-          onConfirm={async (x, y, s) => {
-            const f = await cropAndCompress(cropSrc, x, y, s);
-            setCropSrc('');
-            await uploadAvatar(f);
-          }}
-          onCancel={() => setCropSrc('')}
+          onConfirm={handleCropConfirm}
+          onCancel={handleCropCancel}
+          validating={validating}
         />
       )}
     </div>
