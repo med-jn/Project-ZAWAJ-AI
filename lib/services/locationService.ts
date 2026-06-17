@@ -1,12 +1,10 @@
-/**
- * 📁 lib/services/locationService.ts
- * ✅ يحدّث coords (PostGIS) + latitude + longitude + city + country
- * ✅ Nominatim zoom=10 لاسم المدينة الدقيق (لا المحافظة)
- * ✅ خوارزمية انتقاء المدينة محسّنة للمدن العربية الصغيرة
+/* 📁 lib/services/locationService.ts
+ * ✅ يحدّث عمود coords (PostGIS) عبر RPC — لا نص خام عبر JS
+ * ✅ استراتيجية multi-zoom لتحسين دقة المدينة/المعتمدية (Nominatim مجاني)
+ * ✅ fallback ذكي متعدد المستويات بدون بيانات يدوية غير موثوقة
  */
-
-import { toast }      from "sonner";
-import { Capacitor }  from '@capacitor/core';
+import { toast }       from "sonner";
+import { Capacitor }   from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 
 export interface LocationResult {
@@ -16,7 +14,7 @@ export interface LocationResult {
   lon:     number;
 }
 
-// ── جلب الإحداثيات ──────────────────────────────────────────
+// ── جلب الإحداثيات ─────────────────────────────────────────
 async function getCoords(): Promise<{ lat: number; lon: number }> {
   if (Capacitor.isNativePlatform()) {
     const pos = await Geolocation.getCurrentPosition({
@@ -25,126 +23,139 @@ async function getCoords(): Promise<{ lat: number; lon: number }> {
     });
     return { lat: pos.coords.latitude, lon: pos.coords.longitude };
   }
-
   return new Promise((res, rej) => {
     navigator.geolocation.getCurrentPosition(
       p  => res({ lat: p.coords.latitude, lon: p.coords.longitude }),
-      err => rej(err),
+      rej,
       { enableHighAccuracy: true, timeout: 12000 },
     );
   });
 }
 
-// ── انتقاء أفضل اسم للمدينة من حقول Nominatim ──────────────
-function pickCity(a: Record<string, string>): string {
-  const state = a.state ?? '';
+// ── استدعاء Nominatim بـ zoom محدد ─────────────────────────
+async function reverseGeocode(lat: number, lon: number, zoom: number) {
+  const url =
+    `https://nominatim.openstreetmap.org/reverse` +
+    `?format=jsonv2&lat=${lat}&lon=${lon}` +
+    `&accept-language=ar&addressdetails=1&zoom=${zoom}`;
 
-  /**
-   * zoom=10 في Nominatim يُنتج مستوى "المدينة/البلدية"
-   * الأولوية من الأدق للأوسع:
-   *
-   * 1. town         — مدن متوسطة: رادس، المروج، حمام الأنف
-   * 2. municipality — البلدية (قد تكون أدق من town)
-   * 3. suburb       — ضاحية كبيرة (أحياناً أوضح من البلدية)
-   * 4. city_district— حي إداري
-   * 5. city         — إذا كان مختلفاً عن الولاية (تونس العاصمة مثلاً)
-   * 6. village      — قرى
-   * 7. county       — المعتمدية (أوسع — ملاذ أخير)
-   * 8. state        — الولاية (الملاذ الأخير الأخير)
-   */
-  const priority = [
-    a.town,
-    a.municipality,
-    a.suburb,
-    a.city_district,
-    a.city,
-    a.village,
-    a.county,
-  ];
-
-  for (const field of priority) {
-    if (
-      field &&
-      field.trim() !== '' &&
-      field !== state &&
-      // تجنب أسماء الأحياء السكنية والشوارع
-      !field.match(/^(حي|شارع|طريق|نهج|rue|avenue|cité|cite|lotissement)/i)
-    ) {
-      return field.trim();
-    }
-  }
-
-  return state || 'غير محدد';
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'Zawaj-AI/2.1 (zawaj.ai)' },
+  });
+  if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+  return res.json();
 }
 
-// ── الدالة الرئيسية ──────────────────────────────────────────
+// ── فحص: هل هذا الحقل اسم مكان حقيقي صالح؟ ─────────────────
+function isValidPlaceName(c: string | undefined, stateName: string): boolean {
+  if (!c) return false;
+  const trimmed = c.trim();
+  if (trimmed === '') return false;
+  if (trimmed === stateName) return false;
+  if (/^\d/.test(trimmed)) return false;            // يبدأ برقم
+  if (trimmed.toLowerCase().includes('cité')) return false;
+  if (trimmed.includes('حي ')) return false;
+  if (trimmed.includes('شارع')) return false;
+  if (trimmed.includes('نهج')) return false;          // اسم شارع بالتونسية
+  return true;
+}
+
+// ── استخراج أفضل اسم من عنوان واحد ──────────────────────────
+function extractFromAddress(a: Record<string, string>, stateName: string): string {
+  // الحقول بترتيب الأولوية — من الأدق (معتمدية/بلدية) للأعم
+  const candidates = [
+    a.municipality,   // بلديات (المروج، السيجومي...)
+    a.town,            // مدن صغيرة ومتوسطة (رادس، حمام الشط...)
+    a.city_district,   // أحياء كبرى
+    a.suburb,          // ضواحي
+    a.village,         // قرى
+    a.county,          // معتمديات (أعم من المدينة، أدق من الولاية)
+  ];
+
+  for (const c of candidates) {
+    if (isValidPlaceName(c, stateName)) return c.trim();
+  }
+  return '';
+}
+
+// ── الدالة الرئيسية — متعددة المحاولات ─────────────────────
 export const getAutoLocation = async (): Promise<LocationResult> => {
   const toastId = 'location-toast';
-  toast.loading('جارٍ تحديد موقعك...', { id: toastId });
+  toast.loading('تحديد موقعك...', { id: toastId });
 
   try {
     const { lat, lon } = await getCoords();
 
-    /**
-     * zoom=10 → مستوى المدينة/البلدية مباشرة
-     * zoom=18 → مستوى البناية (يُفسد اسم المدينة)
-     */
-    const url =
-      `https://nominatim.openstreetmap.org/reverse` +
-      `?format=json&lat=${lat}&lon=${lon}` +
-      `&accept-language=ar&addressdetails=1&zoom=10`;
+    // نجرب عدة مستويات zoom بالترتيب من الأدق للأعم
+    // 16 = حي/بلدية صغيرة، 14 = بلدية/معتمدية، 12 = معتمدية كبرى، 10 = مدينة كبرى
+    const zoomLevels = [16, 14, 12, 10];
 
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'ZawajAI/1.0' },
-    });
+    let city    = '';
+    let country = '';
 
-    if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+    for (const zoom of zoomLevels) {
+      try {
+        const data = await reverseGeocode(lat, lon, zoom);
+        const a    = data.address ?? {};
+        const state = a.state ?? a.province ?? '';
 
-    const data = await res.json();
-    const a    = data.address ?? {};
+        const found = extractFromAddress(a, state);
+        if (found) {
+          city    = found;
+          country = a.country ?? country;
+          break; // وجدنا اسماً صالحاً — نوقف المحاولات
+        }
+        // نحتفظ بالدولة حتى لو لم نجد مدينة بعد
+        country = country || a.country || '';
+        // نحتفظ باسم الولاية كـ fallback أخير
+        if (!city && state) city = state;
 
-    const city    = pickCity(a);
-    const country = (a.country ?? '').trim() || 'غير محدد';
+      } catch { /* نجرب zoom التالي */ }
+    }
 
-    toast.success(`${city}، ${country}`, { id: toastId });
+    if (!city) city = 'موقعك الحالي';
+
+    toast.success(`تم التحديد: ${city}`, { id: toastId });
     return { city, country, lat, lon };
 
-  } catch (err: any) {
+  } catch (error: any) {
     toast.dismiss(toastId);
-    toast.error('تعذّر تحديد الموقع — تحقق من الإذن');
-    throw err;
+    if (error?.code === 1) {
+      toast.error('يرجى السماح للتطبيق بالوصول للموقع');
+    } else if (error?.code === 3) {
+      toast.error('انتهت مهلة تحديد الموقع، حاول مجدداً');
+    } else {
+      toast.error('فشل تحديد الموقع، يرجى الاختيار يدوياً');
+    }
+    throw error;
   }
 };
 
-// ── حفظ الموقع في profiles ──────────────────────────────────
-// ✅ يحدّث coords (PostGIS Point) + latitude + longitude + city + country
+// ── حفظ الموقع في قاعدة البيانات ───────────────────────────
+/**
+ * ✅ يستخدم RPC function (update_user_location) لتحديث coords
+ *    بشكل صحيح عبر ST_MakePoint داخل SQL — لا نص خام عبر JS.
+ *    يحدّث أيضاً latitude/longitude/city/country في نفس الاستدعاء.
+ */
 export async function saveLocationToProfile(
   supabase: any,
   userId:   string,
   result:   LocationResult,
 ): Promise<void> {
   const { error } = await supabase.rpc('update_user_location', {
-    p_user_id:  userId,
-    p_lat:      result.lat,
-    p_lon:      result.lon,
-    p_city:     result.city,
-    p_country:  result.country,
+    p_user_id: userId,
+    p_lat:     result.lat,
+    p_lon:     result.lon,
+    p_city:    result.city,
+    p_country: result.country,
   });
 
   if (error) {
-    // fallback: تحديث الحقول العادية فقط (بدون coords)
-    console.warn('[locationService] RPC failed, fallback update:', error.message);
-    await supabase.from('profiles').update({
-      city:       result.city,
-      country:    result.country,
-      latitude:   result.lat,
-      longitude:  result.lon,
-      updated_at: new Date().toISOString(),
-    }).eq('id', userId);
+    console.error('[locationService] update_user_location error:', error.message);
   }
 }
 
-// ── حساب المسافة (Haversine) ─────────────────────────────────
+// ── حساب المسافة (Haversine) — للاستخدام المحلي عند الحاجة ──
 export function calcDistance(
   lat1: number, lon1: number,
   lat2: number, lon2: number,
