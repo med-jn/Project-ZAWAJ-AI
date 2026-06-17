@@ -1,10 +1,11 @@
 'use client';
 /**
- * 📁 components/chat/VoiceMessageBubble.tsx — ZAWAJ AI
+ * 📁 components/chat/VoiceMessageBubble.tsx — ZAWAJ AI v2.1
  * ✅ Signed URL للـ private bucket
  * ✅ كتم كل الرسائل الأخرى عند التشغيل
  * ✅ تحديث listened_at عند انتهاء الاستماع (الطرف الثاني فقط)
- * ✅ pg_cron يحذف الرسالة بعد 30 ثانية تلقائياً
+ * ✅ استدعاء Edge Function لحذف الملف من storage جذرياً
+ * ✅ إصلاح SVG fill لأيقونات Play/Pause
  */
 
 import { useState, useRef, useEffect } from 'react';
@@ -17,13 +18,13 @@ interface Props {
   audioUrl:  string;
   isMine:    boolean;
   duration?: number;
-  messageId: string; // مطلوب لتحديث listened_at
+  messageId: string;
 }
 
 const BARS        = [3,6,9,7,12,8,5,10,6,8,11,7,4,9,6,8,10,5,7,9,6,4,8,5,3];
 const MAX_SECONDS = 10;
 
-// ── Singleton: يوقف أي تشغيل سابق ───────────────────────────
+// ── Singleton ─────────────────────────────────────────────────
 let currentAudio: HTMLAudioElement | null = null;
 let currentStop:  (() => void) | null     = null;
 
@@ -35,6 +36,28 @@ function stopCurrentAudio() {
   currentStop?.();
   currentAudio = null;
   currentStop  = null;
+}
+
+// ── حذف الملف من storage عبر Edge Function ───────────────────
+async function deleteVoiceFile(messageId: string, audioUrl: string) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/delete-voice-messages`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ messageId, audioUrl }),
+      }
+    );
+  } catch (e) {
+    console.warn('[VoiceMsg] edge function call failed:', e);
+  }
 }
 
 export default function VoiceMessageBubble({ audioUrl, isMine, duration, messageId }: Props) {
@@ -54,8 +77,8 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration, message
     setLoadError(false);
 
     getVoiceSignedUrl(audioUrl)
-      .then(url => { if (!cancelled) setSignedUrl(url); })
-      .catch(() => { if (!cancelled) setLoadError(true); });
+      .then(url  => { if (!cancelled) setSignedUrl(url); })
+      .catch(()  => { if (!cancelled) setLoadError(true); });
 
     return () => { cancelled = true; };
   }, [audioUrl]);
@@ -88,15 +111,23 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration, message
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (currentAudio === audio) { currentAudio = null; currentStop = null; }
 
-      // ✅ الطرف الثاني فقط — تحديث listened_at
-      // pg_cron سيحذف الرسالة بعد 30 ثانية تلقائياً
+      // ✅ الطرف المستقبِل فقط
       if (!isMine && messageId) {
+        // 1) حدّث listened_at في DB
         supabase
           .from('messages')
           .update({ listened_at: new Date().toISOString() })
           .eq('id', messageId)
           .then(({ error }) => {
-            if (error) console.error('[VoiceMsg] listened_at update failed:', error.message);
+            if (error) {
+              console.error('[VoiceMsg] listened_at update failed:', error.message);
+              return;
+            }
+            // 2) بعد 30 ثانية: استدعِ Edge Function لحذف الملف من storage
+            //    (الـ cron يحذف الصف من DB — الـ Function تحذف الملف الفعلي)
+            setTimeout(() => {
+              deleteVoiceFile(messageId, audioUrl);
+            }, 31_000);
           });
       }
     };
@@ -110,7 +141,7 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration, message
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (currentAudio === audio) { currentAudio = null; currentStop = null; }
     };
-  }, [signedUrl, isMine, messageId]);
+  }, [signedUrl, isMine, messageId, audioUrl]);
 
   const tick = () => {
     const audio = audioRef.current;
@@ -130,9 +161,7 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration, message
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       if (currentAudio === audio) { currentAudio = null; currentStop = null; }
     } else {
-      // ✅ أوقف أي رسالة أخرى تعزف
       stopCurrentAudio();
-
       audio.play()
         .then(() => {
           setPlaying(true);
@@ -197,9 +226,14 @@ export default function VoiceMessageBubble({ audioUrl, isMine, duration, message
             }}
           />
         ) : playing ? (
-          <Pause size={15} color={accentColor} fill={accentColor} />
+          /* ✅ wrapper يتجاوز قاعدة globals.css التي تمنع fill */
+          <span className="lucide-fill" style={{ color: accentColor, display:'flex' }}>
+            <Pause size={15} />
+          </span>
         ) : (
-          <Play  size={15} color={accentColor} fill={accentColor} />
+          <span className="lucide-fill" style={{ color: accentColor, display:'flex' }}>
+            <Play size={15} />
+          </span>
         )}
       </motion.button>
 

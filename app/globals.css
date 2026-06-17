@@ -597,3 +597,5 @@ html.light .chat-bg {
    الحل: نُعيد التحكم صراحةً للأيقونات التي تحتاج fill
 ══════════════════════════════════════════════════════════════ */
 
+/* ── Lucide filled icons fix ── */
+.lucide-fill svg { fill: currentColor !important; stroke: none !important; }
