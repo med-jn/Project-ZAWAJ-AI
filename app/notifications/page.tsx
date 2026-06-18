@@ -3,7 +3,7 @@
  * 📁 app/notifications/page.tsx — ZAWAJ AI
  * ✅ NotificationTabs مع شريط مقسم
  * ✅ تجميع: آخر إشعار لكل (from_user + type) فقط
- * ✅ مسارات صحيحة: view?id= | chat?id=
+ * ✅ مسارات صحيحة: /view/?id= | /chat/?id= (trailingSlash: true)
  * ✅ زر الجرس يقرأ كل الإشعارات
  * ✅ Realtime
  */
@@ -19,7 +19,7 @@ import { supabase } from '@/lib/supabase/client';
 import NotificationTabs, { type NotificationFilter } from '@/components/notifications/NotificationTabs';
 
 // ── أنواع ─────────────────────────────────────────────────────
-type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system';
+type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system' | 'contact_request';
 
 interface Sender {
   id: string;
@@ -40,19 +40,19 @@ interface NotificationItem {
   from_user: string | null;
   conversation_id?: string | null;
   sender?: Sender | null;
-  // مفتاح التجميع: from_user + type
   _groupKey?: string;
 }
 
 // ── تكوين الأنواع ──────────────────────────────────────────────
 const CONFIG: Record<string, { icon: any; color: string; bg: string; glow: string }> = {
-  like:         { icon: Heart,         color: '#ef4444', bg: 'rgba(239,68,68,0.12)',    glow: 'rgba(239,68,68,0.45)'    },
-  view:         { icon: Eye,           color: '#d4af37', bg: 'rgba(212,175,55,0.12)',   glow: 'rgba(212,175,55,0.45)'   },
-  message:      { icon: MessageCircle, color: '#38bdf8', bg: 'rgba(56,189,248,0.12)',   glow: 'rgba(56,189,248,0.45)'   },
-  match:        { icon: Sparkles,      color: '#c084fc', bg: 'rgba(192,132,252,0.12)',  glow: 'rgba(192,132,252,0.45)'  },
-  mediator:     { icon: Handshake,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
-  subscription: { icon: Crown,         color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
-  system:       { icon: Bell,          color: '#ffffff', bg: 'rgba(255,255,255,0.08)',  glow: 'rgba(255,255,255,0.18)'  },
+  like:            { icon: Heart,         color: '#ef4444', bg: 'rgba(239,68,68,0.12)',    glow: 'rgba(239,68,68,0.45)'    },
+  view:            { icon: Eye,           color: '#d4af37', bg: 'rgba(212,175,55,0.12)',   glow: 'rgba(212,175,55,0.45)'   },
+  message:         { icon: MessageCircle, color: '#38bdf8', bg: 'rgba(56,189,248,0.12)',   glow: 'rgba(56,189,248,0.45)'   },
+  match:           { icon: Sparkles,      color: '#c084fc', bg: 'rgba(192,132,252,0.12)',  glow: 'rgba(192,132,252,0.45)'  },
+  mediator:        { icon: Handshake,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
+  contact_request: { icon: Handshake,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
+  subscription:    { icon: Crown,         color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
+  system:          { icon: Bell,          color: '#ffffff', bg: 'rgba(255,255,255,0.08)',  glow: 'rgba(255,255,255,0.18)'  },
 };
 
 // ── وقت نسبي ──────────────────────────────────────────────────
@@ -80,12 +80,13 @@ function buildText(n: NotificationItem): string {
   const name   = n.sender?.full_name || 'مستخدم';
   const female = n.sender?.gender === 'female';
   switch (n.type) {
-    case 'like':    return female ? `${name} معجبة بملفك` : `${name} معجب بملفك`;
-    case 'view':    return female ? `${name} زارت ملفك`   : `${name} زار ملفك`;
-    case 'message': return female ? `${name} أرسلت لك رسالة` : `${name} أرسل لك رسالة`;
-    case 'match':   return `يوجد انسجام بينك وبين ${name}`;
-    case 'mediator':return female ? `الوسيطة ${name} تريد التواصل` : `الوسيط ${name} يريد التواصل`;
-    default:        return n.title || 'إشعار جديد';
+    case 'like':            return female ? `${name} معجبة بملفك`              : `${name} معجب بملفك`;
+    case 'view':            return female ? `${name} زارت ملفك`                : `${name} زار ملفك`;
+    case 'message':         return female ? `${name} أرسلت لك رسالة`           : `${name} أرسل لك رسالة`;
+    case 'match':           return `يوجد انسجام بينك وبين ${name}`;
+    case 'contact_request': return female ? `${name} أرسلت طلب تواصل`         : `${name} أرسل طلب تواصل`;
+    case 'mediator':        return female ? `الوسيطة ${name} تريد التواصل`    : `الوسيط ${name} يريد التواصل`;
+    default:                return n.title || 'إشعار جديد';
   }
 }
 
@@ -93,26 +94,30 @@ function buildText(n: NotificationItem): string {
 function deduplicateNotifications(list: NotificationItem[]): NotificationItem[] {
   const seen = new Map<string, NotificationItem>();
   for (const n of list) {
-    // الإشعارات بدون from_user (system) لا تُجمَّع
     const key = n.from_user ? `${n.from_user}::${n.type}` : n.notification_id;
     if (!seen.has(key)) {
       seen.set(key, { ...n, _groupKey: key });
     }
-    // نبقي الأحدث فقط (القائمة مرتبة تنازلياً)
   }
   return Array.from(seen.values());
 }
 
-// ── المسار الصحيح ─────────────────────────────────────────────
+// ── المسار الصحيح (trailingSlash: true) ──────────────────────
 function resolveRoute(n: NotificationItem): string | null {
   switch (n.type) {
     case 'message':
     case 'mediator':
-      return n.conversation_id ? `/chat?id=${n.conversation_id}` : null;
+      return n.conversation_id ? `/chat/?id=${n.conversation_id}` : null;
+
     case 'like':
     case 'view':
     case 'match':
-      return n.from_user ? `/view?id=${n.from_user}` : null;
+    case 'contact_request':
+      return n.from_user ? `/view/?id=${n.from_user}` : null;
+
+    case 'subscription':
+      return '/points/';
+
     default:
       return null;
   }
@@ -149,7 +154,6 @@ function NotificationCard({ n, onRead, onNavigate }: {
         background: n.is_read ? 'transparent' : 'rgba(255,255,255,0.02)',
       }}
     >
-      {/* حدود توهج للغير مقروء */}
       {!n.is_read && (
         <div style={{
           position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -157,7 +161,6 @@ function NotificationCard({ n, onRead, onNavigate }: {
         }} />
       )}
 
-      {/* الصورة + أيقونة النوع */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <div style={{
           width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
@@ -197,7 +200,6 @@ function NotificationCard({ n, onRead, onNavigate }: {
         )}
       </div>
 
-      {/* النص */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
           <span style={{
@@ -225,7 +227,6 @@ function NotificationCard({ n, onRead, onNavigate }: {
         </p>
       </div>
 
-      {/* نقطة غير مقروء */}
       {!n.is_read && (
         <div style={{ width: 9, height: 9, borderRadius: '50%', background: cfg.color, flexShrink: 0, boxShadow: `0 0 10px ${cfg.glow}` }} />
       )}
@@ -249,7 +250,6 @@ export default function NotificationsPage() {
     });
   }, []);
 
-  // ── جلب الإشعارات ────────────────────────────────────────
   const load = useCallback(async () => {
     if (!userId) return;
     setLoading(true);
@@ -262,7 +262,6 @@ export default function NotificationsPage() {
 
     if (error || !data) { setLoading(false); return; }
 
-    // جلب بيانات المرسلين
     const ids = [...new Set(data.map((n: any) => n.from_user).filter(Boolean))];
     const { data: profiles } = ids.length
       ? await supabase.from('profiles').select('id,full_name,avatar_url,gender,is_photos_blurred,role').in('id', ids)
@@ -279,7 +278,6 @@ export default function NotificationsPage() {
     setLoading(false);
   }, [userId]);
 
-  // ── Realtime ─────────────────────────────────────────────
   useEffect(() => {
     if (!userId) return;
     load();
@@ -293,7 +291,6 @@ export default function NotificationsPage() {
     return () => { supabase.removeChannel(ch); };
   }, [userId, load]);
 
-  // ── قراءة إشعار ─────────────────────────────────────────
   const markRead = async (notification_id: string) => {
     setNotifications(prev =>
       prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n)
@@ -301,7 +298,6 @@ export default function NotificationsPage() {
     await supabase.from('notifications').update({ is_read: true }).eq('notification_id', notification_id);
   };
 
-  // ── قراءة الكل ───────────────────────────────────────────
   const markAllRead = async () => {
     if (!userId) return;
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
@@ -309,14 +305,10 @@ export default function NotificationsPage() {
       .eq('id', userId).eq('is_read', false);
   };
 
-  // ── التنقل ───────────────────────────────────────────────
   const navigate = (route: string | null) => {
     if (route) router.push(route);
   };
 
-  // ── تجميع + فلترة ────────────────────────────────────────
-  // أولاً: نجمع (آخر إشعار لكل from_user+type)
-  // ثانياً: نفلتر حسب التبويب
   const deduplicated = useMemo(() => deduplicateNotifications(notifications), [notifications]);
 
   const filtered = useMemo(() =>
@@ -324,7 +316,6 @@ export default function NotificationsPage() {
     [deduplicated, filter]
   );
 
-  // عدد الغير مقروء لكل تبويب (من القائمة الكاملة قبل التجميع)
   const counts = useMemo(() => {
     const c: Partial<Record<NotificationFilter, number>> = { all: 0 };
     for (const n of notifications) {
@@ -339,7 +330,6 @@ export default function NotificationsPage() {
 
   const unreadTotal = counts.all ?? 0;
 
-  // ── تحميل ────────────────────────────────────────────────
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}>
       <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.9, ease: 'linear' }}
@@ -350,7 +340,6 @@ export default function NotificationsPage() {
   return (
     <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 'var(--nav-h)' }}>
 
-      {/* ── Header ── */}
       <div style={{
         position: 'sticky', top: 0, zIndex: 50,
         padding: 'var(--sp-4) var(--sp-4) var(--sp-3)',
@@ -359,7 +348,6 @@ export default function NotificationsPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div>
-          
           {unreadTotal > 0 && (
             <p style={{ margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * .72)' }}>
               {unreadTotal} إشعار غير مقروء
@@ -367,7 +355,6 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        {/* زر قراءة الكل */}
         {unreadTotal > 0 && (
           <motion.button
             whileTap={{ scale: 0.94 }}
@@ -389,14 +376,12 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* ── التبويبات ── */}
       <NotificationTabs
         value={filter}
         onChange={setFilter}
         counts={counts}
       />
 
-      {/* ── القائمة ── */}
       {filtered.length === 0 ? (
         <div style={{ padding: 'var(--sp-16)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-4)' }}>
           <div style={{

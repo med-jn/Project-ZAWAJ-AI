@@ -1,6 +1,6 @@
 /**
  * 📁 lib/notifications/notification-route.ts — ZAWAJ AI
- * ✅ مسارات صحيحة متوافقة مع routes التطبيق الفعلية
+ * ✅ trailingSlash: true في next.config.js يتطلب /view/?id= و /chat/?id=
  */
 
 export type NotificationType =
@@ -30,20 +30,22 @@ export function resolveNotificationRoute(
     return `/chat/?id=${payload.conversation_id}`;
   }
 
-  // إعجاب أو زيارة أو توافق → ملف صاحب الإشعار
-  if ((type === 'like' || type === 'view' || type === 'match' || type === 'contact_request')
-      && payload.from_user) {
-    return `/view?id=${payload.from_user}`;
+  // إعجاب أو زيارة أو توافق أو طلب تواصل → ملف صاحب الإشعار
+  if (
+    (type === 'like' || type === 'view' || type === 'match' || type === 'contact_request')
+    && payload.from_user
+  ) {
+    return `/view/?id=${payload.from_user}`;
   }
 
   // اشتراك → صفحة النقاط
-  if (type === 'subscription') return '/points';
+  if (type === 'subscription') return '/points/';
 
   // رابط خارجي
   if (payload.external_url) return payload.external_url;
 
   // fallback
-  return '/notifications';
+  return '/notifications/';
 }
 
 export function resolveNotificationAction(payload: NotificationRoutePayload) {
