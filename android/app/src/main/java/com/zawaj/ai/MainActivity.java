@@ -5,14 +5,27 @@ import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 
 import com.getcapacitor.BridgeActivity;
 
+/**
+ * MainActivity — ZAWAJ AI
+ *
+ * لا نستخدم loadUrl() إطلاقاً — يُعيد تحميل WebView ويمر بـ app/page.tsx
+ * التي تُوجّه لـ /home وتتجاهل الـ route المطلوب.
+ *
+ * الحل: نكتب الـ route في SharedPreferences تحت اسم "CapacitorStorage"
+ * بالمفتاح "CapacitorStorage.pending_route" — وهو نفس المكان الذي
+ * يقرأ منه Capacitor Preferences في JS بـ:
+ *   Preferences.get({ key: 'pending_route' })
+ *
+ * ثم app/page.tsx يقرأ الـ route ويتوجه إليه بعد التحقق من الـ session.
+ */
 public class MainActivity extends BridgeActivity {
 
-    private static final String BASE_URL = "https://localhost";
+    // نفس اسم SharedPreferences الذي يستخدمه Capacitor Preferences plugin
+    private static final String CAP_PREFS = "CapacitorStorage";
+    private static final String ROUTE_KEY = "CapacitorStorage.pending_route";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,38 +43,27 @@ public class MainActivity extends BridgeActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getWindow().setNavigationBarColor(Color.TRANSPARENT);
         }
-    }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        // معالجة الـ Intent بعد جاهزية Bridge
-        handleIntent(getIntent());
+        saveRouteFromIntent(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        handleIntent(intent);
+        saveRouteFromIntent(intent);
     }
 
-    private void handleIntent(final Intent intent) {
+    private void saveRouteFromIntent(Intent intent) {
         if (intent == null) return;
-        final String route = extractRoute(intent);
+        String route = extractRoute(intent);
         if (route == null) return;
 
-        // ✅ نحمّل URL كاملاً في WebView مباشرة
-        // هذا يتجاوز Next.js router ويحمّل الصفحة مباشرة
-        final String url = BASE_URL + route;
-
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().post(() ->
-                    getBridge().getWebView().loadUrl(url)
-                );
-            }
-        }, 1000);
+        // نكتب في نفس SharedPreferences التي يقرأ منها Capacitor Preferences
+        getSharedPreferences(CAP_PREFS, MODE_PRIVATE)
+            .edit()
+            .putString(ROUTE_KEY, route)
+            .apply();
     }
 
     private String extractRoute(Intent intent) {
@@ -70,24 +72,37 @@ public class MainActivity extends BridgeActivity {
         // 1. Extra من FCM
         String route = intent.getStringExtra("route");
         if (route != null && !route.isEmpty()) {
-            // ✅ تأكد من slash قبل ? مثل /view/?id=xxx
-            if (route.contains("?") && !route.contains("/?")) {
-                route = route.replace("?", "/?");
-            }
-            return route.startsWith("/") ? route : "/" + route;
+            return normalizeRoute(route);
         }
 
-        // 2. URI fallback
+        // 2. Deep link: zawaj://app/chat?id=xxx
         Uri data = intent.getData();
-        if (data != null && "zawaj".equals(data.getScheme()) && "app".equals(data.getHost())) {
+        if (data != null
+                && "zawaj".equals(data.getScheme())
+                && "app".equals(data.getHost())) {
             String path  = data.getPath();
             String query = data.getQuery();
             if (path != null && !path.isEmpty()) {
-                String r = (query != null && !query.isEmpty()) ? path + "/?" + query : path;
-                return r;
+                String r = (query != null && !query.isEmpty())
+                    ? path + "?" + query
+                    : path;
+                return normalizeRoute(r);
             }
         }
 
         return null;
+    }
+
+    /**
+     * /chat?id=X   →  /chat/?id=X
+     * chat/?id=X   →  /chat/?id=X
+     */
+    private String normalizeRoute(String route) {
+        if (route == null || route.isEmpty()) return null;
+        if (!route.startsWith("/")) route = "/" + route;
+        if (route.contains("?") && !route.contains("/?")) {
+            route = route.replace("?", "/?");
+        }
+        return route;
     }
 }

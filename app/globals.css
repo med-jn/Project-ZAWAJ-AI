@@ -509,6 +509,7 @@ html, body {
 /* ✅ body يحترم safe area لكن خلفيته تطابق html دائماً */
 body {
   padding-top:      var(--safe-top);
+  padding-bottom:   var(--safe-bottom);
   padding-left:     var(--safe-left);
   padding-right:    var(--safe-right);
   background-color: var(--bg-main) !important;

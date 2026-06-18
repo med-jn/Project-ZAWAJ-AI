@@ -10,6 +10,7 @@ import { toast }               from 'sonner';
 import { Capacitor }           from '@capacitor/core';
 import { Browser }             from '@capacitor/browser';
 import { App }                 from '@capacitor/app';
+import { Preferences }         from '@capacitor/preferences';
 import Footer                  from '@/components/layout/Footer';
 
 export default function LandingPage() {
@@ -23,14 +24,36 @@ export default function LandingPage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { setLoading(false); return; }
+
+        // ✅ على Android: افحص هل هناك route محفوظ من إشعار (Cold Start)
+        if (Capacitor.getPlatform() === 'android') {
+          try {
+            const { value: pendingRoute } = await Preferences.get({ key: 'pending_route' });
+            if (pendingRoute && pendingRoute.startsWith('/')) {
+              await Preferences.remove({ key: 'pending_route' });
+              router.push(pendingRoute);
+              return;
+            }
+          } catch (_) {
+            // لا يوجد route محفوظ — كمّل بالتدفق الطبيعي
+          }
+        }
+
+        // التدفق الطبيعي: هوم أو onboarding
         try {
           const { data: profile } = await supabase
             .from('profiles').select('is_completed')
             .eq('id', session.user.id).maybeSingle();
           router.push(profile?.is_completed ? '/home' : '/onboarding');
-        } catch { router.push('/home'); }
-      } catch { setLoading(false); }
+        } catch {
+          router.push('/home');
+        }
+
+      } catch {
+        setLoading(false);
+      }
     };
+
     checkUser();
   }, [router]);
 
@@ -39,15 +62,13 @@ export default function LandingPage() {
     if (!Capacitor.isNativePlatform()) return;
 
     const listener = App.addListener('appUrlOpen', async ({ url }) => {
-      // url = "com.zawaj.ai://auth/callback#access_token=...&refresh_token=..."
       if (!url.includes('auth/callback')) return;
 
       setGoogleLoading(false);
 
       try {
-        // استخرج الـ tokens من الـ URL
-        const hashPart   = url.split('#')[1] || url.split('?')[1] || '';
-        const params     = new URLSearchParams(hashPart);
+        const hashPart      = url.split('#')[1] || url.split('?')[1] || '';
+        const params        = new URLSearchParams(hashPart);
         const access_token  = params.get('access_token');
         const refresh_token = params.get('refresh_token');
 
@@ -55,7 +76,6 @@ export default function LandingPage() {
           const { error } = await supabase.auth.setSession({ access_token, refresh_token });
           if (error) throw error;
         } else {
-          // PKCE flow — exchangeCodeForSession
           const code = params.get('code');
           if (code) {
             await supabase.auth.exchangeCodeForSession(url);
@@ -69,7 +89,9 @@ export default function LandingPage() {
               .from('profiles').select('is_completed')
               .eq('id', session.user.id).maybeSingle();
             router.push(profile?.is_completed ? '/home' : '/onboarding');
-          } catch { router.push('/home'); }
+          } catch {
+            router.push('/home');
+          }
         }
       } catch (e: any) {
         toast.error('خطأ في تسجيل الدخول: ' + e.message);
@@ -87,8 +109,6 @@ export default function LandingPage() {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          // ✅ على Native: أرسل مباشرة للـ deep link — Android يفتح التطبيق تلقائياً
-          // ✅ على Web: أرسل لـ Vercel كالمعتاد
           redirectTo: isNative
             ? 'com.zawaj.ai://auth/callback'
             : 'https://zawaj-ai.vercel.app/auth/callback',
