@@ -2,9 +2,10 @@
 /**
  * 📁 app/profile/page.tsx — ZAWAJ AI v2
  * ✅ يستخدم CropModal المشترك من onboarding (لا تكرار كود)
- * ✅ فحص Gemini للصورة قبل الرفع (كان مفقوداً في النسخة السابقة!)
+ * ✅ فحص Gemini للصورة قبل الرفع
  * ✅ تنظيف URL.createObjectURL (memory leak)
  * ✅ ضغط الصورة عبر دالة محلية موحّدة
+ * ✅ logout يُلغي FCM tokens قبل الخروج
  */
 
 import { useState, useEffect } from 'react';
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase/client';
+import { logout  } from '@/lib/auth/logout';
 import { moderateImage } from '@/lib/moderate';
 import {
   COMMITTED_LEVELS,
@@ -25,17 +27,13 @@ import {
   READINESS_LEVEL_NOW,
 } from '@/constants/constants';
 import { getSpecialtyLabel } from '@/constants/occupations';
-
-// ✅ نعيد استخدام CropModal المشترك بدل تكراره
 import CropModal from '@/components/onboarding/CropModal';
 
-// ── حالة التواجد ────────────────────────────────────────────────
 function getOnlineStatus(last?: string, gender?: string) {
   const f = gender === 'female';
   return { text: f ? '' : '', color: 'var(--text-tertiary)' };
 }
 
-// ── صف معلومة ────────────────────────────────────────────────────
 function Row({ icon, label, value }: {
   icon: React.ReactNode; label: string; value?: string | number | null;
 }) {
@@ -52,7 +50,6 @@ function Row({ icon, label, value }: {
   );
 }
 
-// ── بلوك قسم ─────────────────────────────────────────────────────
 function Block({ title, icon, children }: {
   title: string; icon: React.ReactNode; children: React.ReactNode;
 }) {
@@ -80,7 +77,6 @@ function Block({ title, icon, children }: {
   );
 }
 
-// ── أدوات الصورة — موحّدة ──────────────────────────────────────
 async function compressToMax(canvas: HTMLCanvasElement, maxKB = 200): Promise<Blob> {
   const maxBytes = maxKB * 1024;
   let quality = 0.85, blob: Blob | null = null;
@@ -120,9 +116,6 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// ══════════════════════════════════════════════════════════════
-//  الصفحة
-// ══════════════════════════════════════════════════════════════
 export default function ProfilePage() {
   const router = useRouter();
 
@@ -131,6 +124,7 @@ export default function ProfilePage() {
   const [uploading,  setUploading]  = useState(false);
   const [validating, setValidating] = useState(false);
   const [cropSrc,    setCropSrc]    = useState('');
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -143,7 +137,6 @@ export default function ProfilePage() {
     load();
   }, [router]);
 
-  // ── رفع الصورة بعد الموافقة ───────────────────────────────
   const uploadAvatar = async (file: File) => {
     if (!profile?.id) return;
     setUploading(true);
@@ -156,23 +149,18 @@ export default function ProfilePage() {
       const url = supabase.storage.from('Avatars').getPublicUrl(path).data.publicUrl;
       await supabase.from('profiles').update({ avatar_url: url }).eq('id', profile.id);
       setProfile((p: any) => ({ ...p, avatar_url: url }));
-
       toast.success('تم تحديث صورتك ✅');
     } catch (e: any) {
-      console.error('[profile] uploadAvatar:', e);
       toast.error('فشل رفع الصورة، حاول مجدداً');
     } finally {
       setUploading(false);
     }
   };
 
-  // ── تأكيد الاقتصاص → فحص Gemini → رفع ────────────────────
   const handleCropConfirm = async (cropX: number, cropY: number, cropSize: number) => {
     setValidating(true);
     try {
-      const file = await cropAndCompress(cropSrc, cropX, cropY, cropSize);
-
-      // ✅ فحص Gemini — كان مفقوداً في النسخة القديمة
+      const file   = await cropAndCompress(cropSrc, cropX, cropY, cropSize);
       const base64 = await fileToBase64(file);
       const check  = await moderateImage(profile?.id ?? 'anonymous', base64, 'image/webp');
 
@@ -186,7 +174,6 @@ export default function ProfilePage() {
       URL.revokeObjectURL(cropSrc);
       setCropSrc('');
       await uploadAvatar(file);
-
     } catch (e: any) {
       toast.error(e?.message || 'حدث خطأ في معالجة الصورة');
       URL.revokeObjectURL(cropSrc);
@@ -199,6 +186,17 @@ export default function ProfilePage() {
   const handleCropCancel = () => {
     if (cropSrc) URL.revokeObjectURL(cropSrc);
     setCropSrc('');
+  };
+
+  // ✅ logout موحد — يُلغي FCM tokens أولاً
+  const handleLogout = async () => {
+    setLoggingOut(true);
+    try {
+      await logout();
+      router.push('/');
+    } catch (_) {
+      router.push('/');
+    }
   };
 
   if (loading || !profile) return (
@@ -227,12 +225,10 @@ export default function ProfilePage() {
   return (
     <div dir="rtl" style={{ padding: '0 var(--sp-4) var(--sp-8)', maxWidth: 600, margin: '0 auto' }}>
 
-      {/* ── Hero ─────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         gap: 'var(--sp-3)', padding: 'var(--sp-6) 0 var(--sp-4)',
       }}>
-        {/* أفاتار + كاميرا */}
         <div style={{ position: 'relative' }}>
           <img
             src={p.avatar_url || '/default-avatar.png'}
@@ -281,12 +277,10 @@ export default function ProfilePage() {
           </label>
         </div>
 
-        {/* الاسم */}
         <span style={{ color: 'var(--text-main)', fontWeight: 900, fontSize: 'var(--text-2xl)', textAlign: 'center' }}>
           {p.full_name}
         </span>
 
-        {/* العمر + المدينة + زر تعديل */}
         <div style={{
           display: 'flex', alignItems: 'center',
           gap: 'var(--sp-4)', flexWrap: 'wrap', justifyContent: 'center',
@@ -318,13 +312,11 @@ export default function ProfilePage() {
           </motion.button>
         </div>
 
-        {/* حالة الاتصال */}
         <span style={{ fontSize: 'var(--text-xs)', color: status.color, fontWeight: 500 }}>
           {status.text}
         </span>
       </div>
 
-      {/* ── شريط الاكتمال ────────────────────────────────────── */}
       {pct > 0 && (
         <div style={{
           marginBottom: 'var(--sp-3)', borderRadius: 'var(--radius-md)',
@@ -345,7 +337,6 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── أقسام المعلومات ──────────────────────────────────── */}
       <Block title="البيانات الأساسية" icon={<Users size={13}/>}>
         <Row icon={<Users size={13}/>}      label="الحالة المدنية" value={p.marital_status ? getMaritalLabel(p.marital_status, gender) : null} />
         <Row icon={<Globe size={13}/>}      label="الجنسية"        value={p.nationality} />
@@ -438,24 +429,29 @@ export default function ProfilePage() {
         </div>
       )}
 
-      {/* ── تسجيل الخروج ─────────────────────────────────────── */}
+      {/* ✅ logout يُلغي FCM tokens أولاً */}
       <motion.button
         whileTap={{ scale: 0.97 }}
-        onClick={() => supabase.auth.signOut().then(() => router.push('/'))}
+        onClick={handleLogout}
+        disabled={loggingOut}
         style={{
           width: '100%', padding: 'var(--sp-4)',
           borderRadius: 'var(--radius-lg)', marginTop: 'var(--sp-4)',
           background: 'rgba(248,113,113,0.08)',
           border: '1px solid rgba(248,113,113,0.2)',
           color: '#f87171', fontWeight: 700, fontSize: 'var(--text-sm)',
-          cursor: 'pointer', fontFamily: 'inherit',
+          cursor: loggingOut ? 'not-allowed' : 'pointer',
+          fontFamily: 'inherit', opacity: loggingOut ? 0.6 : 1,
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--sp-2)',
         }}
       >
-        <LogOut size={16} /> تسجيل الخروج
+        {loggingOut
+          ? <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 0.8, ease: 'linear' }}
+              style={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid rgba(248,113,113,0.3)', borderTopColor: '#f87171' }} />
+          : <><LogOut size={16} /> تسجيل الخروج</>
+        }
       </motion.button>
 
-      {/* ✅ CropModal المشترك — يدعم validating prop لعرض حالة فحص Gemini */}
       {cropSrc && (
         <CropModal
           src={cropSrc}

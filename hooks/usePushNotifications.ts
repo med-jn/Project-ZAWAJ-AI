@@ -2,21 +2,22 @@
 /**
  * hooks/usePushNotifications.ts — ZAWAJ AI
  *
- * COLD START: MainActivity يحفظ route في CapacitorStorage
- *             page.tsx يقرأه ويتوجه قبل /home
+ * Cold Start  → MainActivity يحوّل FCM route إلى zawaj://app/... deep link
+ *               page.tsx يقرأه عبر App.getLaunchUrl()
  *
- * WARM START: pushNotificationActionPerformed يُطلق من Capacitor
- *             إذا userId جاهز → router.push مباشرة
- *             إذا لم يكن جاهزاً → يحفظ في Preferences → check loop يقرأه
+ * Warm Start  → Android يُطلق appUrlOpen في page.tsx تلقائياً
+ *               (لأن Intent يحمل data = zawaj://app/... بعد rewrite)
  *
- * IN-APP:     pushNotificationReceived → router.push مباشرة إذا userId جاهز
- *             وإلا → يحفظ في Preferences → check loop يقرأه
+ * In-App      → pushNotificationReceived → router.push مباشرة
+ *
+ * هذا الهوك مسؤول فقط عن:
+ * - تسجيل FCM token
+ * - التنقل عند الإشعار الداخلي (In-App)
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect }         from 'react';
 import { useRouter }         from 'next/navigation';
 import { Capacitor }         from '@capacitor/core';
-import { Preferences }       from '@capacitor/preferences';
 import {
   PushNotifications,
   type Token,
@@ -35,76 +36,19 @@ interface FCMData {
   route?:           string;
 }
 
-const ROUTE_KEY = 'pending_route';
-
-// مشترك عبر كل renders
 const _push = {
   listenersReady: false,
   userId:         '',
 };
 
 export function usePushNotifications(userId?: string) {
-  const router       = useRouter();
-  const routeHandled = useRef(false);
+  const router = useRouter();
 
   if (userId) _push.userId = userId;
 
-  // ── قراءة pending_route بعد جاهزية userId ──────────────────
-  // يغطي: Cold Start + Warm/In-App اللذان وصلا قبل جاهزية userId
-  useEffect(() => {
-    if (!userId || routeHandled.current) return;
-    if (Capacitor.getPlatform() !== 'android') return;
-
-    let attempts = 0;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const check = async () => {
-      attempts++;
-      try {
-        const { value } = await Preferences.get({ key: ROUTE_KEY });
-        if (value && value.startsWith('/')) {
-          routeHandled.current = true;
-          await Preferences.remove({ key: ROUTE_KEY });
-          router.push(value);
-          return;
-        }
-      } catch (_) {}
-
-      if (attempts < 10) {
-        timer = setTimeout(check, 400);
-      }
-    };
-
-    check();
-    return () => clearTimeout(timer);
-  }, [userId]);
-
-  // ── تسجيل المستمعات — مرة واحدة فقط عند جاهزية userId ─────
   useEffect(() => {
     if (!userId) return;
     if (Capacitor.getPlatform() !== 'android') return;
-
-    const navigate = (route: string) => {
-      routeHandled.current = true;
-      router.push(route);
-    };
-
-    const saveOrNavigate = async (route: string) => {
-      if (_push.userId) {
-        navigate(route);
-      } else {
-        await Preferences.set({ key: ROUTE_KEY, value: route });
-      }
-    };
-
-    const resolveRoute = (data: FCMData): string | null => {
-      if (data.route && data.route.startsWith('/')) return data.route;
-      return resolveNotificationRoute({
-        type:            data.type as NotificationType,
-        conversation_id: data.conversation_id,
-        from_user:       data.from_user,
-      });
-    };
 
     const run = async () => {
       let perm = await PushNotifications.checkPermissions();
@@ -119,7 +63,6 @@ export function usePushNotifications(userId?: string) {
         // ── تسجيل FCM Token ──────────────────────────────────
         PushNotifications.addListener('registration', async (token: Token) => {
           if (!_push.userId) return;
-
           let appVersion = '1.0.0';
           try {
             const res  = await fetch('/update-info.json');
@@ -149,14 +92,21 @@ export function usePushNotifications(userId?: string) {
         // ── IN-APP: التطبيق في المقدمة ───────────────────────
         PushNotifications.addListener(
           'pushNotificationReceived',
-          async (notification: PushNotificationSchema) => {
+          (notification: PushNotificationSchema) => {
             const data  = notification.data as FCMData;
-            const route = resolveRoute(data);
-            if (route) await saveOrNavigate(route);
+            const route = (data.route && data.route.startsWith('/'))
+              ? data.route
+              : resolveNotificationRoute({
+                  type:            data.type as NotificationType,
+                  conversation_id: data.conversation_id,
+                  from_user:       data.from_user,
+                });
+            if (route) router.push(route);
           }
         );
 
-        // ── WARM START: التطبيق في الخلفية ──────────────────
+        // ── WARM START fallback ──────────────────────────────
+        // في حالة نادرة لم يُعالَج الـ deep link في page.tsx
         PushNotifications.addListener(
           'pushNotificationActionPerformed',
           async (action: ActionPerformed) => {
@@ -169,11 +119,16 @@ export function usePushNotifications(userId?: string) {
                 .then(() => {});
             }
 
-            // امسح أي route محفوظ من Cold Start لتجنب التعارض
-            await Preferences.remove({ key: ROUTE_KEY });
-
-            const route = resolveRoute(data);
-            if (route) await saveOrNavigate(route);
+            // إذا وصلنا هنا يعني appUrlOpen لم يُطلق
+            // نتنقل يدوياً
+            const route = (data.route && data.route.startsWith('/'))
+              ? data.route
+              : resolveNotificationRoute({
+                  type:            data.type as NotificationType,
+                  conversation_id: data.conversation_id,
+                  from_user:       data.from_user,
+                });
+            if (route) router.push(route);
           }
         );
       }

@@ -11,21 +11,16 @@ import com.getcapacitor.BridgeActivity;
 /**
  * MainActivity — ZAWAJ AI
  *
- * لا نستخدم loadUrl() إطلاقاً — يُعيد تحميل WebView ويمر بـ app/page.tsx
- * التي تُوجّه لـ /home وتتجاهل الـ route المطلوب.
+ * الحل النهائي: نحوّل route من FCM إلى deep link حقيقي
+ * zawaj://app/chat/?id=X
  *
- * الحل: نكتب الـ route في SharedPreferences تحت اسم "CapacitorStorage"
- * بالمفتاح "CapacitorStorage.pending_route" — وهو نفس المكان الذي
- * يقرأ منه Capacitor Preferences في JS بـ:
- *   Preferences.get({ key: 'pending_route' })
+ * Capacitor App Plugin يقرأه في JS عبر:
+ *   - getLaunchUrl()  → Cold Start
+ *   - appUrlOpen      → Warm Start
  *
- * ثم app/page.tsx يقرأ الـ route ويتوجه إليه بعد التحقق من الـ session.
+ * لا SharedPreferences، لا loadUrl، لا Preferences plugin.
  */
 public class MainActivity extends BridgeActivity {
-
-    // نفس اسم SharedPreferences الذي يستخدمه Capacitor Preferences plugin
-    private static final String CAP_PREFS = "CapacitorStorage";
-    private static final String ROUTE_KEY = "CapacitorStorage.pending_route";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,65 +39,44 @@ public class MainActivity extends BridgeActivity {
             getWindow().setNavigationBarColor(Color.TRANSPARENT);
         }
 
-        saveRouteFromIntent(getIntent());
+        // حوّل route من FCM إلى deep link في الـ Intent
+        rewriteIntentToDeepLink(getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        rewriteIntentToDeepLink(intent);
         setIntent(intent);
-        saveRouteFromIntent(intent);
-    }
-
-    private void saveRouteFromIntent(Intent intent) {
-        if (intent == null) return;
-        String route = extractRoute(intent);
-        if (route == null) return;
-
-        // نكتب في نفس SharedPreferences التي يقرأ منها Capacitor Preferences
-        getSharedPreferences(CAP_PREFS, MODE_PRIVATE)
-            .edit()
-            .putString(ROUTE_KEY, route)
-            .apply();
-    }
-
-    private String extractRoute(Intent intent) {
-        if (intent == null) return null;
-
-        // 1. Extra من FCM
-        String route = intent.getStringExtra("route");
-        if (route != null && !route.isEmpty()) {
-            return normalizeRoute(route);
-        }
-
-        // 2. Deep link: zawaj://app/chat?id=xxx
-        Uri data = intent.getData();
-        if (data != null
-                && "zawaj".equals(data.getScheme())
-                && "app".equals(data.getHost())) {
-            String path  = data.getPath();
-            String query = data.getQuery();
-            if (path != null && !path.isEmpty()) {
-                String r = (query != null && !query.isEmpty())
-                    ? path + "?" + query
-                    : path;
-                return normalizeRoute(r);
-            }
-        }
-
-        return null;
     }
 
     /**
-     * /chat?id=X   →  /chat/?id=X
-     * chat/?id=X   →  /chat/?id=X
+     * إذا كان الـ Intent قادماً من FCM ويحمل "route" extra،
+     * نحوّله إلى deep link zawaj://app{route}
+     * حتى يقرأه Capacitor App Plugin كـ appUrlOpen / getLaunchUrl
      */
-    private String normalizeRoute(String route) {
-        if (route == null || route.isEmpty()) return null;
+    private void rewriteIntentToDeepLink(Intent intent) {
+        if (intent == null) return;
+
+        // تجاهل إذا كان deep link موجوداً أصلاً
+        if (intent.getData() != null) return;
+
+        String route = intent.getStringExtra("route");
+        if (route == null || route.isEmpty()) return;
+
+        // تطبيع الـ route
         if (!route.startsWith("/")) route = "/" + route;
         if (route.contains("?") && !route.contains("/?")) {
             route = route.replace("?", "/?");
         }
-        return route;
+
+        // بناء deep link: zawaj://app/chat/?id=X
+        String deepLink = "zawaj://app" + route;
+
+        try {
+            intent.setData(Uri.parse(deepLink));
+        } catch (Exception e) {
+            // إذا فشل، تجاهل
+        }
     }
 }

@@ -10,36 +10,51 @@ import { toast }               from 'sonner';
 import { Capacitor }           from '@capacitor/core';
 import { Browser }             from '@capacitor/browser';
 import { App }                 from '@capacitor/app';
-import { Preferences }         from '@capacitor/preferences';
 import Footer                  from '@/components/layout/Footer';
+
+/**
+ * استخرج المسار من deep link zawaj://app/...
+ * zawaj://app/chat/?id=X  →  /chat/?id=X
+ */
+function extractRouteFromDeepLink(url: string): string | null {
+  try {
+    const uri = new URL(url);
+    if (uri.protocol === 'zawaj:' && uri.hostname === 'app') {
+      const path  = uri.pathname || '/';
+      const query = uri.search;
+      return query ? path + query : path;
+    }
+  } catch (_) {}
+  return null;
+}
 
 export default function LandingPage() {
   const [loading, setLoading]             = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
   const router                            = useRouter();
 
-  // ── التحقق من الجلسة عند فتح التطبيق ─────────────────────
+  // ── التحقق من الجلسة + قراءة deep link (Cold Start) ──────
   useEffect(() => {
     const checkUser = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { setLoading(false); return; }
 
-        // ✅ على Android: افحص هل هناك route محفوظ من إشعار (Cold Start)
+        // ✅ Cold Start: افحص هل التطبيق فُتح من إشعار
         if (Capacitor.getPlatform() === 'android') {
           try {
-            const { value: pendingRoute } = await Preferences.get({ key: 'pending_route' });
-            if (pendingRoute && pendingRoute.startsWith('/')) {
-              await Preferences.remove({ key: 'pending_route' });
-              router.push(pendingRoute);
-              return;
+            const { url } = await App.getLaunchUrl();
+            if (url) {
+              const route = extractRouteFromDeepLink(url);
+              if (route && route !== '/') {
+                router.push(route);
+                return;
+              }
             }
-          } catch (_) {
-            // لا يوجد route محفوظ — كمّل بالتدفق الطبيعي
-          }
+          } catch (_) {}
         }
 
-        // التدفق الطبيعي: هوم أو onboarding
+        // التدفق الطبيعي
         try {
           const { data: profile } = await supabase
             .from('profiles').select('is_completed')
@@ -53,59 +68,61 @@ export default function LandingPage() {
         setLoading(false);
       }
     };
-
     checkUser();
   }, [router]);
 
-  // ── استقبال Deep Link عند عودة التطبيق من OAuth ──────────
+  // ── Warm Start: التطبيق في الخلفية + OAuth callback ──────
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
 
     const listener = App.addListener('appUrlOpen', async ({ url }) => {
-      if (!url.includes('auth/callback')) return;
+      // OAuth callback
+      if (url.includes('auth/callback')) {
+        setGoogleLoading(false);
+        try {
+          const hashPart      = url.split('#')[1] || url.split('?')[1] || '';
+          const params        = new URLSearchParams(hashPart);
+          const access_token  = params.get('access_token');
+          const refresh_token = params.get('refresh_token');
 
-      setGoogleLoading(false);
-
-      try {
-        const hashPart      = url.split('#')[1] || url.split('?')[1] || '';
-        const params        = new URLSearchParams(hashPart);
-        const access_token  = params.get('access_token');
-        const refresh_token = params.get('refresh_token');
-
-        if (access_token && refresh_token) {
-          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
-          if (error) throw error;
-        } else {
-          const code = params.get('code');
-          if (code) {
-            await supabase.auth.exchangeCodeForSession(url);
+          if (access_token && refresh_token) {
+            const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+            if (error) throw error;
+          } else {
+            const code = params.get('code');
+            if (code) await supabase.auth.exchangeCodeForSession(url);
           }
-        }
 
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          try {
-            const { data: profile } = await supabase
-              .from('profiles').select('is_completed')
-              .eq('id', session.user.id).maybeSingle();
-            router.push(profile?.is_completed ? '/home' : '/onboarding');
-          } catch {
-            router.push('/home');
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            try {
+              const { data: profile } = await supabase
+                .from('profiles').select('is_completed')
+                .eq('id', session.user.id).maybeSingle();
+              router.push(profile?.is_completed ? '/home' : '/onboarding');
+            } catch {
+              router.push('/home');
+            }
           }
+        } catch (e: any) {
+          toast.error('خطأ في تسجيل الدخول: ' + e.message);
         }
-      } catch (e: any) {
-        toast.error('خطأ في تسجيل الدخول: ' + e.message);
+        return;
+      }
+
+      // ✅ Warm Start: إشعار zawaj://app/...
+      const route = extractRouteFromDeepLink(url);
+      if (route && route !== '/') {
+        router.push(route);
       }
     });
 
     return () => { listener.then(l => l.remove()); };
   }, [router]);
 
-  // ── Google Login ──────────────────────────────────────────
   const handleGoogleLogin = async () => {
     try {
       const isNative = Capacitor.isNativePlatform();
-
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
@@ -116,23 +133,16 @@ export default function LandingPage() {
         },
       });
       if (error) throw error;
-
       if (isNative && data?.url) {
         setGoogleLoading(true);
-        await Browser.open({
-          url: data.url,
-          windowName: '_blank',
-          presentationStyle: 'popover',
-        });
+        await Browser.open({ url: data.url, windowName: '_blank', presentationStyle: 'popover' });
       }
-
     } catch (error: any) {
       setGoogleLoading(false);
       toast.error('حدث خطأ: ' + error.message);
     }
   };
 
-  // ── شاشة التحميل ─────────────────────────────────────────
   const spinnerScreen = (msg: string) => (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', gap: '16px' }}
@@ -150,7 +160,6 @@ export default function LandingPage() {
   if (loading)       return spinnerScreen('');
   if (googleLoading) return spinnerScreen('جاري تسجيل الدخول...');
 
-  // ── الصفحة الرئيسية ──────────────────────────────────────
   return (
     <main className="bg-luxury-gradient" style={{
       minHeight: '100dvh', width: '100%', display: 'flex',
@@ -168,7 +177,6 @@ export default function LandingPage() {
             ابحث عن شريك حياتك بآمان وذكاء
           </p>
         </div>
-
         <div style={{ display: 'flex', alignItems: 'center',
           gap: 'var(--sp-8)', marginBottom: 'var(--sp-8)' }}>
           <div style={{ height: 1, flex: 1, background: 'var(--border-soft)' }} />
@@ -178,7 +186,6 @@ export default function LandingPage() {
           </span>
           <div style={{ height: 1, flex: 1, background: 'var(--border-soft)' }} />
         </div>
-
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-4)' }}>
           <GoogleButton onClick={handleGoogleLogin} />
           <button onClick={() => router.push('/login')} className="btn-premium"
@@ -190,7 +197,6 @@ export default function LandingPage() {
             <span className="font-bold text-md">email</span>
           </button>
         </div>
-
         <p style={{ marginTop: 'var(--sp-8)', fontSize: 'var(--text-2xs)',
           color: 'var(--text-tertiary)', opacity: 0.6, lineHeight: 'var(--lh-relaxed)' }}>
          بتسجيل دخولك توافق على سياسات الخصوصية وشروط الاستخدام
