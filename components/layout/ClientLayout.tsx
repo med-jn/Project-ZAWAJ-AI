@@ -94,6 +94,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
      path.startsWith('/likes')         ||
      path.startsWith('/notifications') ||
      path.startsWith('/profile')       ||
+     path.startsWith('/view')          ||
      path.startsWith('/points'));
 
   return (

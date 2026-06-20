@@ -237,8 +237,8 @@ export default function Navbar({ activeTab, onTabClick }: NavbarProps) {
     <nav
       className="fixed bottom-0 inset-x-0 z-[1000]"
       style={{
-        height:        'var(--nav-h)',
-        paddingBottom: 'env(safe-area-inset-bottom, 10px)',
+        height:        'var(--nav-h-safe)',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background:    'var(--bg-main)',
         borderTop:     '1px solid var(--glass-border)',
         // شبكة 5 أعمدة بنسب 10/20/20/20/20/10 لتحقيق 10% 30% 50% 70% 90%

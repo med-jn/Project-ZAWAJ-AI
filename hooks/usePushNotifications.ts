@@ -2,17 +2,13 @@
 /**
  * hooks/usePushNotifications.ts — ZAWAJ AI
  *
- * Cold Start  → MainActivity يحوّل FCM route إلى zawaj://app/... deep link
- *               page.tsx يقرأه عبر App.getLaunchUrl()
+ * Cold Start  → MainActivity يضع route في window.__pendingRoute
+ *               page.tsx يقرأه بعد جاهزية session
  *
- * Warm Start  → Android يُطلق appUrlOpen في page.tsx تلقائياً
- *               (لأن Intent يحمل data = zawaj://app/... بعد rewrite)
+ * Warm Start  → MainActivity يستدعي window.__navigateTo مباشرة
+ *               أو appUrlOpen في page.tsx
  *
  * In-App      → pushNotificationReceived → router.push مباشرة
- *
- * هذا الهوك مسؤول فقط عن:
- * - تسجيل FCM token
- * - التنقل عند الإشعار الداخلي (In-App)
  */
 
 import { useEffect }         from 'react';
@@ -21,7 +17,6 @@ import { Capacitor }         from '@capacitor/core';
 import {
   PushNotifications,
   type Token,
-  type ActionPerformed,
   type PushNotificationSchema,
 } from '@capacitor/push-notifications';
 
@@ -94,33 +89,6 @@ export function usePushNotifications(userId?: string) {
           'pushNotificationReceived',
           (notification: PushNotificationSchema) => {
             const data  = notification.data as FCMData;
-            const route = (data.route && data.route.startsWith('/'))
-              ? data.route
-              : resolveNotificationRoute({
-                  type:            data.type as NotificationType,
-                  conversation_id: data.conversation_id,
-                  from_user:       data.from_user,
-                });
-            if (route) router.push(route);
-          }
-        );
-
-        // ── WARM START fallback ──────────────────────────────
-        // في حالة نادرة لم يُعالَج الـ deep link في page.tsx
-        PushNotifications.addListener(
-          'pushNotificationActionPerformed',
-          async (action: ActionPerformed) => {
-            const data = action.notification.data as FCMData;
-
-            if (_push.userId) {
-              supabase.from('fcm_tokens')
-                .update({ last_opened_at: new Date().toISOString() })
-                .eq('user_id', _push.userId)
-                .then(() => {});
-            }
-
-            // إذا وصلنا هنا يعني appUrlOpen لم يُطلق
-            // نتنقل يدوياً
             const route = (data.route && data.route.startsWith('/'))
               ? data.route
               : resolveNotificationRoute({
