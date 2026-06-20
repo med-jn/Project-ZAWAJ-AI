@@ -54,7 +54,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         final String title     = getOrDef(data, "title",      "ZAWAJ AI");
         final String body      = getOrDef(data, "body",       "إشعار جديد");
         final String avatar    = getOrDef(data, "avatar",     "");
-        final String route     = getOrDef(data, "route",      "/notifications");
+        final String route     = getOrDef(data, "route",      "/notifications/");
         final String chanId    = getOrDef(data, "channel_id", resolveChannel(type));
         final boolean silent   = "true".equals(data.get("is_silent"));
         final boolean blurred  = "true".equals(data.get("is_blurred"));
@@ -62,10 +62,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         final int id = notifId.getAndIncrement();
 
         if (!avatar.isEmpty() && !blurred) {
-            // ✅ صورة حقيقية غير ضبابية — نعرض أولاً بالحرف ثم نحدّث بالصورة
             Bitmap letterBmp = buildLetterAvatar(title);
             showNotification(id, title, body, route, chanId, silent, letterBmp);
-
             executor.execute(() -> {
                 try {
                     Bitmap raw = loadBitmap(avatar);
@@ -75,7 +73,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 } catch (Exception ignored) {}
             });
         } else {
-            // ✅ صورة ضبابية أو لا صورة — دائرة بالحرف الأول فقط
             showNotification(id, title, body, route, chanId, silent, buildLetterAvatar(title));
         }
     }
@@ -112,7 +109,47 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
     }
 
-    // ✅ دائرة #b3334b + الحرف الأول — فورية بدون network
+    /**
+     * ✅ الحل الجذري:
+     * بدل putExtra("route", route) نضع الـ route مباشرة كـ deep link URI
+     * zawaj://app/chat/?id=X
+     *
+     * هذا يجعل Capacitor App Plugin يُطلق appUrlOpen تلقائياً
+     * عند الضغط على الإشعار — سواء Cold Start أو Warm Start.
+     */
+    private PendingIntent buildPendingIntent(String route) {
+        // تطبيع الـ route
+        String normalizedRoute = route;
+        if (normalizedRoute == null || normalizedRoute.isEmpty()) {
+            normalizedRoute = "/notifications/";
+        }
+        if (!normalizedRoute.startsWith("/")) {
+            normalizedRoute = "/" + normalizedRoute;
+        }
+        if (normalizedRoute.contains("?") && !normalizedRoute.contains("/?")) {
+            normalizedRoute = normalizedRoute.replace("?", "/?");
+        }
+
+        // بناء deep link
+        String deepLink = "zawaj://app" + normalizedRoute;
+
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // ✅ نضع الـ URI مباشرة — يقرأه Capacitor كـ appUrlOpen
+        intent.setData(Uri.parse(deepLink));
+        // نضيف route كـ extra أيضاً كـ fallback
+        intent.putExtra("route", normalizedRoute);
+
+        int flags;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE;
+        } else {
+            flags = PendingIntent.FLAG_UPDATE_CURRENT;
+        }
+
+        return PendingIntent.getActivity(this, notifId.getAndIncrement(), intent, flags);
+    }
+
     private Bitmap buildLetterAvatar(String name) {
         int size = 128;
         Bitmap bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
@@ -154,21 +191,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         paint.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN));
         canvas.drawBitmap(src, 0, 0, paint);
         return out;
-    }
-
-    private PendingIntent buildPendingIntent(String route) {
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        intent.putExtra("route", route);
-
-        int flags;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            flags = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE;
-        } else {
-            flags = PendingIntent.FLAG_UPDATE_CURRENT;
-        }
-
-        return PendingIntent.getActivity(this, notifId.getAndIncrement(), intent, flags);
     }
 
     private Bitmap loadBitmap(String url) {
