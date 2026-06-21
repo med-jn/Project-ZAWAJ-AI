@@ -1,9 +1,9 @@
 'use client';
 /**
  * 📁 app/home/page.tsx — ZAWAJ AI v6
- * ✅ الاستيرادات من @/components/filter/types (لا من app/filter/page)
- * ✅ يدعم فلتر المسافة الجغرافية (radiusKm / searchLat / searchLon)
- * ✅ باقي المنطق محافظ عليه بالكامل
+ * ✅ جلب show_photos من profiles وتمريره لـ UserCard
+ * ✅ الاستيرادات من @/components/filter/types
+ * ✅ دعم فلتر المسافة الجغرافية (radiusKm / searchLat / searchLon)
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -14,7 +14,6 @@ import { supabase }          from '@/lib/supabase/client';
 import { MatchingEngine }    from '@/lib/services/MatchingEngine';
 import UserCard              from '@/components/cards/usercard';
 
-// ✅ الاستيراد الجديد — من components/filter/types
 import {
   loadFilters,
   saveFilters,
@@ -69,12 +68,16 @@ async function savePositionToSupabase(uid: string, index: number, cycle: number)
       .eq('id', uid);
   } catch {}
 }
-async function loadPositionFromSupabase(uid: string): Promise<{ index: number; cycle: number } | null> {
+async function loadPositionFromSupabase(
+  uid: string,
+): Promise<{ index: number; cycle: number } | null> {
   try {
     const { data } = await supabase.from('profiles')
       .select('discovery_position').eq('id', uid).single();
     if (!data?.discovery_position) return null;
-    const pos = data.discovery_position as { index: number; cycle: number; ts: number };
+    const pos = data.discovery_position as {
+      index: number; cycle: number; ts: number;
+    };
     if (Date.now() - (pos.ts ?? 0) > 7 * 24 * 60 * 60 * 1000) return null;
     return { index: pos.index ?? 0, cycle: pos.cycle ?? 0 };
   } catch { return null; }
@@ -110,7 +113,11 @@ export default function HomePage() {
     uid: string,
     profile: any,
     activeFilters: DiscoveryFilters,
-    opts: { silent?: boolean; restoreIndex?: number; restoreCycle?: number } = {}
+    opts: {
+      silent?:        boolean;
+      restoreIndex?:  number;
+      restoreCycle?:  number;
+    } = {}
   ) => {
     const { silent = false, restoreIndex = 0, restoreCycle = 0 } = opts;
 
@@ -144,8 +151,13 @@ export default function HomePage() {
     if (!user) { setLoading(false); return; }
     uidRef.current = user.id;
 
+    // ✅ جلب show_photos ضمن select البروفايل
     const { data: profile } = await supabase
-      .from('profiles').select('*').eq('id', user.id).single();
+      .from('profiles')
+      .select('*, show_photos')
+      .eq('id', user.id)
+      .single();
+
     if (!profile) { setLoading(false); return; }
     setCurrentUser(profile);
     profileRef.current = profile;
@@ -163,7 +175,9 @@ export default function HomePage() {
       clearCachedQueue(uid);
       lsDel(LS_INDEX_KEY(uid));
       lsDel(LS_CYCLE_KEY(uid));
-      await fetchFresh(uid, profile, activeFilters, { restoreIndex: 0, restoreCycle: 0 });
+      await fetchFresh(uid, profile, activeFilters, {
+        restoreIndex: 0, restoreCycle: 0,
+      });
       return;
     }
 
@@ -248,16 +262,21 @@ export default function HomePage() {
   // ── Loading ───────────────────────────────────────────────
   if (loading) return (
     <div style={{
-      position: 'fixed', inset: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--bg-main)',
+      position:        'fixed',
+      inset:            0,
+      display:         'flex',
+      alignItems:      'center',
+      justifyContent:  'center',
+      background:      'var(--bg-main)',
     }}>
       <motion.div
         animate={{ rotate: 360 }}
         transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
         style={{
-          width: 36, height: 36, borderRadius: '50%',
-          border: '3px solid var(--glass-border)',
+          width:           36,
+          height:          36,
+          borderRadius:   '50%',
+          border:         '3px solid var(--glass-border)',
           borderTopColor: 'var(--color-primary)',
         }}
       />
@@ -267,52 +286,72 @@ export default function HomePage() {
   // ── لا نتائج ─────────────────────────────────────────────
   if (users.length === 0) return (
     <div style={{
-      position: 'fixed', inset: 0,
-      display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      gap: 'var(--sp-5)', padding: '0 var(--sp-8)',
-      background: 'var(--bg-main)', direction: 'rtl',
+      position:        'fixed',
+      inset:            0,
+      display:         'flex',
+      flexDirection:   'column',
+      alignItems:      'center',
+      justifyContent:  'center',
+      gap:             'var(--sp-5)',
+      padding:         '0 var(--sp-8)',
+      background:      'var(--bg-main)',
+      direction:       'rtl',
     }}>
       <div style={{
-        width: 72, height: 72, borderRadius: '50%',
-        background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        width:          72,
+        height:         72,
+        borderRadius:  '50%',
+        background:    'var(--glass-bg)',
+        border:        '1px solid var(--glass-border)',
+        display:       'flex',
+        alignItems:    'center',
+        justifyContent:'center',
       }}>
-        <SlidersHorizontal size={28} style={{ color: 'var(--color-primary)', opacity: 0.7 }} />
+        <SlidersHorizontal
+          size={28}
+          style={{ color: 'var(--color-primary)', opacity: 0.7 }}
+        />
       </div>
       <p style={{
-        color: 'var(--text-main)', fontWeight: 900,
-        fontSize: 'var(--text-xl)', textAlign: 'center', margin: 0,
+        color:      'var(--text-main)',
+        fontWeight:  900,
+        fontSize:   'var(--text-xl)',
+        textAlign:  'center',
+        margin:      0,
       }}>لا توجد نتائج</p>
       <p style={{
-        color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)',
-        textAlign: 'center', margin: 0,
+        color:     'var(--text-tertiary)',
+        fontSize:  'var(--text-sm)',
+        textAlign: 'center',
+        margin:     0,
       }}>
         {active ? 'جرّب توسيع نطاق الفلاتر' : 'عد لاحقاً لاكتشاف ملفات جديدة'}
       </p>
       {active && (
-        <motion.button whileTap={{ scale: 0.96 }}
+        <motion.button
+          whileTap={{ scale: 0.96 }}
           onClick={() => router.push('/filter')}
           style={{
-            padding: 'var(--sp-3) var(--sp-6)',
-            borderRadius: 'var(--radius-lg)',
-            background: 'var(--color-primary-xsoft)',
-            border: '1px solid var(--color-primary-soft)',
-            color: 'var(--color-primary)',
-            fontWeight: 800, fontSize: 'var(--text-sm)',
-            cursor: 'pointer', fontFamily: 'inherit',
+            padding:         'var(--sp-3) var(--sp-6)',
+            borderRadius:    'var(--radius-lg)',
+            background:      'var(--color-primary-xsoft)',
+            border:          '1px solid var(--color-primary-soft)',
+            color:           'var(--color-primary)',
+            fontWeight:       800,
+            fontSize:        'var(--text-sm)',
+            cursor:          'pointer',
+            fontFamily:      'inherit',
             WebkitTapHighlightColor: 'transparent',
-          }}>
+          }}
+        >
           تعديل الفلاتر
         </motion.button>
       )}
     </div>
   );
 
-  const safeIndex = currentIndex % users.length;
-  const c         = users[safeIndex];
-
-  // ── عرض استراتيجية البحث الجغرافي ───────────────────────
+  const safeIndex   = currentIndex % users.length;
+  const c           = users[safeIndex];
   const isGeoSearch = !!(filters.radiusKm && filters.searchLat);
 
   return (
@@ -323,20 +362,24 @@ export default function HomePage() {
         whileTap={{ scale: 0.92 }}
         onClick={() => router.push('/filter')}
         style={{
-          position: 'fixed',
-          top: 'calc(var(--header-h, 0px) + var(--sp-3))',
-          left: 'var(--sp-4)',
-          zIndex: 200,
-          display: 'flex', alignItems: 'center', gap: 'var(--sp-2)',
-          padding: 'var(--sp-2) var(--sp-3)',
-          borderRadius: 'var(--radius-lg)',
-          background: active ? 'rgba(192,0,42,0.18)' : 'rgba(0,0,0,0.28)',
-          border: `1px solid ${active ? 'rgba(192,0,42,0.4)' : 'rgba(255,255,255,0.12)'}`,
-          backdropFilter: 'blur(14px)',
-          color: active ? '#ff6680' : 'rgba(255,255,255,0.72)',
-          fontSize: 'var(--text-xs)', fontWeight: 700,
-          cursor: 'pointer', fontFamily: 'inherit',
-          boxShadow: active
+          position:        'fixed',
+          top:             'calc(var(--header-h, 0px) + var(--sp-3))',
+          left:             'var(--sp-4)',
+          zIndex:           200,
+          display:         'flex',
+          alignItems:      'center',
+          gap:             'var(--sp-2)',
+          padding:         'var(--sp-2) var(--sp-3)',
+          borderRadius:    'var(--radius-lg)',
+          background:       active ? 'rgba(192,0,42,0.18)' : 'rgba(0,0,0,0.28)',
+          border:          `1px solid ${active ? 'rgba(192,0,42,0.4)' : 'rgba(255,255,255,0.12)'}`,
+          backdropFilter:  'blur(14px)',
+          color:            active ? '#ff6680' : 'rgba(255,255,255,0.72)',
+          fontSize:        'var(--text-xs)',
+          fontWeight:       700,
+          cursor:          'pointer',
+          fontFamily:      'inherit',
+          boxShadow:        active
             ? '0 4px 16px rgba(192,0,42,0.22)'
             : '0 4px 12px rgba(0,0,0,0.18)',
           WebkitTapHighlightColor: 'transparent',
@@ -349,8 +392,12 @@ export default function HomePage() {
         }
         {active && (
           <span style={{
-            width: 6, height: 6, borderRadius: '50%',
-            background: '#ff6680', display: 'inline-block', flexShrink: 0,
+            width:        6,
+            height:       6,
+            borderRadius: '50%',
+            background:   '#ff6680',
+            display:      'inline-block',
+            flexShrink:    0,
           }} />
         )}
       </motion.button>
@@ -358,24 +405,25 @@ export default function HomePage() {
       {/* مؤشر الدورة */}
       {cycle > 0 && (
         <div style={{
-          position: 'fixed',
-          top: 'calc(var(--header-h, 0px) + var(--sp-3))',
-          right: 'var(--sp-4)',
-          zIndex: 200,
-          padding: 'var(--sp-1) var(--sp-3)',
-          borderRadius: 'var(--radius-lg)',
-          background: 'rgba(0,0,0,0.28)',
-          border: '1px solid rgba(255,255,255,0.10)',
+          position:       'fixed',
+          top:            'calc(var(--header-h, 0px) + var(--sp-3))',
+          right:          'var(--sp-4)',
+          zIndex:          200,
+          padding:        'var(--sp-1) var(--sp-3)',
+          borderRadius:   'var(--radius-lg)',
+          background:     'rgba(0,0,0,0.28)',
+          border:         '1px solid rgba(255,255,255,0.10)',
           backdropFilter: 'blur(14px)',
-          color: 'rgba(255,255,255,0.45)',
-          fontSize: 'var(--text-xs)', fontWeight: 600,
-          direction: 'rtl',
+          color:          'rgba(255,255,255,0.45)',
+          fontSize:       'var(--text-xs)',
+          fontWeight:      600,
+          direction:      'rtl',
         }}>
           جولة {cycle + 1}
         </div>
       )}
 
-      {/* البطاقة */}
+      {/* ── البطاقة ── */}
       <UserCard
         key={`${c.id}-${cycle}`}
         userData={{
@@ -385,9 +433,11 @@ export default function HomePage() {
           city:        c.city,
           gender:      c.gender,
           mainPhoto:   c.avatar_url || '/default-avatar.png',
-          prefersBlur: c.is_photos_blurred,
+          // ✅ is_photos_blurred: خيار صاحب البطاقة
+          prefersBlur: c.is_photos_blurred ?? false,
+          // ✅ show_photos: خيار المستخدم الحالي (false = يضبب الكل)
+          showPhotos:  currentUser?.show_photos ?? true,
           currentUser,
-          // ✅ تمرير المسافة للبطاقة إذا توفرت (من RPC)
           distanceKm:  (c as any).distance_km ?? null,
         }}
         onNext={handleNext}

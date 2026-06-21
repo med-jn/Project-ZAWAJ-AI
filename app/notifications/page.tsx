@@ -1,11 +1,8 @@
 'use client';
 /**
  * 📁 app/notifications/page.tsx — ZAWAJ AI
- * ✅ NotificationTabs مع شريط مقسم
- * ✅ تجميع: آخر إشعار لكل (from_user + type) فقط
- * ✅ مسارات صحيحة: /view/?id= | /chat/?id= (trailingSlash: true)
- * ✅ زر الجرس يقرأ كل الإشعارات
- * ✅ Realtime
+ * ✅ رسائل تفتح ChatWindow كـ overlay (نفس نهج view/page.tsx)
+ * ✅ باقي الإشعارات router.push كالمعتاد
  */
 
 import { useEffect, useMemo, useState, useCallback } from 'react';
@@ -17,6 +14,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import NotificationTabs, { type NotificationFilter } from '@/components/notifications/NotificationTabs';
+import ChatWindow from '@/components/chat/ChatWindow';
 
 // ── أنواع ─────────────────────────────────────────────────────
 type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system' | 'contact_request';
@@ -41,6 +39,16 @@ interface NotificationItem {
   conversation_id?: string | null;
   sender?: Sender | null;
   _groupKey?: string;
+}
+
+interface ChatRecipient {
+  id: string;
+  name: string;
+  avatar: string;
+  role: string;
+  gender?: string;
+  last_seen?: string;
+  is_photos_blurred?: boolean;
 }
 
 // ── تكوين الأنواع ──────────────────────────────────────────────
@@ -80,61 +88,57 @@ function buildText(n: NotificationItem): string {
   const name   = n.sender?.full_name || 'مستخدم';
   const female = n.sender?.gender === 'female';
   switch (n.type) {
-    case 'like':            return female ? `${name} معجبة بملفك`              : `${name} معجب بملفك`;
-    case 'view':            return female ? `${name} زارت ملفك`                : `${name} زار ملفك`;
-    case 'message':         return female ? `${name} أرسلت لك رسالة`           : `${name} أرسل لك رسالة`;
+    case 'like':            return female ? `${name} معجبة بملفك`           : `${name} معجب بملفك`;
+    case 'view':            return female ? `${name} زارت ملفك`              : `${name} زار ملفك`;
+    case 'message':         return female ? `${name} أرسلت لك رسالة`        : `${name} أرسل لك رسالة`;
     case 'match':           return `يوجد انسجام بينك وبين ${name}`;
-    case 'contact_request': return female ? `${name} أرسلت طلب تواصل`         : `${name} أرسل طلب تواصل`;
-    case 'mediator':        return female ? `الوسيطة ${name} تريد التواصل`    : `الوسيط ${name} يريد التواصل`;
+    case 'contact_request': return female ? `${name} أرسلت طلب تواصل`      : `${name} أرسل طلب تواصل`;
+    case 'mediator':        return female ? `الوسيطة ${name} تريد التواصل` : `الوسيط ${name} يريد التواصل`;
     default:                return n.title || 'إشعار جديد';
   }
 }
 
-// ── التجميع: آخر إشعار لكل (from_user + type) ───────────────
+// ── التجميع ───────────────────────────────────────────────────
 function deduplicateNotifications(list: NotificationItem[]): NotificationItem[] {
   const seen = new Map<string, NotificationItem>();
   for (const n of list) {
     const key = n.from_user ? `${n.from_user}::${n.type}` : n.notification_id;
-    if (!seen.has(key)) {
-      seen.set(key, { ...n, _groupKey: key });
-    }
+    if (!seen.has(key)) seen.set(key, { ...n, _groupKey: key });
   }
   return Array.from(seen.values());
 }
 
-// ── المسار الصحيح (trailingSlash: true) ──────────────────────
-function resolveRoute(n: NotificationItem): string | null {
-  switch (n.type) {
-    case 'message':
-    case 'mediator':
-      return n.conversation_id ? `/chat/?id=${n.conversation_id}` : null;
-
-    case 'like':
-    case 'view':
-    case 'match':
-    case 'contact_request':
-      return n.from_user ? `/view/?id=${n.from_user}` : null;
-
-    case 'subscription':
-      return '/points/';
-
-    default:
-      return null;
-  }
-}
-
 // ── بطاقة الإشعار ─────────────────────────────────────────────
-function NotificationCard({ n, onRead, onNavigate }: {
+function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
   n: NotificationItem;
   onRead: (id: string) => void;
-  onNavigate: (route: string | null) => void;
+  onNavigate: (route: string) => void;
+  onOpenChat: (conversationId: string, sender: Sender) => void;
 }) {
   const cfg  = CONFIG[n.type ?? 'system'] ?? CONFIG.system;
   const Icon = cfg.icon;
 
   const handleClick = () => {
     if (!n.is_read) onRead(n.notification_id);
-    onNavigate(resolveRoute(n));
+
+    // ✅ رسائل ووسيط → overlay مباشر بدون router.push
+    if ((n.type === 'message' || n.type === 'mediator') && n.conversation_id && n.sender) {
+      onOpenChat(n.conversation_id, n.sender);
+      return;
+    }
+
+    // باقي الإشعارات → router.push
+    switch (n.type) {
+      case 'like':
+      case 'view':
+      case 'match':
+      case 'contact_request':
+        if (n.from_user) onNavigate(`/view/?id=${n.from_user}`);
+        break;
+      case 'subscription':
+        onNavigate('/points/');
+        break;
+    }
   };
 
   return (
@@ -155,10 +159,7 @@ function NotificationCard({ n, onRead, onNavigate }: {
       }}
     >
       {!n.is_read && (
-        <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          boxShadow: `inset 3px 0 0 ${cfg.color}`,
-        }} />
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', boxShadow: `inset 3px 0 0 ${cfg.color}` }} />
       )}
 
       <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -167,10 +168,7 @@ function NotificationCard({ n, onRead, onNavigate }: {
           border: `1.5px solid ${n.is_read ? 'var(--glass-border)' : cfg.glow}`,
           boxShadow: n.is_read ? 'none' : `0 6px 20px ${cfg.glow}`,
         }}>
-          <img
-            src={n.sender?.avatar_url || '/default-avatar.png'}
-            alt=""
-            loading="lazy"
+          <img src={n.sender?.avatar_url || '/default-avatar.png'} alt="" loading="lazy"
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
               filter:    n.sender?.is_photos_blurred ? 'blur(10px)' : 'none',
@@ -244,6 +242,11 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filter,        setFilter]        = useState<NotificationFilter>('all');
 
+  // ✅ حالة نافذة الدردشة overlay
+  const [chatOpen,      setChatOpen]      = useState(false);
+  const [chatConvId,    setChatConvId]    = useState<string | null>(null);
+  const [chatRecipient, setChatRecipient] = useState<ChatRecipient | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) setUserId(user.id);
@@ -283,31 +286,35 @@ export default function NotificationsPage() {
     load();
     const ch = supabase
       .channel(`notif:${userId}`)
-      .on('postgres_changes', {
-        event: '*', schema: 'public', table: 'notifications',
-        filter: `id=eq.${userId}`,
-      }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications', filter: `id=eq.${userId}` }, load)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [userId, load]);
 
   const markRead = async (notification_id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n)
-    );
+    setNotifications(prev => prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n));
     await supabase.from('notifications').update({ is_read: true }).eq('notification_id', notification_id);
   };
 
   const markAllRead = async () => {
     if (!userId) return;
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-    await supabase.from('notifications').update({ is_read: true })
-      .eq('id', userId).eq('is_read', false);
+    await supabase.from('notifications').update({ is_read: true }).eq('id', userId).eq('is_read', false);
   };
 
-  const navigate = (route: string | null) => {
-    if (route) router.push(route);
-  };
+  // ✅ فتح الدردشة كـ overlay مباشرة — نفس نهج view/page.tsx
+  const handleOpenChat = useCallback((conversationId: string, sender: Sender) => {
+    setChatConvId(conversationId);
+    setChatRecipient({
+      id:                sender.id,
+      name:              sender.full_name || 'مستخدم',
+      avatar:            sender.avatar_url || '/default-avatar.png',
+      role:              sender.role || 'user',
+      gender:            sender.gender || undefined,
+      is_photos_blurred: sender.is_photos_blurred || false,
+    });
+    setChatOpen(true);
+  }, []);
 
   const deduplicated = useMemo(() => deduplicateNotifications(notifications), [notifications]);
 
@@ -338,83 +345,76 @@ export default function NotificationsPage() {
   );
 
   return (
-    <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 'var(--nav-h)' }}>
+    <>
+      <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 'var(--nav-h)' }}>
 
-      <div style={{
-        position: 'sticky', top: 0, zIndex: 50,
-        padding: 'var(--sp-4) var(--sp-4) var(--sp-3)',
-        background: 'var(--bg-main)',
-        borderBottom: '1px solid var(--glass-border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      }}>
-        <div>
+        <div style={{
+          position: 'sticky', top: 0, zIndex: 50,
+          padding: 'var(--sp-4) var(--sp-4) var(--sp-3)',
+          background: 'var(--bg-main)', borderBottom: '1px solid var(--glass-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            {unreadTotal > 0 && (
+              <p style={{ margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * .72)' }}>
+                {unreadTotal} إشعار غير مقروء
+              </p>
+            )}
+          </div>
           {unreadTotal > 0 && (
-            <p style={{ margin: '3px 0 0', color: 'var(--text-tertiary)', fontSize: 'calc(var(--base-font-size) * .72)' }}>
-              {unreadTotal} إشعار غير مقروء
-            </p>
+            <motion.button whileTap={{ scale: 0.94 }} onClick={markAllRead} style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: 'var(--sp-2) var(--sp-3)', borderRadius: 'var(--radius-lg)',
+              border: '1px solid var(--glass-border)', background: 'rgba(255,255,255,0.04)',
+              color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', fontWeight: 700,
+              cursor: 'pointer', fontFamily: 'inherit',
+            }}>
+              <CheckCheck size={14} /> قراءة الكل
+            </motion.button>
           )}
         </div>
 
-        {unreadTotal > 0 && (
-          <motion.button
-            whileTap={{ scale: 0.94 }}
-            onClick={markAllRead}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: 'var(--sp-2) var(--sp-3)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--glass-border)',
-              background: 'rgba(255,255,255,0.04)',
-              color: 'var(--text-secondary)',
-              fontSize: 'var(--text-xs)', fontWeight: 700,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}
-          >
-            <CheckCheck size={14} />
-            قراءة الكل
-          </motion.button>
+        <NotificationTabs value={filter} onChange={setFilter} counts={counts} />
+
+        {filtered.length === 0 ? (
+          <div style={{ padding: 'var(--sp-16)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-4)' }}>
+            <div style={{ width: 72, height: 72, borderRadius: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+              <Bell size={26} color="rgba(255,255,255,0.25)" />
+            </div>
+            <p style={{ color: 'var(--text-tertiary)', fontWeight: 700, margin: 0, fontSize: 'var(--text-sm)' }}>لا توجد إشعارات</p>
+          </div>
+        ) : (
+          <div style={{ margin: 'var(--sp-4)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', background: 'var(--glass-bg)', border: '1px solid var(--glass-border)' }}>
+            <AnimatePresence initial={false}>
+              {filtered.map(n => (
+                <NotificationCard
+                  key={n._groupKey ?? n.notification_id}
+                  n={n}
+                  onRead={markRead}
+                  onNavigate={route => router.push(route)}
+                  onOpenChat={handleOpenChat}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
         )}
       </div>
 
-      <NotificationTabs
-        value={filter}
-        onChange={setFilter}
-        counts={counts}
-      />
-
-      {filtered.length === 0 ? (
-        <div style={{ padding: 'var(--sp-16)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--sp-4)' }}>
-          <div style={{
-            width: 72, height: 72, borderRadius: 24,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'var(--glass-bg)', border: '1px solid var(--glass-border)',
-          }}>
-            <Bell size={26} color="rgba(255,255,255,0.25)" />
-          </div>
-          <p style={{ color: 'var(--text-tertiary)', fontWeight: 700, margin: 0, fontSize: 'var(--text-sm)' }}>
-            لا توجد إشعارات
-          </p>
-        </div>
-      ) : (
-        <div style={{
-          margin: 'var(--sp-4)',
-          borderRadius: 'var(--radius-xl)',
-          overflow: 'hidden',
-          background: 'var(--glass-bg)',
-          border: '1px solid var(--glass-border)',
-        }}>
-          <AnimatePresence initial={false}>
-            {filtered.map(n => (
-              <NotificationCard
-                key={n._groupKey ?? n.notification_id}
-                n={n}
-                onRead={markRead}
-                onNavigate={navigate}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
-    </div>
+      {/* ✅ ChatWindow كـ overlay — نفس نهج view/page.tsx */}
+      <AnimatePresence>
+        {chatOpen && chatConvId && chatRecipient && userId && (
+          <ChatWindow
+            conversationId={chatConvId}
+            currentUserId={userId}
+            recipient={chatRecipient}
+            onBack={() => {
+              setChatOpen(false);
+              setChatConvId(null);
+              setChatRecipient(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }

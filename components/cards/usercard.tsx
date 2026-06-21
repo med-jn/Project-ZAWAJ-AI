@@ -1,26 +1,41 @@
 'use client';
 /**
  * 📁 components/cards/usercard.tsx — ZAWAJ AI
+ * ✅ منطق الضبابية الصحيح:
+ *    - is_photos_blurred = true  → صورة هذا الشخص مضببة عند الجميع
+ *    - show_photos = false       → المستخدم الحالي يرى الجميع مضببين
+ * ✅ أزرار التفاعل في مكون ActionButtons منفصل (بدون نصوص)
+ * ✅ إصلاح المسافات: bottom يعتمد على --nav-h-safe لدعم كل الهواتف
  */
 
 import { useRef, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter }    from 'next/navigation';
 import {
   motion, useMotionValue, useTransform, animate, PanInfo,
 } from 'framer-motion';
 import { MapPin, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
-import { useGiftCoins } from '@/hooks/useGiftCoins';
+import { supabase }       from '@/lib/supabase/client';
+import { useGiftCoins }   from '@/hooks/useGiftCoins';
+import ActionButtons      from './ActionButtons';
+
+// ── حجم الأزرار — غيّره من مكان واحد ──
+const BTN_SIZE = 62;
 
 export interface UserCardData {
-  id:           string;
-  name:         string;
-  age:          number;
-  gender?:      'male' | 'female';
-  city?:        string;
-  mainPhoto:    string;
-  prefersBlur?: boolean;
-  currentUser?: { id: string } | null;
+  id:            string;
+  name:          string;
+  age:           number;
+  gender?:       'male' | 'female';
+  city?:         string;
+  mainPhoto:     string;
+  /**
+   * is_photos_blurred: خيار صاحب الصورة (يضبب صورته عند الجميع)
+   * showPhotos:        خيار المشاهِد الحالي (false = يضبب كل الصور)
+   */
+  prefersBlur?:  boolean;  // ← is_photos_blurred لصاحب البطاقة
+  showPhotos?:   boolean;  // ← show_photos للمستخدم الحالي
+  currentUser?:  { id: string } | null;
+  distanceKm?:   number | null;
 }
 
 interface UserCardProps {
@@ -44,13 +59,24 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
   const likeOp = useTransform(x, [20, 140], [0, 1]);
   const passOp = useTransform(x, [-140, -20], [1, 0]);
 
+  /**
+   * منطق التضبيب النهائي:
+   * تُضبَّب الصورة إذا:
+   * (أ) صاحبها فعّل is_photos_blurred
+   * (ب) المشاهِد الحالي أوقف show_photos
+   */
+  const shouldBlur = (u.prefersBlur === true) || (u.showPhotos === false);
+
+  // ── تسجيل الإجراء في Supabase ────────────────────────────
   const recordLike = useCallback(async (action: 'like' | 'pass' | 'view') => {
     if (!u.currentUser?.id) return;
     try {
       const opposite = action === 'like' ? 'pass' : action === 'pass' ? 'like' : null;
       if (opposite) {
         await supabase.from('likes').delete()
-          .eq('from_user', u.currentUser.id).eq('to_user', u.id).eq('action', opposite);
+          .eq('from_user', u.currentUser.id)
+          .eq('to_user',   u.id)
+          .eq('action',    opposite);
       }
       await supabase.from('likes').upsert(
         { from_user: u.currentUser.id, to_user: u.id, action },
@@ -59,6 +85,7 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     } catch (e) { console.error('[UserCard]', e); }
   }, [u]);
 
+  // ── السحب والتنفيذ ───────────────────────────────────────
   const swipeTo = useCallback(async (dir: 1 | -1) => {
     if (busy) return;
     const action = dir === 1 ? 'like' : 'pass';
@@ -68,7 +95,10 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
       import('sonner').then(({ toast }) => {
         toast.error(action === 'like' ? 'نقاطك لا تكفي للإعجاب' : 'نقاطك لا تكفي للتخطي', {
           description: `تحتاج ${cost} نقاط`,
-          action: { label: 'اكسب نقاط', onClick: () => { window.location.href = '/points'; } },
+          action: {
+            label:   'اكسب نقاط',
+            onClick: () => { window.location.href = '/points'; },
+          },
           duration: 4000,
         });
       });
@@ -77,7 +107,10 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     }
 
     setBusy(true);
-    const exitAnim = animate(x, dir * 900, { duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] });
+    const exitAnim = animate(x, dir * 900, {
+      duration: 0.35,
+      ease:     [0.25, 0.46, 0.45, 0.94],
+    });
     deduct({ action, target_id: u.id });
     recordLike(action);
     await exitAnim;
@@ -92,10 +125,10 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
   };
 
   const onDragStart = () => { isDragging.current = false; };
-  const onDrag = (_: any, info: PanInfo) => {
+  const onDrag      = (_: any, info: PanInfo) => {
     if (Math.abs(info.offset.x) > 8) isDragging.current = true;
   };
-  const onDragEnd = (_: any, info: PanInfo) => {
+  const onDragEnd   = (_: any, info: PanInfo) => {
     if      (info.offset.x >  110) { flash('like'); swipeTo(1);  }
     else if (info.offset.x < -110) { flash('pass'); swipeTo(-1); }
     else animate(x, 0, { type: 'spring', stiffness: 420, damping: 32 });
@@ -105,20 +138,25 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
     if (!isDragging.current) router.push(`/view?id=${u.id}`);
   };
 
+  // تسجيل المشاهدة مرة واحدة
   if (!hasViewed.current && u.currentUser) {
     hasViewed.current = true;
     recordLike('view');
   }
 
-  // حجم الزر الموحد
-  const BTN_SIZE = 62;
+  // ارتفاع منطقة المعلومات = nav + زر + هواء × 2
+  const INFO_BOTTOM = `calc(var(--nav-h-safe) + ${BTN_SIZE}px + var(--sp-4) + var(--sp-6))`;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', paddingBottom: 'var(--nav-h)' }}>
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden' }}>
 
-      {/* ══ البطاقة ══ */}
+      {/* ══ البطاقة ══════════════════════════════════════════ */}
       <motion.div
-        style={{ x, rotate, opacity: cardOp, position: 'absolute', inset: 0, cursor: 'grab' }}
+        style={{
+          x, rotate, opacity: cardOp,
+          position: 'absolute', inset: 0,
+          cursor: 'grab',
+        }}
         drag="x"
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.38}
@@ -129,183 +167,169 @@ export default function UserCard({ userData: u, onNext }: UserCardProps) {
         onClick={handleCardClick}
         whileDrag={{ cursor: 'grabbing' }}
       >
-        <img src={u.mainPhoto || '/default-avatar.png'} alt={u.name} draggable={false}
+        {/* ── الصورة ── */}
+        <img
+          src={u.mainPhoto || '/default-avatar.png'}
+          alt={u.name}
+          draggable={false}
           style={{
-            position: 'absolute', inset: 0, width: '100%', height: '100%',
-            objectFit: 'cover', userSelect: 'none', pointerEvents: 'none',
-            filter: u.prefersBlur ? 'blur(24px)' : 'none',
-            transform: u.prefersBlur ? 'scale(1.08)' : 'none',
+            position:      'absolute',
+            inset:          0,
+            width:          '100%',
+            height:         '100%',
+            objectFit:      'cover',
+            userSelect:     'none',
+            pointerEvents:  'none',
+            // ✅ التضبيب يجمع العمودين
+            filter:         shouldBlur ? 'blur(24px)' : 'none',
+            transform:      shouldBlur ? 'scale(1.08)' : 'none',
+            transition:     'filter 0.3s ease, transform 0.3s ease',
           }}
         />
 
         {/* تدرج أسفل */}
         <div style={{
-          position: 'absolute', inset: 0, pointerEvents: 'none',
-          background: 'linear-gradient(to top, var(--bg-main) 0%, color-mix(in srgb, var(--bg-main) 55%, transparent) 32%, transparent 58%)',
+          position:      'absolute',
+          inset:          0,
+          pointerEvents: 'none',
+          background:    'linear-gradient(to top, var(--bg-main) 0%, color-mix(in srgb, var(--bg-main) 55%, transparent) 32%, transparent 58%)',
         }} />
 
-        {/* overlays السوايب */}
-        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to left, rgba(34,197,94,0.45) 0%, transparent 55%)', opacity: likeOp }} />
-        <motion.div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'linear-gradient(to right, rgba(164,22,26,0.45) 0%, transparent 55%)', opacity: passOp }} />
+        {/* overlays السحب */}
+        <motion.div style={{
+          position:      'absolute', inset: 0, pointerEvents: 'none',
+          background:    'linear-gradient(to left, rgba(34,197,94,0.45) 0%, transparent 55%)',
+          opacity:        likeOp,
+        }} />
+        <motion.div style={{
+          position:      'absolute', inset: 0, pointerEvents: 'none',
+          background:    'linear-gradient(to right, rgba(164,22,26,0.45) 0%, transparent 55%)',
+          opacity:        passOp,
+        }} />
 
         {/* مؤشر إعجاب */}
         <motion.div style={{
-          position: 'absolute', top: 'var(--sp-10)', right: 'var(--sp-5)',
-          opacity: likeOp, pointerEvents: 'none',
-          border: '2px solid #22c55e', borderRadius: 'var(--radius-md)',
-          padding: '4px 14px', transform: 'rotate(-12deg)',
-          display: 'flex', alignItems: 'center', gap: 6,
+          position:      'absolute',
+          top:            'var(--sp-10)',
+          right:          'var(--sp-5)',
+          opacity:        likeOp,
+          pointerEvents: 'none',
+          border:         '2px solid #22c55e',
+          borderRadius:   'var(--radius-md)',
+          padding:        '4px 14px',
+          transform:      'rotate(-12deg)',
+          display:        'flex',
+          alignItems:     'center',
+          gap:             6,
         }}>
           <ThumbsUp size={15} color="#22c55e" fill="#22c55e" />
-          <span style={{ color: '#22c55e', fontWeight: 900, fontSize: 'var(--text-base)', letterSpacing: '0.06em' }}>إعجاب</span>
+          <span style={{
+            color:         '#22c55e',
+            fontWeight:     900,
+            fontSize:      'var(--text-base)',
+            letterSpacing: '0.06em',
+          }}>إعجاب</span>
         </motion.div>
 
         {/* مؤشر تجاهل */}
         <motion.div style={{
-          position: 'absolute', top: 'var(--sp-10)', left: 'var(--sp-5)',
-          opacity: passOp, pointerEvents: 'none',
-          border: '2px solid var(--color-primary)', borderRadius: 'var(--radius-md)',
-          padding: '4px 14px', transform: 'rotate(12deg)',
-          display: 'flex', alignItems: 'center', gap: 6,
+          position:      'absolute',
+          top:            'var(--sp-10)',
+          left:           'var(--sp-5)',
+          opacity:        passOp,
+          pointerEvents: 'none',
+          border:         '2px solid var(--color-primary)',
+          borderRadius:   'var(--radius-md)',
+          padding:        '4px 14px',
+          transform:      'rotate(12deg)',
+          display:        'flex',
+          alignItems:     'center',
+          gap:             6,
         }}>
           <ThumbsDown size={15} color="var(--color-primary)" />
-          <span style={{ color: 'var(--color-primary)', fontWeight: 900, fontSize: 'var(--text-base)', letterSpacing: '0.06em' }}>تجاهل</span>
+          <span style={{
+            color:         'var(--color-primary)',
+            fontWeight:     900,
+            fontSize:      'var(--text-base)',
+            letterSpacing: '0.06em',
+          }}>تجاهل</span>
         </motion.div>
 
         {/* ── الاسم + العمر + المدينة ── */}
-        {/* bottom يترك مسافة كافية فوق الأزرار: nav + زر(62) + مسافة(sp-4) + gap(sp-3) */}
         <div style={{
-          position: 'absolute', insetInlineStart: 0, insetInlineEnd: 0,
-          bottom: `calc(var(--nav-h) + ${BTN_SIZE}px + var(--sp-4) + var(--sp-6))`,
-          padding: '0 var(--sp-5)', direction: 'rtl', pointerEvents: 'none',
+          position:         'absolute',
+          insetInlineStart:  0,
+          insetInlineEnd:    0,
+          bottom:            INFO_BOTTOM,
+          padding:           '0 var(--sp-5)',
+          direction:         'rtl',
+          pointerEvents:     'none',
         }}>
-          {/* الاسم */}
           <h2 style={{
-            margin: '0 0 var(--sp-2)',
-            color: 'var(--color-secondary)',   // ← var(--color-secondary)
-            fontWeight: 900,
-            fontSize: 'var(--text-2xl)',
+            margin:     '0 0 var(--sp-2)',
+            color:      'var(--color-secondary)',
+            fontWeight:  900,
+            fontSize:   'var(--text-2xl)',
             lineHeight: 'var(--lh-tight)',
-            textShadow: 'none',                // ← بدون ظل
+            textShadow: 'none',
           }}>
             {u.name}
           </h2>
 
-          {/* العمر + المدينة */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+          <div style={{
+            display:    'flex',
+            alignItems: 'center',
+            gap:        'var(--sp-3)',
+            flexWrap:   'wrap',
+          }}>
             {!!u.age && (
               <span style={{
-                color: 'var(--color-secondary)', // ← var(--color-secondary)
-                fontWeight: 700,
-                fontSize: 'var(--text-md)',
-                textShadow: 'none',              // ← بدون ظل
+                color:      'var(--color-secondary)',
+                fontWeight:  700,
+                fontSize:   'var(--text-md)',
+                textShadow: 'none',
               }}>
                 {u.age} سنة
               </span>
             )}
             {u.city && (
               <span style={{
-                display: 'flex', alignItems: 'center', gap: 'var(--sp-1)',
-                color: 'var(--color-secondary)', // ← var(--color-secondary)
-                fontSize: 'var(--text-sm)',
-                textShadow: 'none',              // ← بدون ظل
+                display:    'flex',
+                alignItems: 'center',
+                gap:        'var(--sp-1)',
+                color:      'var(--color-secondary)',
+                fontSize:   'var(--text-sm)',
+                textShadow: 'none',
               }}>
                 <MapPin size={12} style={{ flexShrink: 0 }} />{u.city}
+              </span>
+            )}
+            {/* المسافة إن وُجدت */}
+            {u.distanceKm != null && (
+              <span style={{
+                color:     'var(--color-secondary)',
+                fontSize:  'var(--text-sm)',
+                opacity:    0.75,
+              }}>
+                {u.distanceKm < 1
+                  ? '< 1 كم'
+                  : `${Math.round(u.distanceKm)} كم`
+                }
               </span>
             )}
           </div>
         </div>
       </motion.div>
 
-      {/* ══ الأزرار ══ */}
-      <div style={{
-        position: 'fixed',
-        left: 0, right: 0,
-        bottom: 'calc(var(--nav-h) + var(--sp-4))',
-        zIndex: 180,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'clamp(56px, 18vw, 100px)', // ← أبعد عن بعضهما
-      }}>
-
-        {/* إعجاب */}
-        <Btn3D
-          variant="like"
-          size={BTN_SIZE}
-          active={likeFlash}
-          busy={busy}
-          onClick={() => { flash('like'); swipeTo(1); }}
-          icon={<ThumbsUp size={24} color="#ffffff" fill="#ffffff" strokeWidth={1.4} />}
-        />
-
-        {/* تجاهل */}
-        <Btn3D
-          variant="pass"
-          size={BTN_SIZE}
-          active={passFlash}
-          busy={busy}
-          onClick={() => { flash('pass'); swipeTo(-1); }}
-          icon={<ThumbsDown size={24} color="#fff" strokeWidth={2} />}
-        />
-      </div>
+      {/* ══ أزرار التفاعل ═══════════════════════════════════ */}
+      <ActionButtons
+        onLike={() => { flash('like'); swipeTo(1);  }}
+        onPass={() => { flash('pass'); swipeTo(-1); }}
+        likeFlash={likeFlash}
+        passFlash={passFlash}
+        busy={busy}
+        size={BTN_SIZE}
+      />
     </div>
-  );
-}
-
-// ── زر ثلاثي الأبعاد ──────────────────────────────────────────
-function Btn3D({ variant, size, active, busy, onClick, icon }: {
-  variant: 'like' | 'pass';
-  size:    number;
-  active:  boolean;
-  busy?:   boolean;
-  onClick: () => void;
-  icon:    React.ReactNode;
-}) {
-  const isLike = variant === 'like';
-
-  const faceColor = isLike
-    ? active ? 'linear-gradient(145deg,#e8293f 0%,#a3001a 100%)' : 'linear-gradient(145deg,#c8002c 0%,#8a0018 100%)'
-    : active ? 'linear-gradient(145deg,#555570 0%,#35354a 100%)' : 'linear-gradient(145deg,#3a3a52 0%,#22223a 100%)';
-
-  const depthColor = isLike ? '#5a000e' : '#0e0e1e';
-
-  const glowColor = isLike
-    ? active ? 'rgba(200,0,44,0.65)' : 'rgba(192,0,42,0.38)'
-    : active ? 'rgba(80,80,120,0.5)' : 'rgba(30,30,60,0.35)';
-
-  const boxShadow = active
-    ? `0 2px 0 ${depthColor}, 0 4px 14px ${glowColor}, inset 0 2px 4px rgba(0,0,0,0.35)`
-    : `0 5px 0 ${depthColor}, 0 8px 22px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.22)`;
-
-  return (
-    <motion.button
-      onClick={onClick}
-      disabled={busy}
-      whileTap={{ scale: 0.84, y: 4 }}
-      whileHover={{ scale: 1.07, y: -2 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 22 }}
-      style={{
-        width: size, height: size,
-        borderRadius: '50%',
-        border: 'none', outline: 'none',
-        cursor: busy ? 'not-allowed' : 'pointer',
-        opacity: busy ? 0.4 : 1,
-        flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative', overflow: 'hidden',
-        background: faceColor,
-        color: '#fff',
-        boxShadow,
-        transition: 'box-shadow 0.18s, background 0.18s',
-      }}
-    >
-      <div style={{
-        position: 'absolute', inset: 0, borderRadius: '50%',
-        background: 'radial-gradient(ellipse at 38% 22%, rgba(255,255,255,0.22) 0%, transparent 62%)',
-        pointerEvents: 'none',
-      }} />
-      {icon}
-    </motion.button>
   );
 }
