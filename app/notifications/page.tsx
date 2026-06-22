@@ -3,9 +3,10 @@
  * 📁 app/notifications/page.tsx — ZAWAJ AI
  * ✅ رسائل تفتح ChatWindow كـ overlay (نفس نهج view/page.tsx)
  * ✅ باقي الإشعارات router.push كالمعتاد
+ * ✅ userIdRef لضمان القراءة الفورية عند فتح ChatWindow
  */
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -16,7 +17,6 @@ import { supabase } from '@/lib/supabase/client';
 import NotificationTabs, { type NotificationFilter } from '@/components/notifications/NotificationTabs';
 import ChatWindow from '@/components/chat/ChatWindow';
 
-// ── أنواع ─────────────────────────────────────────────────────
 type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system' | 'contact_request';
 
 interface Sender {
@@ -51,7 +51,6 @@ interface ChatRecipient {
   is_photos_blurred?: boolean;
 }
 
-// ── تكوين الأنواع ──────────────────────────────────────────────
 const CONFIG: Record<string, { icon: any; color: string; bg: string; glow: string }> = {
   like:            { icon: Heart,         color: '#ef4444', bg: 'rgba(239,68,68,0.12)',    glow: 'rgba(239,68,68,0.45)'    },
   view:            { icon: Eye,           color: '#d4af37', bg: 'rgba(212,175,55,0.12)',   glow: 'rgba(212,175,55,0.45)'   },
@@ -63,7 +62,6 @@ const CONFIG: Record<string, { icon: any; color: string; bg: string; glow: strin
   system:          { icon: Bell,          color: '#ffffff', bg: 'rgba(255,255,255,0.08)',  glow: 'rgba(255,255,255,0.18)'  },
 };
 
-// ── وقت نسبي ──────────────────────────────────────────────────
 function timeAgo(dateStr: string): string {
   const s = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
   if (s < 15)  return 'الآن';
@@ -82,7 +80,6 @@ function timeAgo(dateStr: string): string {
   return 'منذ مدة';
 }
 
-// ── نص الإشعار ────────────────────────────────────────────────
 function buildText(n: NotificationItem): string {
   if (n.message) return n.message;
   const name   = n.sender?.full_name || 'مستخدم';
@@ -98,7 +95,6 @@ function buildText(n: NotificationItem): string {
   }
 }
 
-// ── التجميع ───────────────────────────────────────────────────
 function deduplicateNotifications(list: NotificationItem[]): NotificationItem[] {
   const seen = new Map<string, NotificationItem>();
   for (const n of list) {
@@ -108,7 +104,6 @@ function deduplicateNotifications(list: NotificationItem[]): NotificationItem[] 
   return Array.from(seen.values());
 }
 
-// ── بطاقة الإشعار ─────────────────────────────────────────────
 function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
   n: NotificationItem;
   onRead: (id: string) => void;
@@ -127,7 +122,6 @@ function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
       return;
     }
 
-    // باقي الإشعارات → router.push
     switch (n.type) {
       case 'like':
       case 'view':
@@ -233,34 +227,38 @@ function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
   );
 }
 
-// ── الصفحة ────────────────────────────────────────────────────
 export default function NotificationsPage() {
   const router = useRouter();
 
-  const [userId,        setUserId]        = useState<string | null>(null);
+  // ✅ useRef لضمان أن userId متاح فوراً عند فتح ChatWindow
+  const [userId,  setUserId]  = useState<string | null>(null);
+  const userIdRef             = useRef<string | null>(null);
+
   const [loading,       setLoading]       = useState(true);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [filter,        setFilter]        = useState<NotificationFilter>('all');
 
-  // ✅ حالة نافذة الدردشة overlay
   const [chatOpen,      setChatOpen]      = useState(false);
   const [chatConvId,    setChatConvId]    = useState<string | null>(null);
   const [chatRecipient, setChatRecipient] = useState<ChatRecipient | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setUserId(user.id);
+      if (user) {
+        setUserId(user.id);
+        userIdRef.current = user.id;
+      }
     });
   }, []);
 
   const load = useCallback(async () => {
-    if (!userId) return;
+    if (!userIdRef.current) return;
     setLoading(true);
 
     const { data, error } = await supabase
       .from('notifications')
       .select('notification_id,type,title,message,is_read,created_at,from_user,conversation_id')
-      .eq('id', userId)
+      .eq('id', userIdRef.current)
       .order('created_at', { ascending: false });
 
     if (error || !data) { setLoading(false); return; }
@@ -279,7 +277,7 @@ export default function NotificationsPage() {
 
     setNotifications(items);
     setLoading(false);
-  }, [userId]);
+  }, []);
 
   useEffect(() => {
     if (!userId) return;
@@ -302,15 +300,14 @@ export default function NotificationsPage() {
     await supabase.from('notifications').update({ is_read: true }).eq('id', userId).eq('is_read', false);
   };
 
-  // ✅ فتح الدردشة كـ overlay مباشرة — نفس نهج view/page.tsx
   const handleOpenChat = useCallback((conversationId: string, sender: Sender) => {
     setChatConvId(conversationId);
     setChatRecipient({
       id:                sender.id,
-      name:              sender.full_name || 'مستخدم',
+      name:              sender.full_name  || 'مستخدم',
       avatar:            sender.avatar_url || '/default-avatar.png',
-      role:              sender.role || 'user',
-      gender:            sender.gender || undefined,
+      role:              sender.role       || 'user',
+      gender:            sender.gender     || undefined,
       is_photos_blurred: sender.is_photos_blurred || false,
     });
     setChatOpen(true);
@@ -400,12 +397,12 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* ✅ ChatWindow كـ overlay — نفس نهج view/page.tsx */}
+      {/* ✅ ChatWindow overlay — zIndex 1100 يتجاوز PageHeader */}
       <AnimatePresence>
-        {chatOpen && chatConvId && chatRecipient && userId && (
+        {chatOpen && chatConvId && chatRecipient && userIdRef.current && (
           <ChatWindow
             conversationId={chatConvId}
-            currentUserId={userId}
+            currentUserId={userIdRef.current}
             recipient={chatRecipient}
             onBack={() => {
               setChatOpen(false);

@@ -12,7 +12,7 @@ export default function StickySubHeader({ label, count, children }: Props) {
       style={{
         position:     'sticky',
         top:          'var(--header-h-safe)', // أسفل الـ TopBar
-        zIndex:       900,
+        zIndex:       800,
         background:   'var(--bg-surface)',
         borderBottom: '1px solid var(--glass-border)',
         padding:      'var(--sp-2) var(--sp-4)',

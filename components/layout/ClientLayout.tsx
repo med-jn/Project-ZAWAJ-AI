@@ -43,6 +43,8 @@ function getTitle(path: string) {
 
 export default function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const hideNavbarRoutes = ['/chat', '/profile/edit'];
+  const isHiddenRoute = hideNavbarRoutes.some(route => pathname?.startsWith(route));
   const router   = useRouter();
 
   const [userId, setUserId] = useState<string | undefined>(undefined);
@@ -124,7 +126,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
         {children}
       </main>
 
-      {showNavbar && !isChat && (
+      {showNavbar && !isHiddenRoute && (
         <Navbar
           activeTab={getActiveTab()}
           onTabClick={route => router.push('/' + route)}

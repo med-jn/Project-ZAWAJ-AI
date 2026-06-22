@@ -441,6 +441,7 @@ export default function HomePage() {
           distanceKm:  (c as any).distance_km ?? null,
         }}
         onNext={handleNext}
+        nextUserPhoto={users[(safeIndex + 1) % users.length]?.avatar_url ?? null}
       />
     </div>
   );

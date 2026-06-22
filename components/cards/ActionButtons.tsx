@@ -1,13 +1,23 @@
 'use client';
 /**
- * 📁 components/cards/ActionButtons.tsx — ZAWAJ AI
- * مكون مستقل لأزرار الإعجاب والتجاهل
- * ✅ أزرار مستديرة ثلاثية الأبعاد — بدون نصوص
- * ✅ يمكن تخصيص الحجم والأيقونات من الخارج
+ * 📁 components/cards/ActionButtons.tsx — ZAWAJ AI Premium
+ * ✅ زجاج نقي شفاف — بدون أي لون
+ * ✅ إعجاب يمين / تجاهل يسار (RTL منطقي)
+ * ✅ لمعان فقط عند التفعيل
+ * ✅ haptic feedback عبر Capacitor
  */
 
-import { motion } from 'framer-motion';
+import { motion }           from 'framer-motion';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
+
+// Haptic خفيف عبر Capacitor — يتجاهل الخطأ إن لم يكن متاحاً
+async function haptic(style: 'light' | 'medium' | 'heavy' = 'light') {
+  try {
+    const { Haptics, ImpactStyle } = await import('@capacitor/haptics');
+    const map = { light: ImpactStyle.Light, medium: ImpactStyle.Medium, heavy: ImpactStyle.Heavy };
+    await Haptics.impact({ style: map[style] });
+  } catch {}
+}
 
 export interface ActionButtonsProps {
   onLike:    () => void;
@@ -15,7 +25,6 @@ export interface ActionButtonsProps {
   likeFlash: boolean;
   passFlash: boolean;
   busy?:     boolean;
-  /** حجم الزر بالبكسل — افتراضي 62 */
   size?:     number;
 }
 
@@ -25,120 +34,153 @@ export default function ActionButtons({
   likeFlash,
   passFlash,
   busy,
-  size = 62,
+  size = 66,
 }: ActionButtonsProps) {
+  const iconSize = Math.round(size * 0.40);
+
+  const handleLike = () => { haptic('medium'); onLike(); };
+  const handlePass = () => { haptic('light');  onPass(); };
+
   return (
     <div style={{
-      position:        'fixed',
+      position:       'fixed',
       left:            0,
       right:           0,
-      // safe-area + nav + مسافة هواء
-      bottom:          'calc(var(--nav-h-safe) + var(--sp-4))',
+      bottom:         'calc(var(--nav-h-safe) + var(--sp-5))',
       zIndex:          180,
-      display:         'flex',
-      alignItems:      'center',
-      justifyContent:  'center',
-      gap:             'clamp(56px, 18vw, 100px)',
-      // منع أي تداخل مع عناصر البطاقة
-      pointerEvents:   'none',
+      display:        'flex',
+      alignItems:     'center',
+      justifyContent: 'center',
+      gap:            'clamp(64px, 20vw, 112px)',
+      pointerEvents:  'none',
     }}>
-      {/* زر الإعجاب */}
-      <Btn3D
-        variant="like"
-        size={size}
-        active={likeFlash}
-        busy={busy}
-        onClick={onLike}
-        icon={<ThumbsUp size={Math.round(size * 0.38)} color="#ffffff" fill="#ffffff" strokeWidth={1.4} />}
-      />
 
-      {/* زر التجاهل */}
-      <Btn3D
+      {/* تجاهل — يسار */}
+      <GlassBtn
         variant="pass"
         size={size}
-        active={passFlash}
+        flash={passFlash}
         busy={busy}
-        onClick={onPass}
-        icon={<ThumbsDown size={Math.round(size * 0.38)} color="#fff" strokeWidth={2} />}
+        onClick={handlePass}
+        icon={
+          <ThumbsDown
+            size={iconSize}
+            strokeWidth={1.8}
+            style={{ color: 'rgba(255,255,255,0.85)' }}
+          />
+        }
+      />
+
+      {/* إعجاب — يمين */}
+      <GlassBtn
+        variant="like"
+        size={size}
+        flash={likeFlash}
+        busy={busy}
+        onClick={handleLike}
+        icon={
+          <ThumbsUp
+            size={iconSize}
+            strokeWidth={1.8}
+            fill="rgba(255,255,255,0.85)"
+            style={{ color: 'rgba(255,255,255,0.85)' }}
+          />
+        }
       />
     </div>
   );
 }
 
-// ── زر ثلاثي الأبعاد ──────────────────────────────────────────
-function Btn3D({
-  variant,
-  size,
-  active,
-  busy,
-  onClick,
-  icon,
-}: {
+function GlassBtn({ variant, size, flash, busy, onClick, icon }: {
   variant: 'like' | 'pass';
   size:    number;
-  active:  boolean;
+  flash:   boolean;
   busy?:   boolean;
   onClick: () => void;
   icon:    React.ReactNode;
 }) {
-  const isLike = variant === 'like';
-
-  const faceColor = isLike
-    ? active
-      ? 'linear-gradient(145deg,#e8293f 0%,#a3001a 100%)'
-      : 'linear-gradient(145deg,#c8002c 0%,#8a0018 100%)'
-    : active
-      ? 'linear-gradient(145deg,#555570 0%,#35354a 100%)'
-      : 'linear-gradient(145deg,#3a3a52 0%,#22223a 100%)';
-
-  const depthColor = isLike ? '#5a000e' : '#0e0e1e';
-
-  const glowColor = isLike
-    ? active ? 'rgba(200,0,44,0.65)' : 'rgba(192,0,42,0.38)'
-    : active ? 'rgba(80,80,120,0.5)' : 'rgba(30,30,60,0.35)';
-
-  const boxShadow = active
-    ? `0 2px 0 ${depthColor}, 0 4px 14px ${glowColor}, inset 0 2px 4px rgba(0,0,0,0.35)`
-    : `0 5px 0 ${depthColor}, 0 8px 22px ${glowColor}, inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.22)`;
+  const glowRgb = variant === 'like' ? '34,197,94' : '220,38,38';
 
   return (
     <motion.button
       onClick={onClick}
       disabled={busy}
-      whileTap={{ scale: 0.84, y: 4 }}
-      whileHover={{ scale: 1.07, y: -2 }}
-      transition={{ type: 'spring', stiffness: 500, damping: 22 }}
+      initial={false}
+      animate={{
+        boxShadow: flash
+          ? `0 0 0 1.5px rgba(${glowRgb},0.6),
+             0 0 28px 6px rgba(${glowRgb},0.35),
+             0 6px 0 rgba(0,0,0,0.30),
+             inset 0 1px 0 rgba(255,255,255,0.50),
+             inset 0 -1px 0 rgba(0,0,0,0.16)`
+          : `0 6px 0 rgba(0,0,0,0.26),
+             0 2px 20px rgba(0,0,0,0.20),
+             inset 0 1px 0 rgba(255,255,255,0.38),
+             inset 0 -1px 0 rgba(0,0,0,0.12)`,
+        filter: flash
+          ? `brightness(1.4) drop-shadow(0 0 10px rgba(${glowRgb},0.55))`
+          : 'brightness(1) drop-shadow(0 2px 8px rgba(0,0,0,0.25))',
+      }}
+      transition={{ type: 'spring', stiffness: 480, damping: 20 }}
+      whileTap={{ scale: 0.80, y: 5,
+        transition: { type: 'spring', stiffness: 600, damping: 18 } }}
+      whileHover={{ scale: 1.07, y: -2,
+        transition: { type: 'spring', stiffness: 400, damping: 22 } }}
       style={{
-        width:          size,
-        height:         size,
+        width:           size,
+        height:          size,
         borderRadius:   '50%',
-        border:         'none',
+        border:         '1px solid rgba(255,255,255,0.24)',
         outline:        'none',
-        cursor:         busy ? 'not-allowed' : 'pointer',
-        opacity:        busy ? 0.4 : 1,
-        flexShrink:     0,
+        cursor:          busy ? 'not-allowed' : 'pointer',
+        opacity:         busy ? 0.32 : 1,
+        flexShrink:      0,
         display:        'flex',
         alignItems:     'center',
         justifyContent: 'center',
         position:       'relative',
         overflow:       'hidden',
-        background:     faceColor,
-        color:          '#fff',
-        boxShadow,
-        transition:     'box-shadow 0.18s, background 0.18s',
-        // إعادة pointerEvents للأزرار نفسها (الحاوي disabled)
-        pointerEvents:  busy ? 'none' : 'auto',
+        background:     'rgba(255,255,255,0.08)',
+        backdropFilter: 'blur(20px) saturate(180%)',
+        WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+        pointerEvents:   busy ? 'none' : 'auto',
       }}
     >
-      {/* بريق علوي */}
+      {/* انعكاس ضوء علوي */}
       <div style={{
         position:     'absolute',
-        inset:        0,
-        borderRadius: '50%',
-        background:   'radial-gradient(ellipse at 38% 22%, rgba(255,255,255,0.22) 0%, transparent 62%)',
-        pointerEvents: 'none',
+        top: 0, left: 0, right: 0,
+        height:      '50%',
+        borderRadius:'50% 50% 0 0',
+        background:  'linear-gradient(180deg,rgba(255,255,255,0.24) 0%,transparent 100%)',
+        pointerEvents:'none',
       }} />
-      {icon}
+
+      {/* وميض اللون عند التفعيل */}
+      <motion.div
+        animate={{ opacity: flash ? 1 : 0, scale: flash ? 1.1 : 0.5 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        style={{
+          position:     'absolute',
+          inset:         0,
+          borderRadius: '50%',
+          background:   `radial-gradient(circle at 50% 44%, rgba(${glowRgb},0.30) 0%, transparent 68%)`,
+          pointerEvents:'none',
+        }}
+      />
+
+      {/* خط حافة سفلية — عمق */}
+      <div style={{
+        position:     'absolute',
+        bottom:        0,
+        left:         '12%', right: '12%',
+        height:        1,
+        background:   'rgba(0,0,0,0.22)',
+        borderRadius: '50%',
+        pointerEvents:'none',
+      }} />
+
+      <div style={{ position: 'relative', zIndex: 1 }}>{icon}</div>
     </motion.button>
   );
 }
