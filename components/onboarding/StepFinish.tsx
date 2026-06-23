@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Camera, ShieldCheck, Eye, EyeOff, Check, ExternalLink } from 'lucide-react';
 
+import { Toggle } from '@/components/ui/Toggle';
 import type { FD } from './types';
 
 interface AgreementState {
@@ -22,25 +23,13 @@ interface Props {
   agreementsError?: string;
 }
 
-/* ── بطاقة موافقة واحدة ────────────────────────── */
+/* ── بطاقة موافقة ───────────────────────────── */
 function AgreementCard({
-  checked,
-  onChange,
-  icon,
-  title,
-  subtitle,
-  linkLabel,
-  linkHref,
-  hasError,
+  checked, onChange, icon, title, subtitle, linkLabel, linkHref, hasError,
 }: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  icon: React.ReactNode;
-  title: string;
-  subtitle: string;
-  linkLabel?: string;
-  linkHref?: string;
-  hasError?: boolean;
+  checked: boolean; onChange: (v: boolean) => void;
+  icon: React.ReactNode; title: string; subtitle: string;
+  linkLabel?: string; linkHref?: string; hasError?: boolean;
 }) {
   return (
     <motion.button
@@ -59,15 +48,11 @@ function AgreementCard({
         }`,
         borderRadius: 'var(--radius-lg)',
         padding: 'var(--sp-4)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'var(--sp-3)',
-        cursor: 'pointer',
-        transition: 'all 0.22s ease',
+        display: 'flex', alignItems: 'center', gap: 'var(--sp-3)',
+        cursor: 'pointer', transition: 'all 0.22s ease',
         WebkitTapHighlightColor: 'transparent',
         boxShadow: checked ? '0 4px 20px var(--shadow-red-glow)' : 'none',
-        textAlign: 'right',
-        direction: 'rtl',
+        textAlign: 'right', direction: 'rtl',
       }}
     >
       {/* Checkbox */}
@@ -118,8 +103,7 @@ function AgreementCard({
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 4,
               fontSize: 'var(--text-2xs)', color: 'var(--color-primary)',
-              fontWeight: 700, marginTop: 4,
-              textDecoration: 'none',
+              fontWeight: 700, marginTop: 4, textDecoration: 'none',
               WebkitTapHighlightColor: 'transparent',
             }}
           >
@@ -144,80 +128,8 @@ function AgreementCard({
   );
 }
 
-/* ── Toggle الخصوصية ────────────────────────── */
-function PrivacyToggle({
-  enabled, onToggle, icon, title, subtitle, activeSubtitle,
-}: {
-  enabled: boolean; onToggle: () => void;
-  icon: React.ReactNode; title: string;
-  subtitle: string; activeSubtitle: string;
-}) {
-  return (
-    <motion.button
-      type="button"
-      whileTap={{ scale: 0.97 }}
-      onClick={onToggle}
-      style={{
-        width: '100%',
-        background: enabled ? 'var(--color-primary-soft)' : 'var(--glass-bg)',
-        backdropFilter: 'var(--glass-blur)',
-        WebkitBackdropFilter: 'var(--glass-blur)',
-        border: `1.5px solid ${enabled ? 'var(--color-primary)' : 'var(--glass-border)'}`,
-        borderRadius: 'var(--radius-lg)',
-        padding: 'var(--sp-4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        cursor: 'pointer', transition: 'all 0.22s',
-        WebkitTapHighlightColor: 'transparent',
-        boxShadow: enabled ? '0 4px 16px var(--shadow-red-glow)' : 'none',
-        direction: 'rtl',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
-        <div style={{
-          width: 40, height: 40, borderRadius: 'var(--radius-md)', flexShrink: 0,
-          background: enabled ? 'var(--color-primary)' : 'var(--bg-soft)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.2s',
-          boxShadow: enabled ? '0 4px 12px var(--shadow-red-glow)' : 'none',
-        }}>
-          <span style={{ color: enabled ? '#fff' : 'var(--text-tertiary)', display: 'flex' }}>
-            {icon}
-          </span>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <p style={{
-            fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0,
-            color: enabled ? 'var(--text-main)' : 'var(--text-secondary)',
-          }}>{title}</p>
-          <p style={{
-            fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', margin: '2px 0 0',
-          }}>{enabled ? activeSubtitle : subtitle}</p>
-        </div>
-      </div>
-
-      {/* Toggle pill */}
-      <div style={{
-        width: 44, height: 24, borderRadius: 99, flexShrink: 0,
-        background: enabled ? 'var(--color-primary)' : 'var(--bg-elevated)',
-        border: '1.5px solid var(--border-soft)',
-        position: 'relative', transition: 'background 0.2s',
-      }}>
-        <motion.div
-          animate={{ x: enabled ? 20 : 2 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-          style={{
-            position: 'absolute', top: 2,
-            width: 16, height: 16, borderRadius: '50%',
-            background: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
-          }}
-        />
-      </div>
-    </motion.button>
-  );
-}
-
 /* ══════════════════════════════════════════
-   المكوّن الرئيسي للخطوة الأخيرة
+   المكوّن الرئيسي
 ══════════════════════════════════════════ */
 export default function StepFinish({
   form, errs, set,
@@ -239,7 +151,6 @@ export default function StepFinish({
         onChange={e => {
           const f = e.target.files?.[0];
           if (f) onFileSelect(f);
-          // Reset input للسماح بإعادة اختيار نفس الملف
           e.target.value = '';
         }}
       />
@@ -265,12 +176,10 @@ export default function StepFinish({
             ? '0 0 40px var(--shadow-red-glow), inset 0 1px 0 rgba(255,255,255,0.08)'
             : 'var(--shadow-soft), inset 0 1px 0 rgba(255,255,255,0.05)',
           transition: 'all 0.3s ease',
-          overflow: 'hidden',
-          cursor: 'pointer',
+          overflow: 'hidden', cursor: 'pointer',
           marginBottom: 'var(--sp-2)',
         }}
       >
-        {/* بريق خلفي */}
         {!imgPreview && (
           <div style={{
             position: 'absolute', top: '-50%', left: '50%',
@@ -342,12 +251,9 @@ export default function StepFinish({
 
       {/* ══ معايير الصورة ══════════════════════ */}
       <div style={{
-        borderRadius: 'var(--radius-lg)',
-        marginBottom: 'var(--sp-5)',
-        padding: 'var(--sp-4)',
-        background: 'var(--glass-bg)',
-        backdropFilter: 'var(--glass-blur)',
-        WebkitBackdropFilter: 'var(--glass-blur)',
+        borderRadius: 'var(--radius-lg)', marginBottom: 'var(--sp-5)',
+        padding: 'var(--sp-4)', background: 'var(--glass-bg)',
+        backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
         border: '1px solid var(--glass-border)',
       }}>
         <p style={{
@@ -371,29 +277,89 @@ export default function StepFinish({
         </div>
       </div>
 
-      {/* ══ خصوصية الصورة ══════════════════════ */}
+      {/* ══ خصوصية الصورة — Toggle الموحّد ════ */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)', marginBottom: 'var(--sp-6)' }}>
-        <PrivacyToggle
-          enabled={form.is_photos_blurred}
-          onToggle={() => set('is_photos_blurred', !form.is_photos_blurred)}
-          icon={<ShieldCheck size={20} />}
-          title="تضبيب الصورة"
-          subtitle="اضغط لحماية خصوصيتك"
-          activeSubtitle="مفعّل — صورتك محمية"
-        />
-        <PrivacyToggle
-          enabled={!form.show_photos}
-          onToggle={() => set('show_photos', !form.show_photos)}
-          icon={form.show_photos ? <Eye size={20} /> : <EyeOff size={20} />}
-          title={form.show_photos ? 'رؤية صور الأعضاء' : 'إخفاء صور الأعضاء'}
-          subtitle="ستظهر الصور عادياً"
-          activeSubtitle="مفعّل — ستُضبَّب كل الصور"
-        />
+
+        {/* تضبيب صورتي */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: 'var(--sp-4)',
+          background: form.is_photos_blurred ? 'var(--color-primary-soft)' : 'var(--glass-bg)',
+          backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
+          border: `1.5px solid ${form.is_photos_blurred ? 'var(--color-primary)' : 'var(--glass-border)'}`,
+          borderRadius: 'var(--radius-lg)',
+          transition: 'all 0.22s ease',
+          boxShadow: form.is_photos_blurred ? '0 4px 16px var(--shadow-red-glow)' : 'none',
+          direction: 'rtl',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 'var(--radius-md)', flexShrink: 0,
+              background: form.is_photos_blurred ? 'var(--color-primary)' : 'var(--bg-soft)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              boxShadow: form.is_photos_blurred ? '0 4px 12px var(--shadow-red-glow)' : 'none',
+            }}>
+              <ShieldCheck size={20} style={{ color: form.is_photos_blurred ? '#fff' : 'var(--text-tertiary)' }} />
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
+                تضبيب الصورة
+              </p>
+              <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', margin: '2px 0 0' }}>
+                {form.is_photos_blurred ? 'مفعّل — صورتك محمية' : 'اضغط لحماية خصوصيتك'}
+              </p>
+            </div>
+          </div>
+          <Toggle
+            value={form.is_photos_blurred}
+            onChange={v => set('is_photos_blurred', v)}
+          />
+        </div>
+
+        {/* إظهار صور الأعضاء */}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: 'var(--sp-4)',
+          background: !form.show_photos ? 'var(--color-primary-soft)' : 'var(--glass-bg)',
+          backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
+          border: `1.5px solid ${!form.show_photos ? 'var(--color-primary)' : 'var(--glass-border)'}`,
+          borderRadius: 'var(--radius-lg)',
+          transition: 'all 0.22s ease',
+          boxShadow: !form.show_photos ? '0 4px 16px var(--shadow-red-glow)' : 'none',
+          direction: 'rtl',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-3)' }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 'var(--radius-md)', flexShrink: 0,
+              background: !form.show_photos ? 'var(--color-primary)' : 'var(--bg-soft)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              transition: 'all 0.2s',
+              boxShadow: !form.show_photos ? '0 4px 12px var(--shadow-red-glow)' : 'none',
+            }}>
+              {form.show_photos
+                ? <Eye     size={20} style={{ color: 'var(--text-tertiary)' }} />
+                : <EyeOff  size={20} style={{ color: '#fff' }} />
+              }
+            </div>
+            <div>
+              <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
+                {form.show_photos ? 'رؤية صور الأعضاء' : 'إخفاء صور الأعضاء'}
+              </p>
+              <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', margin: '2px 0 0' }}>
+                {form.show_photos ? 'ستظهر الصور عادياً' : 'مفعّل — ستُضبَّب كل الصور'}
+              </p>
+            </div>
+          </div>
+          <Toggle
+            value={!form.show_photos}
+            onChange={v => set('show_photos', !v)}
+          />
+        </div>
+
       </div>
 
-      {/* ══ الموافقات الثلاث ════════════════════
-          تصميم احترافي — كل خانة مستقلة واضحة
-      ══════════════════════════════════════════ */}
+      {/* ══ الموافقات الثلاث ════════════════════ */}
       <div style={{ marginBottom: 'var(--sp-2)' }}>
         <p style={{
           fontSize: 'var(--text-2xs)', fontWeight: 800, letterSpacing: '0.2em',
@@ -443,10 +409,8 @@ export default function StepFinish({
           >{agreementsError}</motion.p>
         )}
 
-        {/* شريط التقدم للموافقات */}
-        <div style={{
-          display: 'flex', gap: 6, marginTop: 'var(--sp-4)', alignItems: 'center',
-        }}>
+        {/* شريط تقدم الموافقات */}
+        <div style={{ display: 'flex', gap: 6, marginTop: 'var(--sp-4)', alignItems: 'center' }}>
           {(['terms', 'privacy', 'honesty'] as const).map(k => (
             <motion.div
               key={k}
@@ -461,7 +425,8 @@ export default function StepFinish({
           <motion.span
             animate={{ opacity: allAgreed ? 1 : 0.4 }}
             style={{
-              fontSize: 'var(--text-2xs)', color: allAgreed ? 'var(--color-primary)' : 'var(--text-tertiary)',
+              fontSize: 'var(--text-2xs)',
+              color: allAgreed ? 'var(--color-primary)' : 'var(--text-tertiary)',
               fontWeight: 700, whiteSpace: 'nowrap', marginRight: 4,
             }}
           >

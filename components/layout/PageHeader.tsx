@@ -3,15 +3,36 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft  } from 'lucide-react';
 
 interface Props {
-  title:    string;
-  onBack?:  () => void;
-  actions?: React.ReactNode;
+  title:       string;
+  onBack?:     () => void;
+  /**
+   * fallbackRoute: المسار الذي نذهب إليه إذا لا يوجد history
+   * مثال: '/login' في صفحة onboarding
+   * افتراضي: '/' 
+   */
+  fallbackRoute?: string;
+  actions?:    React.ReactNode;
   [key: string]: any;
 }
 
-export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
+export default function PageHeader({
+  title,
+  onBack,
+  fallbackRoute = '/',
+  actions,
+  ...rest
+}: Props) {
   const router = useRouter();
-  const back   = onBack ?? (() => router.back());
+
+  const back = onBack ?? (() => {
+    // window.history.length <= 2 يعني لا يوجد صفحة سابقة حقيقية
+    // (المتصفح يعدّ الصفحة الحالية + صفحة فارغة = 2)
+    if (typeof window !== 'undefined' && window.history.length <= 2) {
+      router.replace(fallbackRoute);
+    } else {
+      router.back();
+    }
+  });
 
   return (
     <header
@@ -59,6 +80,7 @@ export default function PageHeader({ title, onBack, actions, ...rest }: Props) {
           cursor: 'pointer',
           color: 'var(--text-main)',
           flexShrink: 0,
+          WebkitTapHighlightColor: 'transparent',
         }}
       >
         <ArrowLeft size={24} />

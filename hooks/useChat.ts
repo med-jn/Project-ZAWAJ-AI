@@ -1,6 +1,6 @@
 /**
- * 📁 hooks/useChat.ts — ZAWAJ AI v2.3
- * ✅ دعم الرد على الرسائل (reply_to_id, reply_to_content, reply_to_type)
+ * hooks/useChat.ts — ZAWAJ AI v2.4
+ * ✅ typing indicator مُصلَح — throttle + timeout
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -46,7 +46,11 @@ export function useChat(
     is_unlocked: false, is_free: false, pending_unlock: false,
   });
   const [recipientTyping, setRecipientTyping] = useState(false);
-  const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+
+  const channelRef      = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const isSubscribed    = useRef(false);
+  const typingTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentTyping   = useRef(false);
 
   const SELECT_FIELDS =
     'id, conversation_id, sender_id, content, message_type, audio_url, is_read, created_at, reply_to_id, reply_to_content, reply_to_type';
@@ -76,7 +80,7 @@ export function useChat(
 
     const isFree = !!(theyLikedMe || isMatch);
 
-    const { data: myMessages }   = await supabase.from('messages').select('id')
+    const { data: myMessages }    = await supabase.from('messages').select('id')
       .eq('conversation_id', conversationId).eq('sender_id', userId).limit(1);
     const { data: theirMessages } = await supabase.from('messages').select('id')
       .eq('conversation_id', conversationId).eq('sender_id', recipientId).limit(1);
@@ -92,7 +96,7 @@ export function useChat(
     });
   };
 
-  // ── جلب الرسائل مع loading ────────────────────────────────
+  // ── جلب الرسائل ───────────────────────────────────────────
   const fetchMessages = async () => {
     if (!conversationId) return;
     setLoading(true);
@@ -104,7 +108,6 @@ export function useChat(
     setLoading(false);
   };
 
-  // ── جلب صامت (بدون loading) ───────────────────────────────
   const refreshMessagesSilently = async () => {
     if (!conversationId) return;
     const { data, error } = await supabase
@@ -117,26 +120,39 @@ export function useChat(
   // ── الاشتراك الرئيسي ──────────────────────────────────────
   useEffect(() => {
     if (!conversationId) return;
+
+    isSubscribed.current = false;
     fetchMessages();
     fetchConvStatus();
 
     const channel = supabase
       .channel(`chat_${conversationId}`, { config: { presence: { key: userId } } })
+
+      // ✅ presence sync — يُحدّث typing indicator
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState();
         const other = (Object.values(state).flat() as any[])
           .find((u: any) => u.user_id === recipientId);
         setRecipientTyping(!!other?.typing);
       })
+
+      // ✅ presence join/leave — استجابة أسرع
+      .on('presence', { event: 'join' }, ({ newPresences }) => {
+        const other = (newPresences as any[]).find((u: any) => u.user_id === recipientId);
+        if (other) setRecipientTyping(!!other.typing);
+      })
+      .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+        const other = (leftPresences as any[]).find((u: any) => u.user_id === recipientId);
+        if (other) setRecipientTyping(false);
+      })
+
       .on('postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
         payload => {
           const raw = payload.new as ChatMessage;
 
-          // رسالة صوتية من نفس المرسل — تُعالج في sendVoiceMessage
           if (raw.message_type === 'voice' && raw.sender_id === userId) return;
 
-          // رسالة صوتية من الطرف الآخر — نجلب الكاملة لأن payload لا يحمل audio_url
           if (raw.message_type === 'voice' && raw.sender_id !== userId) {
             void (async () => {
               const { data: fullMsg } = await supabase
@@ -153,7 +169,6 @@ export function useChat(
             return;
           }
 
-          // رسالة نصية
           setMessages(prev => {
             if (prev.some(m => m.id === raw.id)) return prev;
             const tempIdx = prev.findIndex(m =>
@@ -201,18 +216,30 @@ export function useChat(
         }
       )
       .subscribe(async status => {
-        if (status === 'SUBSCRIBED') await channel.track({ user_id: userId, typing: false });
+        if (status === 'SUBSCRIBED') {
+          isSubscribed.current = true;
+          await channel.track({ user_id: userId, typing: false });
+        }
       });
 
     channelRef.current = channel;
-    return () => { supabase.removeChannel(channel); };
+
+    return () => {
+      isSubscribed.current = false;
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      supabase.removeChannel(channel);
+    };
   }, [conversationId, userId, recipientId]);
 
   // ── Android: إعادة الاتصال عند رجوع التطبيق ──────────────
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !conversationId) return;
     const p = App.addListener('appStateChange', ({ isActive }) => {
-      if (isActive) { supabase.realtime.connect(); refreshMessagesSilently(); fetchConvStatus(); }
+      if (isActive) {
+        supabase.realtime.connect();
+        refreshMessagesSilently();
+        fetchConvStatus();
+      }
     });
     return () => { p.then(h => h.remove()); };
   }, [conversationId, userId, recipientId]);
@@ -228,12 +255,37 @@ export function useChat(
     setConvStatus(prev => ({ ...prev, is_unlocked: true, pending_unlock: false }));
   };
 
+  // ── setTyping مُحسَّن: throttle + auto-stop بعد 3 ثوانٍ ──
+  const setTyping = (isTyping: boolean) => {
+    if (!isSubscribed.current || !channelRef.current) return;
+
+    // إذا نفس الحالة، لا نُرسل
+    if (isTyping === currentTyping.current) return;
+
+    currentTyping.current = isTyping;
+    channelRef.current.track({ user_id: userId, typing: isTyping }).catch(() => {});
+
+    // إيقاف تلقائي بعد 3 ثوانٍ من الكتابة
+    if (isTyping) {
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+      typingTimer.current = setTimeout(() => {
+        currentTyping.current = false;
+        channelRef.current?.track({ user_id: userId, typing: false }).catch(() => {});
+      }, 3000);
+    } else {
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+    }
+  };
+
   // ── إرسال رسالة نصية ──────────────────────────────────────
   const sendMessage = async (
     content: string,
     replyTo?: { id: string; content: string; type: string } | null
   ): Promise<boolean> => {
     if (!content.trim() || !conversationId || !userId) return false;
+
+    // إيقاف typing عند الإرسال
+    setTyping(false);
 
     const tid = makeTempId();
     const optimistic: ChatMessage = {
@@ -307,10 +359,6 @@ export function useChat(
       setMessages(prev => prev.map(m => m.id === tid ? { ...m, failed: true, is_optimistic: false } : m));
       return false;
     }
-  };
-
-  const setTyping = (isTyping: boolean) => {
-    channelRef.current?.track({ user_id: userId, typing: isTyping }).catch(() => {});
   };
 
   const deleteMessage = async (messageId: string) => {

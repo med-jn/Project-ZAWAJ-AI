@@ -399,10 +399,10 @@ export default function NotificationsPage() {
 
       {/* ✅ ChatWindow overlay — zIndex 1100 يتجاوز PageHeader */}
       <AnimatePresence>
-        {chatOpen && chatConvId && chatRecipient && userIdRef.current && (
+        {chatOpen && chatConvId && chatRecipient && userId && (
           <ChatWindow
             conversationId={chatConvId}
-            currentUserId={userIdRef.current}
+            currentUserId={userId!}
             recipient={chatRecipient}
             onBack={() => {
               setChatOpen(false);
