@@ -46,12 +46,16 @@ function buildCustomSchemeUrl(userId: string) {
   return `zawaj://app/view?id=${encodeURIComponent(userId)}`;
 }
 
-// أيقونة تشغيل أحادية اللون (currentColor) — بديل نظيف ومحترف
-// لأيقونة Google Play الملونة، تتكيف تلقائياً مع أي خلفية.
-function PlayIcon() {
+// شعار Google Play الملون الرسمي — مقسّم لـ 4 قطع بنفس ألوان جوجل
+// الرسمية (أزرق يسار، أخضر أعلى، أصفر يمين/الطرف، أحمر أسفل)
+// حسب الوصف الرسمي لجوجل للعلامة.
+function GooglePlayIcon() {
   return (
-    <svg width={18} height={18} viewBox="0 0 24 24" fill="currentColor" stroke="none">
-      <path d="M4 3.5v17a1 1 0 0 0 1.5.87l14-8.5a1 1 0 0 0 0-1.74l-14-8.5A1 1 0 0 0 4 3.5z" />
+    <svg width={26} height={26} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#34A853" d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1z" />
+      <path fill="#4285F4" d="M47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0z" />
+      <path fill="#FBBC04" d="M425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8z" />
+      <path fill="#EA4335" d="M104.6 499l280.8-161.2-60.1-60.1L104.6 499z" />
     </svg>
   );
 }
@@ -239,7 +243,7 @@ function ShareContent() {
                   marginBottom: 'var(--sp-3)',
                 }}
               >
-                <PlayIcon />
+                <GooglePlayIcon />
                 <span style={{ textAlign: 'left', lineHeight: 1.15 }}>
                   <span style={{
                     display: 'block', fontSize: 10, opacity: 0.7,
@@ -253,19 +257,11 @@ function ShareContent() {
                 </span>
               </a>
 
-              {/* زر ثانوي — لمن ثبّت التطبيق للتو */}
-              <button
-                onClick={handleManualOpen}
-                style={{
-                  width: '100%', height: 'var(--btn-h)',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'transparent',
-                  border: '1px solid var(--glass-border)',
-                  color: 'var(--text-tertiary)',
-                  fontWeight: 700, fontSize: 'var(--text-sm)',
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
+              {/* زر ثانوي — لمن ثبّت التطبيق للتو
+                  يستخدم .btn-premium من globals.css بكل خصائصه
+                  (لون var(--color-primary)، لمعة الانزلاق، تأثير
+                  الضغط 3D) للحفاظ على تناسق نظام الأزرار بالتطبيق */}
+              <button onClick={handleManualOpen} className="btn-premium" style={{ width: '100%' }}>
                 ثبّتّه؟ افتح التطبيق الآن
               </button>
             </>
