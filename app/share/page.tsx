@@ -29,9 +29,15 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams }               from 'next/navigation';
 import { motion, AnimatePresence }       from 'framer-motion';
 
-const PACKAGE_NAME    = 'com.zawaj.ai';
-const PLAY_STORE_URL  = 'https://play.google.com/store/apps/details?id=com.zawaj.ai';
-const APP_LOGO        = '/icons/icon-512x512.png';
+const PACKAGE_NAME     = 'com.zawaj.ai';
+const PLAY_STORE_URL   = 'https://play.google.com/store/apps/details?id=com.zawaj.ai';
+const APP_LOGO         = '/icons/icon-512x512.png';
+const DEVELOPER_NAME   = 'ORCAUP';
+// شارة "Get it on Google Play" الرسمية المستضافة من جوجل نفسها —
+// هذي نفس الشارة إلي جوجل توصي المطورين يستخدموها للربط لمتجرهم،
+// بالنسخة العربية المحلّية لتطابق لغة التطبيق، مع نسخة إنجليزية احتياطية.
+const PLAY_BADGE_AR    = 'https://play.google.com/intl/ar/badges/static/images/badges/ar_badge_web_generic.png';
+const PLAY_BADGE_EN    = 'https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png';
 
 // ── أيقونة Android بسيطة (تستخدم فقط كزخرفة داخل الأزرار) ──
 function AndroidIcon() {
@@ -145,15 +151,26 @@ function ShareContent() {
         }}>
           <img
             src={APP_LOGO}
-            alt="زواج AI"
+            alt="ZAWAJ AI"
             width={84}
             height={84}
             style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
           />
         </div>
-        <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 28, margin: '0 0 6px' }}>
-          زواج AI
+        {/* اسم البراند يبقى بالإنجليزية دايماً بغض النظر عن لغة الواجهة */}
+        <h1 style={{
+          color: '#fff', fontWeight: 900, fontSize: 26, margin: '0 0 4px',
+          direction: 'ltr', letterSpacing: 0.5,
+        }}>
+          ZAWAJ AI
         </h1>
+        {/* اسم المطوّر — بنفس شكل بطاقات متجر Google Play */}
+        <p style={{
+          color: 'rgba(255,255,255,0.4)', fontSize: 12.5, margin: '0 0 10px',
+          direction: 'ltr', letterSpacing: 0.3, textTransform: 'uppercase',
+        }}>
+          by {DEVELOPER_NAME}
+        </p>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: 0 }}>
           منصة الزواج الجاد
         </p>
@@ -232,31 +249,30 @@ function ShareContent() {
                   التطبيق غير مثبت
                 </h2>
                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
-                  ثبّت تطبيق زواج AI لتتمكن من مشاهدة هذا الملف الشخصي والتواصل مع أصحابه
+                  ثبّت تطبيق ZAWAJ AI لتتمكن من مشاهدة هذا الملف الشخصي والتواصل مع أصحابه
                 </p>
 
-                {/* زر تحميل */}
+                {/* زر تحميل — الشارة الرسمية "Get it on Google Play" من جوجل نفسها */}
                 <motion.a
                   whileTap={{ scale: 0.95 }}
                   href={PLAY_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    width: '100%', padding: '14px 0',
-                    borderRadius: 16,
-                    background: 'linear-gradient(135deg,#800020,#B3334B)',
-                    color: '#fff', fontWeight: 800, fontSize: 16,
-                    textDecoration: 'none',
-                    boxShadow: '0 8px 24px rgba(179,51,75,0.4)',
-                    marginBottom: 12,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: '100%', marginBottom: 12,
                   }}
                 >
-                  {/* Google Play icon */}
-                  <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" stroke="none">
-                    <path d="M3 20.5v-17c0-.83.94-1.3 1.6-.8l14 8.5a1 1 0 0 1 0 1.6l-14 8.5c-.66.5-1.6.03-1.6-.8z"/>
-                  </svg>
-                  تحميل من Google Play
+                  <img
+                    src={PLAY_BADGE_AR}
+                    onError={(e) => {
+                      // في حال فشل تحميل النسخة العربية لأي سبب، نرجع للإنجليزية
+                      const img = e.currentTarget;
+                      if (img.src !== PLAY_BADGE_EN) img.src = PLAY_BADGE_EN;
+                    }}
+                    alt="Get it on Google Play"
+                    style={{ height: 56, width: 'auto', maxWidth: '100%' }}
+                  />
                 </motion.a>
 
                 {/* زر محاولة فتح التطبيق مرة أخرى (لمن ثبّته للتو) */}
@@ -287,7 +303,7 @@ function ShareContent() {
         transition={{ delay: 0.4 }}
         style={{ color: 'rgba(255,255,255,0.2)', fontSize: 12, marginTop: 32, textAlign: 'center' }}
       >
-        © 2026 زواج AI — منصة الزواج الجاد
+        © 2026 ZAWAJ AI — منصة الزواج الجاد
       </motion.p>
     </div>
   );
