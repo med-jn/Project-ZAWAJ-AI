@@ -55,38 +55,38 @@ export default function ActionButtons({
       pointerEvents:  'none',
     }}>
 
-      {/* تجاهل — يسار */}
-      <GlassBtn
-        variant="pass"
-        size={size}
-        flash={passFlash}
-        busy={busy}
-        onClick={handlePass}
-        icon={
-          <ThumbsDown
-            size={iconSize}
-            strokeWidth={1.8}
-            style={{ color: 'rgba(255,255,255,0.85)' }}
-          />
-        }
-      />
+    {/* إعجاب — يمين (RTL: يُعرض أولاً) */}
+    <GlassBtn
+      variant="like"
+      size={size}
+      flash={likeFlash}
+      busy={busy}
+      onClick={handleLike}
+      icon={
+        <ThumbsUp
+          size={iconSize}
+          strokeWidth={1.8}
+          fill="rgba(255,255,255,0.85)"
+          style={{ color: 'rgba(255,255,255,0.85)' }}
+        />
+      }
+    />
 
-      {/* إعجاب — يمين */}
-      <GlassBtn
-        variant="like"
-        size={size}
-        flash={likeFlash}
-        busy={busy}
-        onClick={handleLike}
-        icon={
-          <ThumbsUp
-            size={iconSize}
-            strokeWidth={1.8}
-            fill="rgba(255,255,255,0.85)"
-            style={{ color: 'rgba(255,255,255,0.85)' }}
-          />
-        }
-      />
+    {/* تجاهل — يسار (RTL: يُعرض ثانياً) */}
+    <GlassBtn
+      variant="pass"
+      size={size}
+      flash={passFlash}
+      busy={busy}
+      onClick={handlePass}
+      icon={
+        <ThumbsDown
+          size={iconSize}
+          strokeWidth={1.8}
+          style={{ color: 'rgba(255,255,255,0.85)' }}
+        />
+      }
+    />
     </div>
   );
 }

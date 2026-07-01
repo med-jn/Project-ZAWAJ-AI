@@ -174,7 +174,7 @@ export default function StepBasics({ form, errs, set }: Props) {
       {/* رقم الهاتف */}
       {form.country && (
         <div style={{ marginBottom: 28 }}>
-          <Lbl t="رقم الهاتف (اختياري ولا يظهر)" />
+          <Lbl t="رقم الهاتف ( اختياري ولا يظهر )" />
           <div dir="ltr" style={{
             display: 'flex', alignItems: 'center',
             borderBottom: '1.5px solid var(--input-line)',

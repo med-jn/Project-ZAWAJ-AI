@@ -314,7 +314,7 @@ export default function OnboardingForm() {
   };
 
   return (
-    <div className="bg-luxury-gradient" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+    <div className="bg-main" style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
 
       {/* ══ الهيدر — سهم الرجوع الذكي ══ */}
       <PageHeader title="إعداد الملف" onBack={handleBack} />
