@@ -24,6 +24,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/notifications':'الإشعارات',
   '/profile':      'الملف الشخصي',
   '/view':         'عرض البيانات',
+  '/share':        'افتح التطبيق',
   '/profile/edit': 'تعديل الملف',
   '/settings':     'الإعدادات',
   '/privacy':      'سياسات الخصوصية',

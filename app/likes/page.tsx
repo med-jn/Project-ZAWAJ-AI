@@ -173,7 +173,7 @@ export default function LikesPage() {
     <>
       {/* ══ الشريط الثابت ══════════════════════════════════════ */}
       <div dir="rtl" style={{
-        position: 'sticky', top: 'var(--header-h)', zIndex: 900,
+        position: 'sticky', top: 'var(--header-h-safe)', zIndex: 900,
         background: 'var(--bg-main)',
         borderBottom: '1px solid var(--glass-border)',
         padding: 'var(--sp-3) var(--sp-4) var(--sp-2)',
@@ -231,7 +231,7 @@ export default function LikesPage() {
       {/* ══ المحتوى ════════════════════════════════════════════ */}
       <div
         dir="rtl"
-        style={{ minHeight: '60vh', paddingBottom: 'var(--nav-h)' }}
+        style={{ minHeight: '60vh', paddingBottom: 'var(--nav-h-safe)' }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
       >

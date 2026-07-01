@@ -39,7 +39,7 @@ export default function NotificationTabs({ value, onChange, counts = {} }: Props
   return (
     <div dir="rtl" style={{
       position:     'sticky',
-      top:          'var(--header-h)',
+      top:          'var(--header-h-safe)',
       zIndex:       900,
       background:   'var(--bg-main)',
       borderBottom: '1px solid var(--glass-border)',

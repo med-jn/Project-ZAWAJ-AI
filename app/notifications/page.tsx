@@ -343,7 +343,7 @@ export default function NotificationsPage() {
 
   return (
     <>
-      <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 'var(--nav-h)' }}>
+      <div dir="rtl" style={{ minHeight: '100vh', background: 'var(--bg-main)', paddingBottom: 'var(--nav-h-safe)' }}>
 
         <div style={{
           position: 'sticky', top: 0, zIndex: 50,

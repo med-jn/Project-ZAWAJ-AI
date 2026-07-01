@@ -363,7 +363,7 @@ export default function HomePage() {
         onClick={() => router.push('/filter')}
         style={{
           position:        'fixed',
-          top:             'calc(var(--header-h, 0px) + var(--sp-3))',
+          top:             'calc(var(--header-h-safe) + var(--sp-3))',
           left:             'var(--sp-4)',
           zIndex:           200,
           display:         'flex',
@@ -406,7 +406,7 @@ export default function HomePage() {
       {cycle > 0 && (
         <div style={{
           position:       'fixed',
-          top:            'calc(var(--header-h, 0px) + var(--sp-3))',
+          top:            'calc(var(--header-h-safe) + var(--sp-3))',
           right:          'var(--sp-4)',
           zIndex:          200,
           padding:        'var(--sp-1) var(--sp-3)',
