@@ -83,8 +83,7 @@ export default function StepPrivacy({ form, set, avatarUrl }: Props) {
             </div>
             <div>
               <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
-                تضبيب صورتك
-              </p>
+                تضبيب صورتي              </p>
               <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', margin: '2px 0 0' }}>
                 {form.is_photos_blurred ? 'مفعّل — صورتك محمية من الغرباء' : 'اضغط لحماية خصوصيتك'}
               </p>
@@ -122,7 +121,7 @@ export default function StepPrivacy({ form, set, avatarUrl }: Props) {
             </div>
             <div>
               <p style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, color: 'var(--text-main)' }}>
-                {form.show_photos ? 'رؤية صور الأعضاء' : 'إخفاء صور الأعضاء'}
+                {form.show_photos ? 'تضبيب صور الآخرين' : 'تضبيب صور الآخرين'}
               </p>
               <p style={{ fontSize: 'var(--text-2xs)', color: 'var(--text-tertiary)', margin: '2px 0 0' }}>
                 {form.show_photos ? 'الصور تظهر عادياً' : 'مفعّل — كل الصور مضبّبة'}

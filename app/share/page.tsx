@@ -3,61 +3,107 @@
  * 📁 app/share/page.tsx — ZAWAJ AI
  *
  * الصفحة الوسيطة للمشاركة — تعمل هكذا:
- * 1. المشاركة تُرسل: https://zawaj.orcaup.com/share?id=USER_ID
- * 2. عند فتحه في المتصفح/Telegram تظهر هذه الصفحة
- * 3. تحاول فوراً فتح: zawaj://app/view?id=USER_ID
- * 4. إذا فتح التطبيق ✅ — إذا لم يكن مثبتاً تظهر أزرار التحميل
  *
- * ✅ إذا كان التطبيق مثبتاً وتم إعداد autoVerify صح
- *    فإن Android يفتح التطبيق مباشرة بدون ظهور هذه الصفحة أصلاً.
+ * 1. المشاركة تُرسل: https://zawaj.orcaup.com/share?id=USER_ID
+ *
+ * 2. ✅ الحالة المثالية (وهي الأغلبية على أندرويد):
+ *    بما أن AndroidManifest يحتوي intent-filter مع autoVerify="true"
+ *    لـ https://zawaj.orcaup.com/share* + assetlinks.json منشور صح،
+ *    فإن أندرويد يفتح التطبيق مباشرة على مستوى النظام
+ *    قبل حتى ما يوصل هذا الرابط لمتصفح — هذي الصفحة ما تظهر إطلاقاً.
+ *
+ * 3. هذي الصفحة تشتغل فقط كخط دفاع ثاني (fallback) في الحالات:
+ *    - المستخدم فاتح الرابط من متصفح داخلي (Telegram / Instagram / إلخ)
+ *      ما يدعم Android App Links
+ *    - تحقق App Link فشل (شهادة تغيرت، تأخير انتشار...)
+ *    - التطبيق غير مثبت أصلاً
+ *
+ * 4. الحل هنا: Intent URL (الطريقة الرسمية لكروم/أندرويد) بدل تخمين
+ *    بـ setTimeout — المتصفح نفسه يتكفل بفتح التطبيق أو الرجوع لمتجر
+ *    Play تلقائياً عبر S.browser_fallback_url، بدون حاجة نحزر إذا نجح
+ *    أو فشل. نضيف زر يدوي + مؤقت أمان بسيط فقط لتغطية المتصفحات
+ *    غير الكرومية إلي ما تدعم intent://.
  */
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams }               from 'next/navigation';
 import { motion, AnimatePresence }       from 'framer-motion';
 
-// ── أيقونة Android بسيطة ─────────────────────────────────────
+const PACKAGE_NAME    = 'com.zawaj.ai';
+const PLAY_STORE_URL  = 'https://play.google.com/store/apps/details?id=com.zawaj.ai';
+const APP_LOGO        = '/icons/icon-512x512.png';
+
+// ── أيقونة Android بسيطة (تستخدم فقط كزخرفة داخل الأزرار) ──
 function AndroidIcon() {
   return (
-    <svg width={22} height={22} viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <svg width={20} height={20} viewBox="0 0 24 24" fill="currentColor" stroke="none">
       <path d="M17.523 15.341A5.5 5.5 0 0 0 17.5 15a5.5 5.5 0 0 0-11 0 5.5 5.5 0 0 0-.023.341A2 2 0 0 0 5 17v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a2 2 0 0 0-1.477-1.659zM9 14a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm6 0a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM8.5 8.634l-1.545-2.68a.5.5 0 1 1 .866-.5L9.366 8.1A5.98 5.98 0 0 1 12 7.5a5.98 5.98 0 0 1 2.634.6l1.545-2.646a.5.5 0 1 1 .866.5L15.5 8.634A5.99 5.99 0 0 1 18 13.5H6a5.99 5.99 0 0 1 2.5-4.866z"/>
     </svg>
   );
+}
+
+function isAndroidDevice() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent);
+}
+
+// بعض المتصفحات داخل التطبيقات (Telegram / Instagram / Facebook in-app
+// webview) لا تدعم intent:// إطلاقاً، فيها لازم fallback يدوي أسرع.
+function isInAppBrowser() {
+  if (typeof navigator === 'undefined') return false;
+  return /FBAN|FBAV|Instagram|Telegram|Line|Twitter/i.test(navigator.userAgent);
+}
+
+function buildIntentUrl(userId: string) {
+  // انتبه: browser_fallback_url هو المسؤول عن الرجوع للمتجر تلقائياً
+  // لو التطبيق غير مثبت — المتصفح (كروم) يتكفل بهذا بدون أي كود منا.
+  const fallback = encodeURIComponent(PLAY_STORE_URL);
+  return `intent://app/view?id=${encodeURIComponent(userId)}#Intent;scheme=zawaj;package=${PACKAGE_NAME};S.browser_fallback_url=${fallback};end`;
+}
+
+function buildCustomSchemeUrl(userId: string) {
+  return `zawaj://app/view?id=${encodeURIComponent(userId)}`;
 }
 
 function ShareContent() {
   const searchParams = useSearchParams();
   const userId       = searchParams.get('id') ?? '';
 
-  const [attempted, setAttempted] = useState(false);
-  const [failed,    setFailed]    = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
 
-  const customScheme = `zawaj://app/view?id=${userId}`;
-  const playStoreUrl = 'https://play.google.com/store/apps/details?id=com.zawaj.ai';
-
-  // ── محاولة فتح التطبيق فور تحميل الصفحة ─────────────────
   useEffect(() => {
     if (!userId) return;
 
-    // انتظر قليلاً حتى يتحمل DOM
+    const android  = isAndroidDevice();
+    const inApp    = isInAppBrowser();
+
+    // متصفح داخلي (Telegram/Instagram) لا يدعم intent:// — اعرض
+    // زر التحميل فوراً بدل ما ننتظر محاولة راح تفشل بصمت.
+    if (inApp || !android) {
+      setShowFallback(true);
+      return;
+    }
+
     const timer = setTimeout(() => {
-      setAttempted(true);
+      // Intent URL: كروم بيحاول يفتح التطبيق، ولو فشل بيرجع تلقائياً
+      // لـ browser_fallback_url (متجر Play) — بدون أي تدخل منا.
+      window.location.href = buildIntentUrl(userId);
 
-      // حاول فتح التطبيق عبر Custom Scheme
-      window.location.href = customScheme;
-
-      // بعد 2.5 ثانية — إذا لا تزال الصفحة مفتوحة = التطبيق غير مثبت
-      setTimeout(() => {
-        setFailed(true);
-      }, 2500);
-    }, 300);
+      // شبكة أمان فقط: لو لأي سبب المتصفح ما نفذ الـ intent
+      // (متصفح غير معروف)، نعرض زر يدوي بعد فترة قصيرة.
+      setTimeout(() => setShowFallback(true), 2000);
+    }, 250);
 
     return () => clearTimeout(timer);
-  }, [userId, customScheme]);
+  }, [userId]);
 
-  const handleOpenApp = () => {
-    window.location.href = customScheme;
-    setTimeout(() => setFailed(true), 2500);
+  const handleManualOpen = () => {
+    if (isAndroidDevice() && !isInAppBrowser()) {
+      window.location.href = buildIntentUrl(userId);
+    } else {
+      window.location.href = buildCustomSchemeUrl(userId);
+    }
+    setTimeout(() => setShowFallback(true), 1500);
   };
 
   if (!userId) {
@@ -92,16 +138,18 @@ function ShareContent() {
         style={{ marginBottom: 40, textAlign: 'center' }}
       >
         <div style={{
-          width: 80, height: 80, borderRadius: '50%',
-          background: 'linear-gradient(145deg,#c8002c,#8a0018)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          width: 84, height: 84, borderRadius: 24,
+          overflow: 'hidden',
           margin: '0 auto 16px',
           boxShadow: '0 12px 40px rgba(192,0,42,0.5)',
         }}>
-          {/* قلب بسيط */}
-          <svg width={40} height={40} viewBox="0 0 24 24" fill="#fff" stroke="none">
-            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-          </svg>
+          <img
+            src={APP_LOGO}
+            alt="زواج AI"
+            width={84}
+            height={84}
+            style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}
+          />
         </div>
         <h1 style={{ color: '#fff', fontWeight: 900, fontSize: 28, margin: '0 0 6px' }}>
           زواج AI
@@ -126,9 +174,9 @@ function ShareContent() {
           textAlign: 'center',
         }}
       >
-        {!failed ? (
+        {!showFallback ? (
           <>
-            {/* حالة المحاولة */}
+            {/* حالة المحاولة — جارٍ تحويل المستخدم للتطبيق */}
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
@@ -140,14 +188,14 @@ function ShareContent() {
               }}
             />
             <h2 style={{ color: '#fff', fontWeight: 800, fontSize: 20, margin: '0 0 10px' }}>
-              {attempted ? 'جاري فتح التطبيق...' : 'تحضير الرابط...'}
+              جاري فتح التطبيق...
             </h2>
             <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 14, lineHeight: 1.6, margin: '0 0 24px' }}>
               إذا لم يفتح التطبيق تلقائياً، اضغط الزر أدناه
             </p>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={handleOpenApp}
+              onClick={handleManualOpen}
               style={{
                 width: '100%', padding: '14px 0',
                 borderRadius: 16, border: 'none',
@@ -164,7 +212,7 @@ function ShareContent() {
           </>
         ) : (
           <>
-            {/* حالة الفشل — التطبيق غير مثبت */}
+            {/* حالة الـ fallback — التطبيق غير مثبت أو المتصفح لا يدعم الفتح التلقائي */}
             <AnimatePresence>
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -190,7 +238,7 @@ function ShareContent() {
                 {/* زر تحميل */}
                 <motion.a
                   whileTap={{ scale: 0.95 }}
-                  href={playStoreUrl}
+                  href={PLAY_STORE_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{
@@ -211,9 +259,9 @@ function ShareContent() {
                   تحميل من Google Play
                 </motion.a>
 
-                {/* زر محاولة مرة أخرى */}
+                {/* زر محاولة فتح التطبيق مرة أخرى (لمن ثبّته للتو) */}
                 <button
-                  onClick={() => { setFailed(false); handleOpenApp(); }}
+                  onClick={handleManualOpen}
                   style={{
                     width: '100%', padding: '12px 0',
                     borderRadius: 16,
@@ -224,7 +272,7 @@ function ShareContent() {
                     cursor: 'pointer', fontFamily: 'inherit',
                   }}
                 >
-                  حاول مرة أخرى
+                  ثبّتّه؟ افتح التطبيق الآن
                 </button>
               </motion.div>
             </AnimatePresence>
