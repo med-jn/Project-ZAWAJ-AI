@@ -51,29 +51,35 @@ function buildCustomSchemeUrl(userId: string) {
 // Play الرسمية نفسها، وليس تقريباً هندسياً).
 function GooglePlayIcon() {
   return (
-    <svg width={22} height={24} viewBox="18 16 26 28" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="gpBlue" x1="31.8" y1="183.29" x2="15.02" y2="166.51" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#00a0ff" /><stop offset=".01" stopColor="#00a1ff" /><stop offset=".26" stopColor="#00beff" /><stop offset=".51" stopColor="#00d2ff" /><stop offset=".76" stopColor="#00dfff" /><stop offset="1" stopColor="#00e3ff" />
-        </linearGradient>
-        <linearGradient id="gpYellow" x1="43.83" y1="172" x2="19.64" y2="172" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ffe000" /><stop offset=".41" stopColor="#ffbd00" /><stop offset=".78" stopColor="orange" /><stop offset="1" stopColor="#ff9c00" />
-        </linearGradient>
-        <linearGradient id="gpRed" x1="34.83" y1="169.7" x2="12.07" y2="146.95" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#ff3a44" /><stop offset="1" stopColor="#c31162" />
-        </linearGradient>
-        <linearGradient id="gpGreen" x1="17.3" y1="191.82" x2="27.46" y2="181.66" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#32a071" /><stop offset=".07" stopColor="#2da771" /><stop offset=".48" stopColor="#15cf74" /><stop offset=".8" stopColor="#06e775" /><stop offset="1" stopColor="#00f076" />
-        </linearGradient>
-      </defs>
-      <path fill="url(#gpBlue)" d="M20.44 17.54a2 2 0 0 0-.46 1.4v22.12a2 2 0 0 0 .46 1.4l.07.07L32.9 30.15v-.29L20.51 17.47z" />
-      <path fill="url(#gpYellow)" d="M37 34.28l-4.1-4.13v-.29l4.1-4.14.09.05L42 28.56c1.4.79 1.4 2.09 0 2.89l-4.89 2.78z" />
-      <path fill="url(#gpRed)" d="M37.12 34.22L32.9 30 20.44 42.46a1.63 1.63 0 0 0 2.08.06l14.61-8.3" />
-      <path fill="url(#gpGreen)" d="M37.12 25.78l-14.61-8.3a1.63 1.63 0 0 0-2.08.06L32.9 30z" />
-      <path opacity=".2" style={{ isolation: 'isolate' }} d="M37 34.13l-14.49 8.25a1.67 1.67 0 0 1-2 0l-.07.07.07.07a1.66 1.66 0 0 0 2 0l14.61-8.3z" />
-      <path opacity=".12" style={{ isolation: 'isolate' }} d="M20.44 42.32a2 2 0 0 1-.46-1.4v.15a2 2 0 0 0 .46 1.4l.07-.07zM42 31.3l-5 2.83.09.09L42 31.44A1.75 1.75 0 0 0 43 30a1.86 1.86 0 0 1-1 1.3z" />
-      <path fill="#fff" opacity=".25" style={{ isolation: 'isolate' }} d="M22.51 17.62L42 28.7a1.86 1.86 0 0 1 1 1.3 1.75 1.75 0 0 0-1-1.44L22.51 17.48c-1.4-.79-2.54-.13-2.54 1.47v.15c.03-1.61 1.15-2.27 2.54-1.48z" />
-    </svg>
+    // .icon-wrap يلغي القاعدة العامة في globals.css التي تفرض
+    // stroke: currentColor على كل SVG بالموقع (مصممة أصلاً لأيقونات
+    // Lucide المفرغة) — وهي سبب الحواف السوداء حول الشعار الملوّن.
+    // نستخدم آلية موجودة أصلاً بالنظام بدل تعديل globals.css نفسه.
+    <span className="icon-wrap" style={{ display: 'inline-flex', flexShrink: 0 }}>
+      <svg width={22} height={24} viewBox="18 16 26 28" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gpBlue" x1="31.8" y1="183.29" x2="15.02" y2="166.51" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#00a0ff" /><stop offset=".01" stopColor="#00a1ff" /><stop offset=".26" stopColor="#00beff" /><stop offset=".51" stopColor="#00d2ff" /><stop offset=".76" stopColor="#00dfff" /><stop offset="1" stopColor="#00e3ff" />
+          </linearGradient>
+          <linearGradient id="gpYellow" x1="43.83" y1="172" x2="19.64" y2="172" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#ffe000" /><stop offset=".41" stopColor="#ffbd00" /><stop offset=".78" stopColor="orange" /><stop offset="1" stopColor="#ff9c00" />
+          </linearGradient>
+          <linearGradient id="gpRed" x1="34.83" y1="169.7" x2="12.07" y2="146.95" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#ff3a44" /><stop offset="1" stopColor="#c31162" />
+          </linearGradient>
+          <linearGradient id="gpGreen" x1="17.3" y1="191.82" x2="27.46" y2="181.66" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stopColor="#32a071" /><stop offset=".07" stopColor="#2da771" /><stop offset=".48" stopColor="#15cf74" /><stop offset=".8" stopColor="#06e775" /><stop offset="1" stopColor="#00f076" />
+          </linearGradient>
+        </defs>
+        <path fill="url(#gpBlue)" d="M20.44 17.54a2 2 0 0 0-.46 1.4v22.12a2 2 0 0 0 .46 1.4l.07.07L32.9 30.15v-.29L20.51 17.47z" />
+        <path fill="url(#gpYellow)" d="M37 34.28l-4.1-4.13v-.29l4.1-4.14.09.05L42 28.56c1.4.79 1.4 2.09 0 2.89l-4.89 2.78z" />
+        <path fill="url(#gpRed)" d="M37.12 34.22L32.9 30 20.44 42.46a1.63 1.63 0 0 0 2.08.06l14.61-8.3" />
+        <path fill="url(#gpGreen)" d="M37.12 25.78l-14.61-8.3a1.63 1.63 0 0 0-2.08.06L32.9 30z" />
+        <path opacity=".2" style={{ isolation: 'isolate' }} d="M37 34.13l-14.49 8.25a1.67 1.67 0 0 1-2 0l-.07.07.07.07a1.66 1.66 0 0 0 2 0l14.61-8.3z" />
+        <path opacity=".12" style={{ isolation: 'isolate' }} d="M20.44 42.32a2 2 0 0 1-.46-1.4v.15a2 2 0 0 0 .46 1.4l.07-.07zM42 31.3l-5 2.83.09.09L42 31.44A1.75 1.75 0 0 0 43 30a1.86 1.86 0 0 1-1 1.3z" />
+        <path fill="#fff" opacity=".25" style={{ isolation: 'isolate' }} d="M22.51 17.62L42 28.7a1.86 1.86 0 0 1 1 1.3 1.75 1.75 0 0 0-1-1.44L22.51 17.48c-1.4-.79-2.54-.13-2.54 1.47v.15c.03-1.61 1.15-2.27 2.54-1.48z" />
+      </svg>
+    </span>
   );
 }
 
