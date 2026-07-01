@@ -46,16 +46,33 @@ function buildCustomSchemeUrl(userId: string) {
   return `zawaj://app/view?id=${encodeURIComponent(userId)}`;
 }
 
-// شعار Google Play الملون الرسمي — مقسّم لـ 4 قطع بنفس ألوان جوجل
-// الرسمية (أزرق يسار، أخضر أعلى، أصفر يمين/الطرف، أحمر أسفل)
-// حسب الوصف الرسمي لجوجل للعلامة.
+// شعار Google Play — مسار SVG مطابق حرفياً للشعار الرسمي (نفس بيانات
+// المسار وتدرجات الألوان الأربعة الدقيقة المستخدمة في شارات Google
+// Play الرسمية نفسها، وليس تقريباً هندسياً).
 function GooglePlayIcon() {
   return (
-    <svg width={26} height={26} viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#34A853" d="M325.3 234.3L104.6 13l280.8 161.2-60.1 60.1z" />
-      <path fill="#4285F4" d="M47 0C34 6.8 25.3 19.2 25.3 35.3v441.3c0 16.1 8.7 28.5 21.7 35.3l256.6-256L47 0z" />
-      <path fill="#FBBC04" d="M425.2 225.6l-58.9-34.1-65.7 64.5 65.7 64.5 60.1-34.1c18-14.3 18-46.5-1.2-60.8z" />
-      <path fill="#EA4335" d="M104.6 499l280.8-161.2-60.1-60.1L104.6 499z" />
+    <svg width={22} height={24} viewBox="18 16 26 28" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="gpBlue" x1="31.8" y1="183.29" x2="15.02" y2="166.51" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#00a0ff" /><stop offset=".01" stopColor="#00a1ff" /><stop offset=".26" stopColor="#00beff" /><stop offset=".51" stopColor="#00d2ff" /><stop offset=".76" stopColor="#00dfff" /><stop offset="1" stopColor="#00e3ff" />
+        </linearGradient>
+        <linearGradient id="gpYellow" x1="43.83" y1="172" x2="19.64" y2="172" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ffe000" /><stop offset=".41" stopColor="#ffbd00" /><stop offset=".78" stopColor="orange" /><stop offset="1" stopColor="#ff9c00" />
+        </linearGradient>
+        <linearGradient id="gpRed" x1="34.83" y1="169.7" x2="12.07" y2="146.95" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#ff3a44" /><stop offset="1" stopColor="#c31162" />
+        </linearGradient>
+        <linearGradient id="gpGreen" x1="17.3" y1="191.82" x2="27.46" y2="181.66" gradientTransform="matrix(1 0 0 -1 0 202)" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#32a071" /><stop offset=".07" stopColor="#2da771" /><stop offset=".48" stopColor="#15cf74" /><stop offset=".8" stopColor="#06e775" /><stop offset="1" stopColor="#00f076" />
+        </linearGradient>
+      </defs>
+      <path fill="url(#gpBlue)" d="M20.44 17.54a2 2 0 0 0-.46 1.4v22.12a2 2 0 0 0 .46 1.4l.07.07L32.9 30.15v-.29L20.51 17.47z" />
+      <path fill="url(#gpYellow)" d="M37 34.28l-4.1-4.13v-.29l4.1-4.14.09.05L42 28.56c1.4.79 1.4 2.09 0 2.89l-4.89 2.78z" />
+      <path fill="url(#gpRed)" d="M37.12 34.22L32.9 30 20.44 42.46a1.63 1.63 0 0 0 2.08.06l14.61-8.3" />
+      <path fill="url(#gpGreen)" d="M37.12 25.78l-14.61-8.3a1.63 1.63 0 0 0-2.08.06L32.9 30z" />
+      <path opacity=".2" style={{ isolation: 'isolate' }} d="M37 34.13l-14.49 8.25a1.67 1.67 0 0 1-2 0l-.07.07.07.07a1.66 1.66 0 0 0 2 0l14.61-8.3z" />
+      <path opacity=".12" style={{ isolation: 'isolate' }} d="M20.44 42.32a2 2 0 0 1-.46-1.4v.15a2 2 0 0 0 .46 1.4l.07-.07zM42 31.3l-5 2.83.09.09L42 31.44A1.75 1.75 0 0 0 43 30a1.86 1.86 0 0 1-1 1.3z" />
+      <path fill="#fff" opacity=".25" style={{ isolation: 'isolate' }} d="M22.51 17.62L42 28.7a1.86 1.86 0 0 1 1 1.3 1.75 1.75 0 0 0-1-1.44L22.51 17.48c-1.4-.79-2.54-.13-2.54 1.47v.15c.03-1.61 1.15-2.27 2.54-1.48z" />
     </svg>
   );
 }
@@ -231,12 +248,13 @@ function ShareContent() {
                 href={PLAY_STORE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
+                className="btn-premium"
                 style={{
                   direction: 'ltr',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  gap: 'var(--sp-3)',
-                  width: '100%', height: 'var(--btn-h-lg)',
-                  borderRadius: 'var(--radius-sm)',
+                  width: '100%',
+                  // كل خصائص .btn-premium (الشكل، الارتفاع، اللمعة،
+                  // تأثير الضغط) تبقى كما هي — فقط اللون نتحكم فيه
+                  // يدوياً هنا ليتكيف مع الثيم بدل لون البراند الثابت
                   backgroundColor: 'var(--text-main)',
                   color: 'var(--bg-main)',
                   textDecoration: 'none',
@@ -244,23 +262,24 @@ function ShareContent() {
                 }}
               >
                 <GooglePlayIcon />
-                <span style={{ textAlign: 'left', lineHeight: 1.15 }}>
+                <span style={{ textAlign: 'left', lineHeight: 1.1 }}>
                   <span style={{
-                    display: 'block', fontSize: 10, opacity: 0.7,
-                    fontWeight: 600, letterSpacing: 0.5, textTransform: 'uppercase',
+                    display: 'block', fontSize: 9, opacity: 0.75,
+                    fontWeight: 600, letterSpacing: 0.4, textTransform: 'uppercase',
                   }}>
                     Get it on
                   </span>
-                  <span style={{ display: 'block', fontSize: 17, fontWeight: 800 }}>
+                  <span style={{ display: 'block', fontSize: 14.5, fontWeight: 800 }}>
                     Google Play
                   </span>
                 </span>
               </a>
 
-              {/* زر ثانوي — لمن ثبّت التطبيق للتو
-                  يستخدم .btn-premium من globals.css بكل خصائصه
-                  (لون var(--color-primary)، لمعة الانزلاق، تأثير
-                  الضغط 3D) للحفاظ على تناسق نظام الأزرار بالتطبيق */}
+              {/* زر ثانوي — لمن ثبّت التطبيق للتو. نفس كلاس btn-premium
+                  بالضبط (لون var(--color-primary) الافتراضي) — بهذا
+                  يتوحّد الزرّان تلقائياً بنفس الارتفاع والشكل والحواف
+                  لأنهما يستخدمان نفس تعريف الكلاس، دون تعديل أي شيء
+                  في globals.css نفسه */}
               <button onClick={handleManualOpen} className="btn-premium" style={{ width: '100%' }}>
                 ثبّتّه؟ افتح التطبيق الآن
               </button>
