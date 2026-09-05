@@ -16,9 +16,26 @@ echo   ZAWAJ AI - Release Builder
 echo  ==========================================
 echo.
 
-:: === 1. Bump version (patch) ===
-echo [1/6] Bumping version...
-call npm version patch --no-git-tag-version
+:: === 1. Bump version ===
+echo [1/6] Choose version bump type:
+echo 1) Patch (x.y.z+1)  - Minor bug fixes [Default]
+echo 2) Minor (x.y+1.0)  - New features
+echo 3) Major (x+1.0.0)  - Major update
+echo.
+
+set CHOICE=1
+set /p CHOICE="Enter choice (1-3) [Default: 1]: "
+
+if "%CHOICE%"=="2" (
+    set BUMP=minor
+) else if "%CHOICE%"=="3" (
+    set BUMP=major
+) else (
+    set BUMP=patch
+)
+
+echo Bumping version as [%BUMP%]...
+call npm version %BUMP% --no-git-tag-version
 if errorlevel 1 ( echo FAILED: version bump & pause & exit /b 1 )
 
 :: === 2. Sync version to build.gradle + update-info.json ===

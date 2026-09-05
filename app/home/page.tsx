@@ -4,6 +4,7 @@
  * ✅ جلب show_photos من profiles وتمريره لـ UserCard
  * ✅ الاستيرادات من @/components/filter/types
  * ✅ دعم فلتر المسافة الجغرافية (radiusKm / searchLat / searchLon)
+ * ✅ إعلان Interstitial تلقائي كل 8 بطاقات (مُدار عبر AdManager)
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,6 +13,7 @@ import { SlidersHorizontal } from 'lucide-react';
 import { useRouter }         from 'next/navigation';
 import { supabase }          from '@/lib/supabase/client';
 import { MatchingEngine }    from '@/lib/services/MatchingEngine';
+import { preloadInterstitial, showInterstitialIfReady } from '@/lib/services/AdManager';
 import UserCard              from '@/components/cards/usercard';
 
 import {
@@ -31,6 +33,9 @@ const LS_CYCLE_KEY = (uid: string) => `zawaj_cycle_${uid}`;
 const LS_QUEUE_KEY = (uid: string) => `zawaj_queue_${uid}`;
 const LS_FHASH_KEY = (uid: string) => `zawaj_fhash_${uid}`;
 const QUEUE_TTL    = 2 * 60 * 60 * 1000;
+
+// ── إعداد الإعلان التلقائي ────────────────────────────────
+const CARDS_PER_INTERSTITIAL = 8; // كل كم بطاقة يظهر الإعلان
 
 function lsGet<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : fallback; }
@@ -105,8 +110,14 @@ export default function HomePage() {
   const cycleRef   = useRef(0);
   const profileRef = useRef<any>(null);
 
+  // ── عدّاد الإعلان التلقائي ─────────────────────────────
+  const swipeCountRef = useRef(0);
+
   useEffect(() => { usersRef.current = users;  }, [users]);
   useEffect(() => { cycleRef.current = cycle;  }, [cycle]);
+
+  // ✅ حمّل إعلان Interstitial مسبقاً فور دخول شاشة التصفح
+  useEffect(() => { preloadInterstitial(); }, []);
 
   // ══════════════════════════════════════════════════════════
   const fetchFresh = useCallback(async (
@@ -230,6 +241,13 @@ export default function HomePage() {
   // ══════════════════════════════════════════════════════════
   const handleNext = useCallback(() => {
     if (!currentUser || !uidRef.current) return;
+
+    // ── عدّاد الإعلان التلقائي: كل CARDS_PER_INTERSTITIAL بطاقة ──
+    swipeCountRef.current += 1;
+    if (swipeCountRef.current >= CARDS_PER_INTERSTITIAL) {
+      swipeCountRef.current = 0;
+      showInterstitialIfReady(); // لا ينتظر، لا يؤخر أي شيء — يعرض فقط إن كان جاهزاً ومسموحاً بالتردد
+    }
 
     setCurrentIndex(prevIdx => {
       const total      = usersRef.current.length;

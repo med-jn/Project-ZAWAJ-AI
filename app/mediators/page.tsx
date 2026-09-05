@@ -1,6 +1,6 @@
 'use client';
 /**
- * app/mediators/page.tsx — ZAWAJ AI v4
+ * app/mediators/page.tsx — ZAWAJ AI v5
  * ✅ فلتر فرز الوسطاء (تقييم / عدد الأعضاء / الأقرب)
  * ✅ المحظورون يختفون من القائمة نهائياً
  * ✅ قائمة المشتركين للمشتركين فقط
@@ -10,6 +10,8 @@
  * ✅ الضغط على مشترك → /view?id=...
  * ✅ تضبيب is_photos_blurred
  * ✅ كل الألوان من CSS vars (متوافق مع الوضعين)
+ * ✅ [مُصحَّح] "طلب وساطة" أُلغي نهائياً → اشتراك مباشر عبر SubscribeSheet
+ * ✅ [جديد] BuyCoinsSheet يُفتح تلقائياً عند نقص الرصيد
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -18,17 +20,19 @@ import { useRouter }                        from 'next/navigation';
 import {
   Star, Users, MessageCircle, Flag, ChevronLeft,
   Crown, Send, X, ShieldCheck, UserX, ShieldOff,
-  Lock, ExternalLink, SlidersHorizontal,
+  Lock, ExternalLink, SlidersHorizontal, Sparkles,
 } from 'lucide-react';
 import { toast }                            from 'sonner';
 import { supabase }                         from '@/lib/supabase/client';
 import { MediatorCard }                     from '@/components/mediators/MediatorCard';
-import { RequestMediationSheet }            from '@/components/mediators/RequestMediationSheet';
+import { SubscribeSheet }                   from '@/components/mediators/SubscribeSheet';
 import { SuccessScreen }                    from '@/components/mediators/SuccessScreen';
 import { Stars }                            from '@/components/mediators/Stars';
 import { Icon }                             from '@/components/mediators/Icon';
 import { LevelBadge }                       from '@/components/gems';
 import { useMediators }                     from '@/hooks/useMediators';
+import { useWallet }                        from '@/hooks/useWallet';
+import { BuyCoinsSheet }                    from '@/components/wallet/BuyCoinsSheet';
 import ReportSheet                          from '@/components/security/ReportSheet';
 import ChatWindow                           from '@/components/chat/ChatWindow';
 import type { MediatorRow, SuccessData }    from '@/components/mediators/types';
@@ -119,8 +123,13 @@ export default function MediatorsPage() {
     markSubscribed, markUnsubscribed,
   } = useMediators();
 
+  // ✅ [جديد] رصيد العملات المدفوعة الحقيقي (وليس balance_free)
+  const { balance } = useWallet();
+
   const [selected,           setSelected]           = useState<MediatorRow | null>(null);
-  const [requestTarget,      setRequestTarget]      = useState<MediatorRow | null>(null);
+  // ✅ [مُصحَّح] كان requestTarget/RequestMediationSheet — الآن اشتراك مباشر
+  const [subscribeTarget,    setSubscribeTarget]    = useState<MediatorRow | null>(null);
+  const [showBuyCoins,       setShowBuyCoins]       = useState(false);
   const [successData,        setSuccessData]        = useState<SuccessData | null>(null);
   const [showRate,           setShowRate]           = useState(false);
   const [myRating,           setMyRating]           = useState(0);
@@ -301,25 +310,30 @@ export default function MediatorsPage() {
         {visibleMediators.map((m, i) => (
           <MediatorCard key={m.id} mediator={m} rank={i + 1}
             isAuthenticated={!!currentUser}
-            onRequestMediation={setRequestTarget}
+            onRequestMediation={setSubscribeTarget}
             onOpenDetail={openDetail} />
         ))}
       </div>
 
-      {/* ── RequestMediationSheet ───────────────────────── */}
+      {/* ── SubscribeSheet (اشتراك مباشر) ───────────────── */}
       <AnimatePresence>
-        {requestTarget && !successData && (
-          <RequestMediationSheet
-            mediator={requestTarget}
+        {subscribeTarget && !successData && (
+          <SubscribeSheet
+            mediator={subscribeTarget}
+            balance={balance}
             userName={currentUser?.full_name ?? 'مستخدم'}
-            onClose={() => setRequestTarget(null)}
-            onSuccess={() => { setRequestTarget(null); load(); }}
+            onClose={() => setSubscribeTarget(null)}
+            onSuccess={(d) => { setSubscribeTarget(null); setSuccessData(d); load(); }}
+            onNeedTopUp={() => setShowBuyCoins(true)}
           />
         )}
       </AnimatePresence>
       <AnimatePresence>
         {successData && <SuccessScreen data={successData} onClose={() => setSuccessData(null)} />}
       </AnimatePresence>
+
+      {/* ── BuyCoinsSheet (شحن عبر Google Play) ─────────── */}
+      <BuyCoinsSheet open={showBuyCoins} onClose={() => setShowBuyCoins(false)} />
 
       {/* ══ Detail Sheet ══════════════════════════════════ */}
       <AnimatePresence>
@@ -609,8 +623,9 @@ export default function MediatorsPage() {
                       </motion.button>
                     </div>
                   ) : (
+                    /* ✅ [مُصحَّح] كان يفتح RequestMediationSheet — الآن يفتح SubscribeSheet مباشرة */
                     <motion.button whileTap={{scale:0.97}}
-                      onClick={() => { setSelected(null); setRequestTarget(selected); }}
+                      onClick={() => { setSelected(null); setSubscribeTarget(selected); }}
                       disabled={!currentUser}
                       style={{ flex:2, padding:'14px 0', borderRadius:16,
                         background:'linear-gradient(135deg,#800020,var(--color-primary))',
@@ -619,7 +634,7 @@ export default function MediatorsPage() {
                         fontSize:'var(--text-sm)', cursor: currentUser ? 'pointer' : 'default',
                         fontFamily:'inherit',
                         display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
-                      <Icon i={ShieldCheck} size={14} color="#fff" /> طلب وساطة
+                      <Icon i={Sparkles} size={14} color="#fff" /> اشترك الآن
                     </motion.button>
                   )}
 

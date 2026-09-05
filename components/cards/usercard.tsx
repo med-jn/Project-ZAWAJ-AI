@@ -9,6 +9,7 @@
  *  - parallax الصورة محسّن
  *  - overlays radial سينمائية
  *  - دخول سينمائي: scale+blur spring
+ *  - ✅ إعلان Interstitial عند فتح الملف الكامل (مُدار عبر AdManager)
  */
 
 import { useRef, useState, useCallback } from 'react';
@@ -24,6 +25,7 @@ import {
 import { MapPin, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { supabase }     from '@/lib/supabase/client';
 import { useGiftCoins } from '@/hooks/useGiftCoins';
+import { showInterstitialThenRun } from '@/lib/services/AdManager';
 import ActionButtons    from './ActionButtons';
 
 const BTN_SIZE = 66;
@@ -159,8 +161,10 @@ export default function UserCard({ userData: u, nextUserPhoto, onNext }: UserCar
     }
   };
 
+  // ✅ فتح الملف الكامل: يعرض Interstitial إن كان جاهزاً، ثم ينتقل دائماً
   const handleCardClick = () => {
-    if (!isDragging.current) router.push(`/view?id=${u.id}`);
+    if (isDragging.current) return;
+    showInterstitialThenRun(() => router.push(`/view?id=${u.id}`));
   };
 
   if (!hasViewed.current && u.currentUser) {
