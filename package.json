@@ -1,7 +1,7 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.6.4",
+  "version": "0.6.5",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
@@ -23,6 +23,7 @@
     "@capacitor/core": "^8.1.0",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/geolocation": "^8.1.0",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/keyboard": "^8.0.2",
     "@capacitor/live-updates": "^0.5.0",
     "@capacitor/preferences": "^8.0.1",
