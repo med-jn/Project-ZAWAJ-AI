@@ -13,8 +13,13 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/lib/supabase/client";
+import { toast } from "sonner";
 
 const REPORT_REASONS = [
+  {
+    value: "child_safety",
+    label: "استغلال أو إساءة تخص قاصرًا (أقل من 18)",
+  },
   {
     value: "fake_identity",
     label: "انتحال أو معلومات غير حقيقية",
@@ -227,6 +232,11 @@ export default function ReportSheet({
 
     if (error || !report) {
       setLoading(false);
+      toast.error(
+        error?.code === "23505"
+          ? "لقد أرسلت بلاغًا مماثلًا قيد المراجعة بالفعل."
+          : "تعذّر إرسال البلاغ، حاول مرة أخرى."
+      );
       return;
     }
 
@@ -647,4 +657,3 @@ export default function ReportSheet({
     </AnimatePresence>
   );
 }
-

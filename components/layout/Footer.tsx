@@ -37,6 +37,9 @@ export default function Footer() {
           <Link href="/help" style={{ fontSize: '8px', opacity: 0.7, color: 'var(--text-main)', textDecoration: 'none' }}>
             Help & Support
           </Link>
+          <Link href="/child-safety" style={{ fontSize: '8px', opacity: 0.7, color: 'var(--text-main)', textDecoration: 'none' }}>
+            Child Safety
+          </Link>
           <Link href="/about" style={{ fontSize: '8px', opacity: 0.7, color: 'var(--text-main)', textDecoration: 'none' }}>
             About
           </Link>
