@@ -7,8 +7,7 @@
  */
 import { useState, useCallback, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { addBonusPoints } from '@/lib/services/EconomyService';
-import { ECONOMY_RULES }  from '@/constants/ecomomy';
+import { supabase }       from '@/lib/supabase/client';
 import { toast }          from 'sonner';
 
 const IS_NATIVE = Capacitor.isNativePlatform();
@@ -28,19 +27,24 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
   const userIdRef       = useRef(userId);
   const rewardAmtRef    = useRef(rewardAmount);
   const bonusOfferedRef = useRef(false); // منع تكرار العرض أكثر من مرة لكل دورة مشاهدة
-  const pendingAmtRef   = useRef(rewardAmount);
-  const pendingNoteRef  = useRef('');
+  const pendingBonusRef = useRef(false);
 
   userIdRef.current    = userId;
   rewardAmtRef.current = rewardAmount;
 
-  // ── منح المكافأة ─────────────────────────────────────────
-  const grantReward = useCallback(async (amt: number, note: string) => {
-    const uid = userIdRef.current;
-    if (!uid) return;
+  // ── منح المكافأة (عبر RPC آمن على الخادم) ───────────────
+  const grantReward = useCallback(async (isBonus: boolean) => {
+    if (!userIdRef.current) return;
     try {
-      await addBonusPoints(uid, amt, ECONOMY_RULES.TRANSACTION_SOURCES.ADMOB, note);
-      toast.success(`تم إضافة ${amt} نقطة مكافأة!`);
+      const { data, error } = await supabase.rpc('claim_ad_reward', { p_is_bonus: isBonus });
+      if (error) throw error;
+      if (!data?.success) {
+        toast.error(data?.error === 'daily_cap_reached'
+          ? 'بلغت الحد اليومي لمكافآت الإعلانات.'
+          : 'تعذّر منح المكافأة الآن.');
+        return;
+      }
+      toast.success(`تم إضافة ${data.added} نقطة مكافأة!`);
     } catch (e) {
       console.error('[AdMob] grantReward error:', e);
       toast.error('فشل تسجيل المكافأة، حاول لاحقاً.');
@@ -54,21 +58,15 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
       return;
     }
 
-    const amt  = rewardAmtRef.current;
-    const note = isBonusRound
-      ? `مكافأة إضافية مضاعفة — +${amt} نقطة`
-      : `مكافأة مشاهدة إعلان — +${amt} نقطة`;
-
     if (!IS_NATIVE) {
       // في المتصفح/التطوير: منح مباشر بدون إعلان
-      await grantReward(amt, note);
+      await grantReward(isBonusRound);
       return;
     }
 
     if (statusRef.current !== 'idle') return; // منع الضغط المزدوج
 
-    pendingAmtRef.current  = amt;
-    pendingNoteRef.current = note;
+    pendingBonusRef.current = isBonusRound;
     if (!isBonusRound) bonusOfferedRef.current = false; // دورة جديدة → مؤهلة لعرض المكافأة الإضافية
 
     setStatus('loading');
@@ -116,7 +114,7 @@ export function useSmartAdMobReward(userId: string | undefined, rewardAmount = 5
         grantedRef.current = false;
         if (!wasGranted) return;
 
-        grantReward(pendingAmtRef.current, pendingNoteRef.current);
+        grantReward(pendingBonusRef.current);
 
         // ── عرض فرصة إعلان إضافي اختياري (مرة واحدة فقط لكل دورة) ──
         if (!bonusOfferedRef.current) {

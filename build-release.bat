@@ -2,7 +2,7 @@
 chcp 65001 >nul
 title ZAWAJ AI - Release Builder
 
-set PROJECT_DIR=C:\Users\lumina\Desktop\Project ZAWAJ AI
+set PROJECT_DIR=C:\Users\lumina\Desktop\ALL PROJECTS\ZAWAJ AI
 set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr
 set OUTPUT_APK=%PROJECT_DIR%\android\app\build\outputs\apk\release\app-release.apk
 set OUTPUT_AAB=%PROJECT_DIR%\android\app\build\outputs\bundle\release\app-release.aab

@@ -1,7 +1,7 @@
 {
   "name": "zawaj-ai",
   "type": "module",
-  "version": "0.6.1",
+  "version": "0.6.4",
   "private": true,
   "scripts": {
     "dev": "next dev --webpack --hostname 0.0.0.0",
@@ -57,6 +57,7 @@
     "archiver": "^7.0.1",
     "eslint": "^10.1.0",
     "eslint-config-next": "16.1.6",
+    "supabase": "^3.2.0",
     "typescript": "5.2.2"
   }
 }
