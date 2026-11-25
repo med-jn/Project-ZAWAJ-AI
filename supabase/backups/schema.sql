@@ -117,6 +117,42 @@ $$;
 ALTER FUNCTION "public"."add_points"("p_user_id" "uuid", "p_amount" integer, "p_type" "text", "p_note" "text") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."admin_audit_immutable"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'admin_audit_log is append-only';
+END;
+$$;
+
+
+ALTER FUNCTION "public"."admin_audit_immutable"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_emails"("p_ids" "uuid"[]) RETURNS TABLE("id" "uuid", "email" "text")
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'auth'
+    AS $$
+  SELECT u.id, u.email::text FROM auth.users u WHERE u.id = ANY(p_ids);
+$$;
+
+
+ALTER FUNCTION "public"."admin_emails"("p_ids" "uuid"[]) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."admin_lookup_email"("p_email" "text") RETURNS TABLE("id" "uuid", "email" "text")
+    LANGUAGE "sql" SECURITY DEFINER
+    SET "search_path" TO 'public', 'auth'
+    AS $$
+  SELECT u.id, u.email::text FROM auth.users u
+  WHERE lower(u.email) = lower(trim(p_email)) LIMIT 1;
+$$;
+
+
+ALTER FUNCTION "public"."admin_lookup_email"("p_email" "text") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."apply_welcome_bonus"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -306,6 +342,58 @@ $$;
 
 
 ALTER FUNCTION "public"."claim_activity_reward"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."claim_ad_reward"("p_is_bonus" boolean DEFAULT false) RETURNS "jsonb"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_uid        uuid := auth.uid();
+  v_amount     integer := 3;      -- ⚠️ يجب أن يساوي AD_REWARD في app/points/page.tsx
+  v_daily_cap  integer := 30;     -- أقصى عدد مكافآت إعلانية في اليوم
+  v_min_gap    interval := interval '15 seconds';
+  v_count      integer;
+  v_last       timestamptz;
+  v_balance    integer;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'unauthorized';
+  END IF;
+
+  SELECT balance_free INTO v_balance FROM wallets WHERE id = v_uid FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object('success', false, 'error', 'wallet_not_found');
+  END IF;
+
+  SELECT count(*), max(created_at) INTO v_count, v_last
+  FROM gift_transactions
+  WHERE user_id = v_uid AND source = 'admob'
+    AND created_at >= date_trunc('day', now());
+
+  IF v_count >= v_daily_cap THEN
+    RETURN jsonb_build_object('success', false, 'error', 'daily_cap_reached');
+  END IF;
+  IF v_last IS NOT NULL AND now() - v_last < v_min_gap THEN
+    RETURN jsonb_build_object('success', false, 'error', 'too_fast');
+  END IF;
+
+  UPDATE wallets
+     SET balance_free = COALESCE(balance_free, 0) + v_amount,
+         updated_at   = now()
+   WHERE id = v_uid
+  RETURNING balance_free INTO v_balance;
+
+  INSERT INTO gift_transactions (user_id, action, amount, balance_after, source, notes)
+  VALUES (v_uid, 'admob', v_amount, v_balance, 'admob',
+          CASE WHEN p_is_bonus THEN 'مكافأة إضافية مضاعفة — +' ELSE 'مكافأة مشاهدة إعلان — +' END || v_amount || ' نقطة');
+
+  RETURN jsonb_build_object('success', true, 'added', v_amount, 'balance_free', v_balance);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."claim_ad_reward"("p_is_bonus" boolean) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."claim_daily_bonus"("p_user_id" "uuid") RETURNS "jsonb"
@@ -974,6 +1062,8 @@ CREATE OR REPLACE FUNCTION "public"."get_mediators"() RETURNS TABLE("id" "uuid",
     ON sub_p.id = ms.id
 
   WHERE p.role = 'mediator'
+    AND p.account_status = 'active'
+    AND COALESCE(p.is_hidden, false) = false
 
   GROUP BY
     p.id, p.full_name, p.avatar_url, p.bio,
@@ -1108,6 +1198,9 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
     "delete_requested_at" timestamp with time zone,
     "discovery_position" "jsonb",
     "coords" "extensions"."geography"(Point,4326),
+    "is_hidden" boolean DEFAULT false NOT NULL,
+    "hidden_at" timestamp with time zone,
+    "hidden_reason" "text",
     CONSTRAINT "check_verification_status" CHECK (("verification_status" = ANY (ARRAY['approved'::"text", 'pending'::"text", 'rejected'::"text"]))),
     CONSTRAINT "profiles_account_status_check" CHECK (("account_status" = ANY (ARRAY['active'::"text", 'disabled'::"text", 'deleted'::"text"]))),
     CONSTRAINT "profiles_gender_check" CHECK (("gender" = ANY (ARRAY['male'::"text", 'female'::"text"]))),
@@ -1385,7 +1478,7 @@ ALTER FUNCTION "public"."handle_payout_approved"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."nearby_profiles"("user_lat" double precision, "user_lon" double precision, "radius_km" integer, "target_gender" "text", "excluded_ids" "uuid"[] DEFAULT '{}'::"uuid"[], "p_marital_status" integer[] DEFAULT '{}'::integer[], "p_education_level" integer[] DEFAULT '{}'::integer[], "p_religious_commitment" integer[] DEFAULT '{}'::integer[], "p_readiness_level" integer[] DEFAULT '{}'::integer[], "p_occupation_cat" integer[] DEFAULT '{}'::integer[], "p_housing_type" integer[] DEFAULT '{}'::integer[], "p_age_min" integer DEFAULT 18, "p_age_max" integer DEFAULT 80, "p_height_min" integer DEFAULT 140, "p_height_max" integer DEFAULT 210, "p_weight_min" integer DEFAULT 40, "p_weight_max" integer DEFAULT 150, "p_financial_status" "text"[] DEFAULT '{}'::"text"[], "p_skin_color" "text"[] DEFAULT '{}'::"text"[], "p_travel_willingness" "text"[] DEFAULT '{}'::"text"[], "p_desire_for_children" "text"[] DEFAULT '{}'::"text"[], "p_health_status" "text"[] DEFAULT '{}'::"text"[], "p_smoking" "text"[] DEFAULT '{}'::"text"[], "p_hijab_style" "text"[] DEFAULT '{}'::"text"[], "p_beard_style" "text"[] DEFAULT '{}'::"text"[], "p_prayer_commitment" "text"[] DEFAULT '{}'::"text"[], "p_quran_memorization" "text"[] DEFAULT '{}'::"text"[], "p_polygamy_acceptance" "text"[] DEFAULT '{}'::"text"[], "p_work_after_marriage" "text"[] DEFAULT '{}'::"text"[], "p_preferred_housing" "text"[] DEFAULT '{}'::"text"[], "p_social_type" "text"[] DEFAULT '{}'::"text"[], "p_morning_evening" "text"[] DEFAULT '{}'::"text"[], "p_conflict_style" "text"[] DEFAULT '{}'::"text"[], "p_affection_style" "text"[] DEFAULT '{}'::"text"[], "p_life_priority" "text"[] DEFAULT '{}'::"text"[], "p_parenting_style" "text"[] DEFAULT '{}'::"text"[], "p_relationship_with_family" "text"[] DEFAULT '{}'::"text"[]) RETURNS TABLE("id" "uuid", "full_name" "text", "gender" "text", "age" integer, "country" "text", "city" "text", "avatar_url" "text", "images_data" "jsonb", "is_photos_blurred" boolean, "readiness_level" integer, "profile_completion_percent" integer, "occupation_id" integer, "occupation_category_id" integer, "marital_status" integer, "education_level" integer, "religious_commitment" integer, "housing_type" integer, "financial_status" "text", "health_status" "text", "desire_for_children" "text", "children_count" integer, "children_custody" "text", "travel_willingness" "text", "skin_color" "text", "height" double precision, "weight" double precision, "nationality" "text", "bio" "text", "partner_requirements" "text", "quran_memorization" "text", "beard_style" "text", "prayer_commitment" "text", "hijab_style" "text", "polygamy_acceptance" "text", "work_after_marriage" "text", "smoking" "text", "social_type" "text", "morning_evening" "text", "home_time" "text", "conflict_style" "text", "affection_style" "text", "life_priority" "text", "parenting_style" "text", "relationship_with_family" "text", "interests" "jsonb", "health_habits" "jsonb", "birth_date" "date", "is_completed" boolean, "role" "text", "distance_km" double precision)
     LANGUAGE "sql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+    SET "search_path" TO 'public', 'extensions'
     AS $$
   SELECT
     p.id,
@@ -1452,6 +1545,8 @@ CREATE OR REPLACE FUNCTION "public"."nearby_profiles"("user_lat" double precisio
     p.gender        = target_gender
     AND p.is_completed = true
     AND (p.role IS NULL OR p.role = 'user')
+    AND p.account_status = 'active'
+    AND COALESCE(p.is_hidden, false) = false
     AND p.coords IS NOT NULL
 
     -- ✅ الفلترة الجغرافية
@@ -1553,6 +1648,43 @@ $$;
 ALTER FUNCTION "public"."notify_on_like"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."notify_reporter_on_report"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_ref text := '#' || upper(substr(NEW.id::text, 1, 8));
+BEGIN
+  IF NEW.reporter_id IS NULL THEN
+    RETURN NEW;
+  END IF;
+
+  BEGIN
+    INSERT INTO public.notifications (id, type, title, message)
+    VALUES (
+      NEW.reporter_id,
+      'system',
+      'تم استلام بلاغك',
+      CASE
+        WHEN NEW.reason = 'child_safety' THEN
+          'استلمنا بلاغك (' || v_ref || ') وسيُراجَع بأولوية قصوى من فريق الإشراف. سنُعلمك فور اكتمال المراجعة. شكرًا لحرصك على سلامة المجتمع.'
+        ELSE
+          'استلمنا بلاغك (' || v_ref || ') وسيراجعه فريق الإشراف. سنُعلمك بالنتيجة فور اكتمال المراجعة. شكرًا لمساهمتك في إبقاء المجتمع آمنًا.'
+      END
+    );
+  EXCEPTION WHEN OTHERS THEN
+    -- فشل الإشعار يجب ألا يمنع تسجيل البلاغ أبدًا
+    RAISE WARNING 'notify_reporter_on_report failed: %', SQLERRM;
+  END;
+
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."notify_reporter_on_report"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."process_mediator_payment"("sender_uid" "uuid", "receiver_uid" "uuid", "points_amount" integer, "service_name" "text") RETURNS "void"
     LANGUAGE "plpgsql" SECURITY DEFINER
     AS $$
@@ -1604,6 +1736,9 @@ BEGIN
     NEW.verification_status := OLD.verification_status;
     NEW.can_reverse_swipe := OLD.can_reverse_swipe;
     NEW.consecutive_months := OLD.consecutive_months;
+    NEW.is_hidden := OLD.is_hidden;
+    NEW.hidden_at := OLD.hidden_at;
+    NEW.hidden_reason := OLD.hidden_reason;
   END IF;
   RETURN NEW;
 END;
@@ -1640,6 +1775,22 @@ $$;
 
 
 ALTER FUNCTION "public"."reactivate_account"("p_user_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."reports_set_priority"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+  IF NEW.reason = 'child_safety' THEN
+    NEW.priority := 'urgent';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."reports_set_priority"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."request_mediation"("p_user_id" "uuid", "p_mediator_id" "uuid", "p_message" "text" DEFAULT NULL::"text") RETURNS "void"
@@ -1972,10 +2123,22 @@ ALTER FUNCTION "public"."sync_zawaj_tables"() OWNER TO "postgres";
 
 CREATE OR REPLACE FUNCTION "public"."trigger_send_push_notification"() RETURNS "trigger"
     LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
     AS $$
 DECLARE
   payload jsonb;
+  v_key   text;
 BEGIN
+  SELECT decrypted_secret INTO v_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'service_role_key'
+  LIMIT 1;
+
+  IF v_key IS NULL THEN
+    RAISE WARNING 'trigger_send_push_notification: service_role_key غير موجود في Vault';
+    RETURN NEW; -- لا نمنع إنشاء الإشعار
+  END IF;
+
   payload := jsonb_build_object(
     'record', jsonb_build_object(
       'notification_id', NEW.notification_id,
@@ -1994,7 +2157,7 @@ BEGIN
     url     := 'https://lbftmbutvtjtkxgdbndu.supabase.co/functions/v1/send-push',
     headers := jsonb_build_object(
       'Content-Type',  'application/json',
-      'Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxiZnRtYnV0dnRqdGt4Z2RibmR1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTE5MzcxMywiZXhwIjoyMDg2NzY5NzEzfQ.AYy0hwM5ksBLBoEx-S8r7WcVBXDkI3Z9Lpnw2UTVJ2U'
+      'Authorization', 'Bearer ' || v_key
     ),
     body    := payload
   );
@@ -2073,6 +2236,43 @@ CREATE OR REPLACE VIEW "public"."accounts_pending_deletion" WITH ("security_invo
 
 
 ALTER VIEW "public"."accounts_pending_deletion" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_audit_log" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "admin_id" "uuid" NOT NULL,
+    "admin_email" "text",
+    "action" "text" NOT NULL,
+    "target_user_id" "uuid",
+    "report_id" "uuid",
+    "details" "jsonb" DEFAULT '{}'::"jsonb" NOT NULL
+);
+
+
+ALTER TABLE "public"."admin_audit_log" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."admin_users" (
+    "user_id" "uuid" NOT NULL,
+    "role" "text" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "created_by" "uuid",
+    "can_view_reports" boolean DEFAULT false NOT NULL,
+    "can_handle_reports" boolean DEFAULT false NOT NULL,
+    "can_ban_users" boolean DEFAULT false NOT NULL,
+    "can_hide_users" boolean DEFAULT false NOT NULL,
+    "can_view_users" boolean DEFAULT false NOT NULL,
+    "can_view_user_pii" boolean DEFAULT false NOT NULL,
+    "can_manage_mediators" boolean DEFAULT false NOT NULL,
+    "can_manage_admins" boolean DEFAULT false NOT NULL,
+    "can_view_audit" boolean DEFAULT false NOT NULL,
+    "can_view_stats" boolean DEFAULT false NOT NULL,
+    CONSTRAINT "admin_users_role_check" CHECK (("role" = ANY (ARRAY['owner'::"text", 'moderator'::"text", 'viewer'::"text", 'custom'::"text"])))
+);
+
+
+ALTER TABLE "public"."admin_users" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."app_categories" (
@@ -2808,7 +3008,7 @@ CREATE TABLE IF NOT EXISTS "public"."reports" (
     "updated_at" timestamp with time zone DEFAULT "now"(),
     CONSTRAINT "reports_priority_check" CHECK (("priority" = ANY (ARRAY['low'::"text", 'normal'::"text", 'high'::"text", 'urgent'::"text"]))),
     CONSTRAINT "reports_status_check" CHECK (("status" = ANY (ARRAY['pending'::"text", 'investigating'::"text", 'resolved'::"text", 'rejected'::"text", 'warning_sent'::"text", 'banned'::"text"]))),
-    CONSTRAINT "reports_target_type_check" CHECK (("target_type" = ANY (ARRAY['profile'::"text", 'message'::"text", 'image'::"text", 'voice'::"text", 'call'::"text", 'story'::"text", 'other'::"text"])))
+    CONSTRAINT "reports_target_type_check" CHECK (("target_type" = ANY (ARRAY['profile'::"text", 'message'::"text", 'image'::"text", 'voice'::"text", 'call'::"text", 'story'::"text", 'conversation'::"text", 'other'::"text"])))
 );
 
 
@@ -2891,6 +3091,16 @@ ALTER VIEW "public"."wallets_view" OWNER TO "postgres";
 
 ALTER TABLE ONLY "public"."account_deletion_requests"
     ADD CONSTRAINT "account_deletion_requests_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_audit_log"
+    ADD CONSTRAINT "admin_audit_log_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."admin_users"
+    ADD CONSTRAINT "admin_users_pkey" PRIMARY KEY ("user_id");
 
 
 
@@ -3204,6 +3414,10 @@ ALTER TABLE ONLY "public"."wallets"
 
 
 
+CREATE INDEX "admin_audit_log_created_idx" ON "public"."admin_audit_log" USING "btree" ("created_at" DESC);
+
+
+
 CREATE INDEX "blocks_blocked_idx" ON "public"."blocks" USING "btree" ("blocked_id");
 
 
@@ -3465,6 +3679,14 @@ CREATE OR REPLACE TRIGGER "tr_match_check" AFTER INSERT ON "public"."likes" FOR 
 
 
 
+CREATE OR REPLACE TRIGGER "trg_admin_audit_no_change" BEFORE DELETE OR UPDATE ON "public"."admin_audit_log" FOR EACH ROW EXECUTE FUNCTION "public"."admin_audit_immutable"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_admin_audit_no_truncate" BEFORE TRUNCATE ON "public"."admin_audit_log" FOR EACH STATEMENT EXECUTE FUNCTION "public"."admin_audit_immutable"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_create_mediator_pricing" AFTER UPDATE OF "role" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."create_mediator_pricing"();
 
 
@@ -3477,6 +3699,10 @@ CREATE OR REPLACE TRIGGER "trg_new_subscription" AFTER INSERT ON "public"."subsc
 
 
 
+CREATE OR REPLACE TRIGGER "trg_notify_reporter_on_report" AFTER INSERT ON "public"."reports" FOR EACH ROW EXECUTE FUNCTION "public"."notify_reporter_on_report"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_payment_completed" AFTER UPDATE OF "status" ON "public"."konnect_payments" FOR EACH ROW EXECUTE FUNCTION "public"."handle_payment_completed"();
 
 
@@ -3485,11 +3711,20 @@ CREATE OR REPLACE TRIGGER "trg_payout_approved" BEFORE UPDATE OF "status" ON "pu
 
 
 
+CREATE OR REPLACE TRIGGER "trg_reports_set_priority" BEFORE INSERT ON "public"."reports" FOR EACH ROW EXECUTE FUNCTION "public"."reports_set_priority"();
+
+
+
 CREATE OR REPLACE TRIGGER "trg_sync_wallet_name" AFTER UPDATE OF "full_name" ON "public"."profiles" FOR EACH ROW EXECUTE FUNCTION "public"."sync_wallet_name"();
 
 
 
 CREATE OR REPLACE TRIGGER "trigger_check_match" AFTER INSERT ON "public"."likes" FOR EACH ROW EXECUTE FUNCTION "public"."check_for_match"();
+
+
+
+ALTER TABLE ONLY "public"."admin_users"
+    ADD CONSTRAINT "admin_users_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -3792,6 +4027,12 @@ CREATE POLICY "Users can view their own blocks" ON "public"."blocks" FOR SELECT 
 
 
 ALTER TABLE "public"."account_deletion_requests" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_audit_log" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."admin_users" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "allow authenticated insert fcm" ON "public"."fcm_tokens" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
@@ -6676,6 +6917,22 @@ GRANT ALL ON FUNCTION "public"."add_points"("p_user_id" "uuid", "p_amount" integ
 
 
 
+GRANT ALL ON FUNCTION "public"."admin_audit_immutable"() TO "anon";
+GRANT ALL ON FUNCTION "public"."admin_audit_immutable"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."admin_audit_immutable"() TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_emails"("p_ids" "uuid"[]) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_emails"("p_ids" "uuid"[]) TO "service_role";
+
+
+
+REVOKE ALL ON FUNCTION "public"."admin_lookup_email"("p_email" "text") FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."admin_lookup_email"("p_email" "text") TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."apply_welcome_bonus"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."apply_welcome_bonus"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."apply_welcome_bonus"() TO "service_role";
@@ -6720,6 +6977,12 @@ REVOKE ALL ON FUNCTION "public"."claim_activity_reward"() FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."claim_activity_reward"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."claim_activity_reward"() TO "service_role";
 GRANT ALL ON FUNCTION "public"."claim_activity_reward"() TO "anon";
+
+
+
+REVOKE ALL ON FUNCTION "public"."claim_ad_reward"("p_is_bonus" boolean) FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."claim_ad_reward"("p_is_bonus" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."claim_ad_reward"("p_is_bonus" boolean) TO "service_role";
 
 
 
@@ -7140,6 +7403,11 @@ GRANT ALL ON FUNCTION "public"."notify_on_like"() TO "anon";
 
 
 
+REVOKE ALL ON FUNCTION "public"."notify_reporter_on_report"() FROM PUBLIC;
+GRANT ALL ON FUNCTION "public"."notify_reporter_on_report"() TO "service_role";
+
+
+
 REVOKE ALL ON FUNCTION "public"."process_mediator_payment"("sender_uid" "uuid", "receiver_uid" "uuid", "points_amount" integer, "service_name" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."process_mediator_payment"("sender_uid" "uuid", "receiver_uid" "uuid", "points_amount" integer, "service_name" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."process_mediator_payment"("sender_uid" "uuid", "receiver_uid" "uuid", "points_amount" integer, "service_name" "text") TO "service_role";
@@ -7157,6 +7425,12 @@ REVOKE ALL ON FUNCTION "public"."reactivate_account"("p_user_id" "uuid") FROM PU
 GRANT ALL ON FUNCTION "public"."reactivate_account"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."reactivate_account"("p_user_id" "uuid") TO "service_role";
 GRANT ALL ON FUNCTION "public"."reactivate_account"("p_user_id" "uuid") TO "anon";
+
+
+
+GRANT ALL ON FUNCTION "public"."reports_set_priority"() TO "anon";
+GRANT ALL ON FUNCTION "public"."reports_set_priority"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."reports_set_priority"() TO "service_role";
 
 
 
@@ -7346,6 +7620,14 @@ GRANT ALL ON TABLE "public"."account_deletion_requests" TO "service_role";
 
 
 GRANT ALL ON TABLE "public"."accounts_pending_deletion" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."admin_audit_log" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."admin_users" TO "service_role";
 
 
 

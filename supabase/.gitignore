@@ -8,3 +8,4 @@
 .env.*.local
 backups/data.sql
 functions
+migrations/20261123014710_remote_schema.sql
