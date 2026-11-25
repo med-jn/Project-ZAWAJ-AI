@@ -13,6 +13,7 @@ import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { Share2, ShieldOff, Check, ThumbsUp, ShieldCheck } from 'lucide-react';
 import { Share } from '@capacitor/share';
 import ReportSheet from '@/components/security/ReportSheet';
+import UserActionsMenu from '@/components/security/UserActionsMenu';
 
 // ── أصوات ─────────────────────────────────────────────────────
 function playSound(name: 'like' | 'unlike' | 'message' | 'share') {
@@ -343,74 +344,15 @@ export default function ProfileActions({
             icon={<DotsIcon size={18} />}
           />
 
-          <AnimatePresence>
-            {menu && (
-              <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 100 }} onClick={() => setMenu(false)} />
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.82, y: 10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.82, y: 10 }}
-                  transition={{ type: 'spring', stiffness: 440, damping: 32 }}
-                  style={{
-                    position: 'absolute', bottom: BTN + 12, left: '50%',
-                    transform: 'translateX(-50%)', zIndex: 101,
-                    background: 'var(--bg-elevated)',
-                    border: '1px solid var(--glass-border)',
-                    borderRadius: 20, overflow: 'hidden', width: 164,
-                    boxShadow: 'var(--shadow-deep)',
-                    backdropFilter: 'blur(20px)',
-                  }}
-                >
-                  <div style={{
-                    position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)',
-                    width: 12, height: 6,
-                    borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
-                    borderTop: '6px solid var(--bg-elevated)',
-                  }} />
-
-                  {/* إبلاغ */}
-                  <button onClick={() => { setMenu(false); setReportOpen(true); }}
-                    style={{
-                      width: '100%', padding: '14px 16px',
-                      display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl',
-                      background: 'transparent', border: 'none',
-                      borderBottom: '1px solid var(--glass-border)',
-                      cursor: 'pointer', color: '#fca5a5',
-                      fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(239,68,68,0.07)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    <span>🚩</span> إبلاغ
-                  </button>
-
-                  {/* حظر */}
-                  <button
-                    onClick={() => { setMenu(false); if (!blocked) setBlockDialog(true); }}
-                    disabled={blocked}
-                    style={{
-                      width: '100%', padding: '14px 16px',
-                      display: 'flex', alignItems: 'center', gap: 10, direction: 'rtl',
-                      background: 'transparent', border: 'none',
-                      cursor: blocked ? 'default' : 'pointer',
-                      color: blocked ? '#86efac' : '#fdba74',
-                      fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
-                      opacity: blocked ? 0.7 : 1,
-                    }}
-                    onMouseEnter={e => { if (!blocked) e.currentTarget.style.background = 'rgba(251,146,60,0.07)'; }}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {blocked
-                      ? <ShieldCheck size={14} color="#86efac" strokeWidth={2} />
-                      : <ShieldOff   size={14} color="#fdba74" strokeWidth={2} />
-                    }
-                    {blocked ? 'تم الحظر ✓' : 'حظر'}
-                  </button>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+          <UserActionsMenu
+            open={menu}
+            onClose={() => setMenu(false)}
+            onReport={() => setReportOpen(true)}
+            onBlock={() => { if (!blocked) setBlockDialog(true); }}
+            blocked={blocked}
+            placement="top"
+            confirmBlock={false}
+          />
         </div>
       </motion.div>
 

@@ -137,6 +137,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
         // ✅ نضع الـ URI مباشرة — يقرأه Capacitor كـ appUrlOpen
         intent.setData(Uri.parse(deepLink));
+        intent.setAction(Intent.ACTION_VIEW); // يُطلق appUrlOpen في Capacitor
         // نضيف route كـ extra أيضاً كـ fallback
         intent.putExtra("route", normalizedRoute);
 

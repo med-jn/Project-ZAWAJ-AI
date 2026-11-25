@@ -33,7 +33,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     private static final String CH_MESSAGES     = "messages";
     private static final String CH_SOCIAL       = "social";
     private static final String CH_SUBSCRIPTION = "subscription";
-    private static final String CH_SYSTEM       = "system";
+    private static final String CH_SYSTEM       = "system_v2";
 
     private static final AtomicInteger notifId   = new AtomicInteger(1000);
     private static final ExecutorService executor = Executors.newCachedThreadPool();
@@ -55,7 +55,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         final String body      = getOrDef(data, "body",       "إشعار جديد");
         final String avatar    = getOrDef(data, "avatar",     "");
         final String route     = getOrDef(data, "route",      "/notifications/");
-        final String chanId    = getOrDef(data, "channel_id", resolveChannel(type));
+        final String chanRaw   = getOrDef(data, "channel_id", resolveChannel(type));
+        final String chanId    = "system".equals(chanRaw) ? CH_SYSTEM : chanRaw;
         final boolean silent   = "true".equals(data.get("is_silent"));
         final boolean blurred  = "true".equals(data.get("is_blurred"));
 
@@ -216,7 +217,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         makeChannel(mgr, CH_MESSAGES,     "الرسائل",    "رسائل المحادثات",          NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
         makeChannel(mgr, CH_SOCIAL,       "التفاعل",    "إعجابات وزيارات وتوافقات", NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
         makeChannel(mgr, CH_SUBSCRIPTION, "الاشتراكات", "إشعارات الوسطاء",          NotificationManager.IMPORTANCE_DEFAULT, soundUri, attr);
-        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",             NotificationManager.IMPORTANCE_LOW,     null,     null);
+        makeChannel(mgr, CH_SYSTEM,       "النظام",     "إشعارات عامة",             NotificationManager.IMPORTANCE_HIGH,    soundUri, attr);
     }
 
     private void makeChannel(NotificationManager mgr, String id, String name, String desc,

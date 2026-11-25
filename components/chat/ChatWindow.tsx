@@ -19,6 +19,7 @@ import OnlineDot                from '@/components/profile/OnlineDot';
 import VoiceRecorder            from './VoiceRecorder';
 import VoiceMessageBubble       from './VoiceMessageBubble';
 import ReportSheet              from '@/components/security/ReportSheet';
+import UserActionsMenu from '@/components/security/UserActionsMenu';
 
 function msgTime(dateStr: string): string {
   const d    = new Date(dateStr);
@@ -312,24 +313,15 @@ export default function ChatWindow({ conversationId, currentUserId, recipient, o
           <button onClick={() => setShowMenu(v => !v)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
             <MoreVertical size={20} />
           </button>
-          <AnimatePresence>
-            {showMenu && (
-              <>
-                <div style={{ position: 'fixed', inset: 0, zIndex: 10 }} onClick={() => setShowMenu(false)} />
-                <motion.div initial={{ opacity:0, scale:0.88, y:-8 }} animate={{ opacity:1, scale:1, y:0 }} exit={{ opacity:0, scale:0.88, y:-8 }} transition={{ duration:0.15 }}
-                  dir="rtl" style={{ position: 'absolute', top: 46, left: 0, zIndex: 20, background: 'var(--bg-elevated)', border: '1px solid var(--glass-border)', borderRadius: 16, overflow: 'hidden', width: 150, boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                  {[
-                    { label:'إبلاغ', color:'#f87171', action:() => { setShowMenu(false); setShowReport(true); } },
-                    { label:'حظر',   icon:<ShieldOff size={13}/>, color:'#fb923c', action:handleBlock },
-                  ].map((item,i) => (
-                    <button key={item.label} onClick={item.action} style={{ width: '100%', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 8, background: 'transparent', border: 'none', cursor: 'pointer', borderBottom: i===0 ? '1px solid var(--glass-border)' : 'none', color: item.color, fontFamily: 'inherit', fontSize: 13, fontWeight: 600 }}>
-                      {(item as any).icon}{item.label}
-                    </button>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+          <UserActionsMenu
+            open={showMenu}
+            onClose={() => setShowMenu(false)}
+            onReport={() => setShowReport(true)}
+            onBlock={handleBlock}
+            blocked={isBlocked}
+            placement="bottom"
+            targetName={(recipient as any)?.full_name}
+          />
         </div>
 
         <button onClick={onBack} style={{ background: 'transparent', border: 'none', cursor: 'pointer', width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)' }}>
