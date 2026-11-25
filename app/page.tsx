@@ -11,27 +11,14 @@ import { Capacitor }           from '@capacitor/core';
 import { Browser }             from '@capacitor/browser';
 import { App }                 from '@capacitor/app';
 import Footer                  from '@/components/layout/Footer';
+import { consumeLaunchRoute, shouldNavigate } from '@/lib/notifications/deep-link';
 
-// نُسجّل دالة التنقل في window حتى يستطيع Java استدعاؤها (Warm Start)
-if (typeof window !== 'undefined') {
-  (window as any).__navigateTo = null; // سيُعيَّن بعد جاهزية router
-}
+// [deep-link-patch] التنقل من الإشعارات صار في components/system/DeepLinkHandler.tsx
 
 export default function LandingPage() {
   const [loading, setLoading]             = useState(true);
   const [googleLoading, setGoogleLoading] = useState(false);
   const router                            = useRouter();
-
-  // ── تسجيل __navigateTo فور جاهزية router ──────────────────
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    (window as any).__navigateTo = (route: string) => {
-      if (route && route.startsWith('/')) {
-        router.push(route);
-      }
-    };
-    return () => { (window as any).__navigateTo = null; };
-  }, [router]);
 
   // ── التحقق من الجلسة + Cold Start ─────────────────────────
   useEffect(() => {
@@ -40,21 +27,19 @@ export default function LandingPage() {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session) { setLoading(false); return; }
 
-        // ✅ Cold Start: افحص window.__pendingRoute الذي وضعه MainActivity
-        if (Capacitor.getPlatform() === 'android') {
-          const pendingRoute = (window as any).__pendingRoute;
-          if (pendingRoute && pendingRoute.startsWith('/')) {
-            (window as any).__pendingRoute = null;
-            router.push(pendingRoute);
-            return;
-          }
-        }
-
         // التدفق الطبيعي
         try {
           const { data: profile } = await supabase
             .from('profiles').select('is_completed')
             .eq('id', session.user.id).maybeSingle();
+          // ✅ Cold Start من إشعار: /home أولًا (ليعمل زر الرجوع) ثم الصفحة المطلوبة
+          const launchRoute = await consumeLaunchRoute();
+          if (launchRoute && profile?.is_completed) {
+            router.replace('/home');
+            shouldNavigate(launchRoute);
+            setTimeout(() => router.push(launchRoute), 80);
+            return;
+          }
           router.push(profile?.is_completed ? '/home' : '/onboarding');
         } catch {
           router.push('/home');
@@ -104,14 +89,6 @@ export default function LandingPage() {
         return;
       }
 
-      // ✅ Warm Start من إشعار: zawaj://app/chat/?id=X
-      try {
-        const uri   = new URL(url);
-        if (uri.protocol === 'zawaj:' && uri.hostname === 'app') {
-          const route = uri.pathname + uri.search;
-          if (route && route !== '/') router.push(route);
-        }
-      } catch (_) {}
     });
 
     return () => { listener.then(l => l.remove()); };

@@ -11,6 +11,7 @@ import { Toaster } from 'sonner';
 import './globals.css';
 
 import ClientLayout from '@/components/layout/ClientLayout';
+import DeepLinkHandler from '@/components/system/DeepLinkHandler';
 
 const cairo = Cairo({
   subsets:  ['arabic', 'latin'],
@@ -105,6 +106,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           }}
         />
 
+        <DeepLinkHandler />
         <ClientLayout>{children}</ClientLayout>
 
       </body>

@@ -14,6 +14,7 @@
 import { useEffect }         from 'react';
 import { useRouter }         from 'next/navigation';
 import { Capacitor }         from '@capacitor/core';
+import { toast }             from 'sonner';
 import {
   PushNotifications,
   type Token,
@@ -96,7 +97,11 @@ export function usePushNotifications(userId?: string) {
                   conversation_id: data.conversation_id,
                   from_user:       data.from_user,
                 });
-            if (route) router.push(route);
+            // لا نُحوِّل المستخدم تلقائيًا أثناء استخدامه للتطبيق: تنبيه يضغط عليه إن أراد
+            toast((data as any).title || notification.title || 'إشعار جديد', {
+              description: (data as any).body || notification.body,
+              action: route ? { label: 'عرض', onClick: () => router.push(route) } : undefined,
+            });
           }
         );
       }
