@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu, X, Settings, Shield, ShieldCog, Package, UserPen, SlidersHorizontal,
-  HelpCircle, FileText, LogOut, ChevronLeft, Info
+  HelpCircle, FileText, LogOut, ChevronLeft, Info, Flag, MessageCircle
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { logout } from '@/lib/auth/logout';
@@ -17,6 +17,8 @@ const MENU_ITEMS = [
       { icon: UserPen,          label: 'تعديل الملف',        href: '/profile/edit' },
       { icon: SlidersHorizontal, label: 'البحث المتقدم',      href: '/filter'       },
       { icon: ShieldCog,        label: 'الأمان والخصوصية',   href: '/security'     },
+      { icon: Flag,             label: 'بلاغاتي وتنبيهاتي',  href: '/reports'      },
+      { icon: MessageCircle,    label: 'ملاحظات وشكاوى',     href: '/feedback'     },
       { icon: Settings,         label: 'الإعدادات',          href: '/settings'     },
       { icon: Package,          label: 'رصيد النقاط',        href: '/points'       },
     ],

@@ -11,13 +11,13 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Bell, Heart, Eye, MessageCircle,
-  Sparkles, Handshake, Crown, ChevronLeft, CheckCheck,
+  Sparkles, Handshake, Crown, ChevronLeft, CheckCheck, Flag,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 import NotificationTabs, { type NotificationFilter } from '@/components/notifications/NotificationTabs';
 import ChatWindow from '@/components/chat/ChatWindow';
 
-type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system' | 'contact_request';
+type NotifType = 'like' | 'view' | 'message' | 'match' | 'mediator' | 'subscription' | 'system' | 'contact_request' | 'report';
 
 interface Sender {
   id: string;
@@ -60,6 +60,7 @@ const CONFIG: Record<string, { icon: any; color: string; bg: string; glow: strin
   contact_request: { icon: Handshake,     color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
   subscription:    { icon: Crown,         color: '#f59e0b', bg: 'rgba(245,158,11,0.12)',   glow: 'rgba(245,158,11,0.45)'   },
   system:          { icon: Bell,          color: '#ffffff', bg: 'rgba(255,255,255,0.08)',  glow: 'rgba(255,255,255,0.18)'  },
+  report:          { icon: Flag,          color: '#ef4444', bg: 'rgba(239,68,68,0.12)',    glow: 'rgba(239,68,68,0.45)'    },
 };
 
 function timeAgo(dateStr: string): string {
@@ -132,6 +133,9 @@ function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
       case 'subscription':
         onNavigate('/points/');
         break;
+      case 'report':
+        onNavigate('/reports/');
+        break;
     }
   };
 
@@ -162,7 +166,7 @@ function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
           border: `1.5px solid ${n.is_read ? 'var(--glass-border)' : cfg.glow}`,
           boxShadow: n.is_read ? 'none' : `0 6px 20px ${cfg.glow}`,
         }}>
-          <img src={n.sender?.avatar_url || '/default-avatar.png'} alt="" loading="lazy"
+          <img src={n.type === 'report' ? '/icons/report-flag.png' : (n.sender?.avatar_url || '/default-avatar.png')} alt="" loading="lazy"
             style={{
               width: '100%', height: '100%', objectFit: 'cover',
               filter:    n.sender?.is_photos_blurred ? 'blur(10px)' : 'none',

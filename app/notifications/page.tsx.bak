@@ -199,7 +199,7 @@ function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
             fontSize: 'calc(var(--base-font-size) * .84)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {n.sender?.full_name || 'إشعار'}
+            {n.sender?.full_name || n.title || 'إشعار'}
           </span>
           <span style={{ color: 'rgba(255,255,255,0.28)', fontSize: 'calc(var(--base-font-size) * .66)', flexShrink: 0 }}>
             {timeAgo(n.created_at)}
@@ -212,7 +212,7 @@ function NotificationCard({ n, onRead, onNavigate, onOpenChat }: {
           lineHeight: 1.5,
           overflow: 'hidden',
           display: '-webkit-box',
-          WebkitLineClamp: 2,
+          WebkitLineClamp: n.type === 'system' ? 6 : 2,
           WebkitBoxOrient: 'vertical',
         }}>
           {buildText(n)}

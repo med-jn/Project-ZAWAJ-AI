@@ -9,6 +9,8 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   AlertTriangle,
@@ -103,6 +105,7 @@ const REASONS: Reason[] = [
   },
 ];
 
+const SUPPORT_EMAIL = "support@orcaup.com";
 const DAILY_UPLOAD_LIMIT = 3;
 const MAX_IMAGE_BYTES = 250 * 1024;
 const MIN_OTHER_DETAILS = 10;
@@ -177,6 +180,10 @@ export default function ReportSheet({
   targetType = "profile",
   targetId = null,
 }: Props) {
+  const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [images, setImages] = useState<File[]>([]);
@@ -336,7 +343,11 @@ export default function ReportSheet({
       toast.warning(`أُرسل البلاغ، لكن تعذّر رفع ${failedUploads} من لقطات الشاشة.`);
     }
 
-    setRefId(String(report.id).slice(0, 8).toUpperCase());
+    setRefId(
+      report.ref_no
+        ? `ZR-${String(report.ref_no).padStart(6, "0")}`
+        : `#${String(report.id).slice(0, 8).toUpperCase()}`,
+    );
     setSuccess(true);
     setLoading(false);
   }
@@ -382,7 +393,9 @@ export default function ReportSheet({
     </div>
   );
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -390,8 +403,9 @@ export default function ReportSheet({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 30 }}
           transition={{ duration: 0.2 }}
-          className="fixed inset-0 z-[120] flex flex-col"
+          className="fixed inset-0 flex flex-col"
           style={{
+            zIndex: 1250,
             background: "var(--bg-main)",
             paddingTop: "var(--safe-top)",
             paddingBottom: "calc(var(--nav-h-safe) + var(--sp-4))",
@@ -459,14 +473,30 @@ export default function ReportSheet({
                 className="glass-panel"
                 style={{ padding: "var(--sp-2) var(--sp-4)", fontSize: "var(--text-sm)", fontWeight: 700 }}
               >
-                رقم البلاغ: #{refId}
+                رقم البلاغ: {refId}
               </div>
               <button
-                onClick={handleClose}
+                onClick={() => {
+                  handleClose();
+                  router.push("/reports/");
+                }}
                 className="btn-premium"
                 style={{ marginTop: "var(--sp-4)", height: "3.2rem", width: "100%", maxWidth: "20rem" }}
               >
-                تم
+                متابعة حالة البلاغ
+              </button>
+              <button
+                onClick={handleClose}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  fontSize: "var(--text-sm)",
+                  color: "var(--text-tertiary)",
+                }}
+              >
+                إغلاق
               </button>
             </div>
           ) : (
@@ -763,11 +793,29 @@ export default function ReportSheet({
                     قد يؤدي إرسال بلاغات كاذبة أو مسيئة إلى تقييد حسابك.
                   </p>
                 </div>
+
+                <p
+                  style={{
+                    marginTop: "var(--sp-3)",
+                    textAlign: "center",
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-tertiary)",
+                  }}
+                >
+                  للتواصل المباشر:{" "}
+                  <a
+                    href={`mailto:${SUPPORT_EMAIL}`}
+                    style={{ color: "var(--color-primary)", fontWeight: 700, direction: "ltr", display: "inline-block" }}
+                  >
+                    {SUPPORT_EMAIL}
+                  </a>
+                </p>
               </div>
             </>
           )}
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
