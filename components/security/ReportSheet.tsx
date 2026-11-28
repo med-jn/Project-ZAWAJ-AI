@@ -184,6 +184,7 @@ export default function ReportSheet({
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const [step, setStep] = useState<1 | 2>(1);
   const [reason, setReason] = useState("");
   const [details, setDetails] = useState("");
   const [images, setImages] = useState<File[]>([]);
@@ -234,8 +235,7 @@ export default function ReportSheet({
   function selectReason(value: string) {
     setReason(value);
     setError(null);
-    // بلاغ سلامة الأطفال: لا نحتفظ بأي صور
-    if (value === "child_safety") setImages([]);
+    if (value === "child_safety") setImages([]); // لا صور في بلاغات سلامة الأطفال
   }
 
   async function handleSelectImages(e: React.ChangeEvent<HTMLInputElement>) {
@@ -317,11 +317,7 @@ export default function ReportSheet({
 
         const { error: uploadError } = await supabase.storage
           .from("evidence")
-          .upload(filePath, image, {
-            cacheControl: "3600",
-            upsert: false,
-            contentType: "image/webp",
-          });
+          .upload(filePath, image, { cacheControl: "3600", upsert: false, contentType: "image/webp" });
 
         if (uploadError) {
           failedUploads++;
@@ -354,8 +350,8 @@ export default function ReportSheet({
 
   function handleClose() {
     onClose();
-    // تفريغ الحالة بعد انتهاء حركة الإغلاق
     setTimeout(() => {
+      setStep(1);
       setSuccess(false);
       setReason("");
       setDetails("");
@@ -365,35 +361,20 @@ export default function ReportSheet({
     }, 250);
   }
 
-  const sectionTitle = (n: number, text: string, note?: string) => (
-    <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", marginBottom: "var(--sp-3)" }}>
-      <span
-        style={{
-          width: "1.5rem",
-          height: "1.5rem",
-          borderRadius: "999px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontSize: "var(--text-xs)",
-          fontWeight: 800,
-          background: "var(--color-primary-xsoft)",
-          color: "var(--color-primary)",
-          flexShrink: 0,
-        }}
-      >
-        {n}
-      </span>
-      <span style={{ fontSize: "var(--text-base)", fontWeight: 800, color: "var(--text-main)" }}>{text}</span>
-      {note && (
-        <span style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", marginInlineStart: "auto" }}>
-          {note}
-        </span>
-      )}
-    </div>
-  );
-
   if (!mounted) return null;
+
+  const iconBtn: React.CSSProperties = {
+    width: "2.5rem",
+    height: "2.5rem",
+    borderRadius: "var(--radius-full)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "transparent",
+    border: "none",
+    cursor: "pointer",
+    color: "var(--text-main)",
+  };
 
   return createPortal(
     <AnimatePresence>
@@ -408,12 +389,12 @@ export default function ReportSheet({
             zIndex: 1250,
             background: "var(--bg-main)",
             paddingTop: "var(--safe-top)",
-            paddingBottom: "calc(var(--nav-h-safe) + var(--sp-4))",
+            paddingBottom: "var(--sp-4)",
           }}
         >
           {/* HEADER */}
           <div
-            className="sticky top-0 z-20 flex items-center justify-between"
+            className="flex items-center justify-between"
             style={{
               height: "var(--header-h)",
               paddingInline: "var(--sp-4)",
@@ -421,25 +402,27 @@ export default function ReportSheet({
               backdropFilter: "var(--glass-blur)",
               WebkitBackdropFilter: "var(--glass-blur)",
               borderBottom: "1px solid var(--border-soft)",
+              flexShrink: 0,
             }}
           >
-            <button
-              onClick={handleClose}
-              className="flex items-center justify-center"
-              style={{ width: "2.5rem", height: "2.5rem", borderRadius: "var(--radius-full)" }}
-            >
+            <button onClick={handleClose} style={iconBtn} aria-label="إغلاق">
               <X className="icon-md" />
             </button>
-
-            <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text-main)" }}>
-              إرسال بلاغ
-            </h2>
-
+            <div style={{ textAlign: "center" }}>
+              <h2 style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text-main)", margin: 0 }}>
+                إرسال بلاغ
+              </h2>
+              {!success && (
+                <p style={{ fontSize: "var(--text-xs)", color: "var(--text-tertiary)", margin: 0 }}>
+                  الخطوة {step} من 2
+                </p>
+              )}
+            </div>
             <div style={{ width: "2.5rem" }} />
           </div>
 
           {success ? (
-            /* SUCCESS */
+            /* ───────── نجاح ───────── */
             <div
               className="flex-1 flex flex-col items-center justify-center"
               style={{ padding: "var(--sp-6)", textAlign: "center", gap: "var(--sp-3)" }}
@@ -456,7 +439,7 @@ export default function ReportSheet({
               >
                 <Check size={34} />
               </div>
-              <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text-main)" }}>
+              <h3 style={{ fontSize: "var(--text-lg)", fontWeight: 800, color: "var(--text-main)", margin: 0 }}>
                 تم استلام بلاغك
               </h3>
               <p
@@ -465,15 +448,16 @@ export default function ReportSheet({
                   color: "var(--text-secondary)",
                   lineHeight: "var(--lh-relaxed)",
                   maxWidth: "20rem",
+                  margin: 0,
                 }}
               >
                 سيراجعه فريق الإشراف، وستصلك إشعارات بأي تحديث على بلاغك.
               </p>
               <div
                 className="glass-panel"
-                style={{ padding: "var(--sp-2) var(--sp-4)", fontSize: "var(--text-sm)", fontWeight: 700 }}
+                style={{ padding: "var(--sp-2) var(--sp-4)", fontSize: "var(--text-sm)", fontWeight: 700, direction: "ltr" }}
               >
-                رقم البلاغ: {refId}
+                {refId}
               </div>
               <button
                 onClick={() => {
@@ -499,44 +483,22 @@ export default function ReportSheet({
                 إغلاق
               </button>
             </div>
-          ) : (
+          ) : step === 1 ? (
+            /* ───────── الخطوة 1: قائمة نظيفة بأنواع البلاغ ───────── */
             <>
-              {/* BODY */}
               <div className="flex-1 overflow-y-auto no-scrollbar" style={{ padding: "var(--sp-4)" }}>
-                {/* TOP */}
-                <div
-                  className="glass-panel"
-                  style={{ padding: "var(--sp-3) var(--sp-4)", marginBottom: "var(--sp-5)" }}
+                <p
+                  style={{
+                    fontSize: "var(--text-base)",
+                    fontWeight: 800,
+                    color: "var(--text-main)",
+                    margin: "0 0 var(--sp-3)",
+                  }}
                 >
-                  <div className="flex items-center" style={{ gap: "var(--sp-3)" }}>
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        width: "2.5rem",
-                        height: "2.5rem",
-                        borderRadius: "var(--radius-full)",
-                        background: "var(--color-primary-xsoft)",
-                        color: "var(--color-primary)",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <ShieldAlert className="icon-md" />
-                    </div>
-                    <p
-                      style={{
-                        fontSize: "var(--text-sm)",
-                        color: "var(--text-secondary)",
-                        lineHeight: "var(--lh-relaxed)",
-                      }}
-                    >
-                      تتم مراجعة البلاغات بسرية تامة. ساعدنا بتفاصيل واضحة ليكون القرار أسرع وأدق.
-                    </p>
-                  </div>
-                </div>
+                  ما نوع المشكلة؟
+                </p>
 
-                {/* 1 — السبب */}
-                {sectionTitle(1, "ما المشكلة؟")}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-2)" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
                   {REASONS.map((item) => {
                     const selected = reason === item.value;
                     const critical = !!item.critical;
@@ -547,92 +509,144 @@ export default function ReportSheet({
                         onClick={() => selectReason(item.value)}
                         className="glass-panel"
                         style={{
-                          gridColumn: critical ? "1 / -1" : undefined,
-                          padding: "var(--sp-3) var(--sp-3)",
-                          minHeight: "3.2rem",
+                          padding: "var(--sp-3) var(--sp-4)",
+                          minHeight: "3.3rem",
                           border: selected ? `1px solid ${accent}` : "1px solid var(--border-soft)",
                           background: selected ? "var(--color-primary-xsoft)" : undefined,
                           textAlign: "right",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "space-between",
-                          gap: "var(--sp-2)",
+                          gap: "var(--sp-3)",
+                          cursor: "pointer",
                         }}
                       >
+                        <span
+                          style={{
+                            width: "1.25rem",
+                            height: "1.25rem",
+                            borderRadius: "999px",
+                            border: `2px solid ${selected ? accent : "var(--border-soft)"}`,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {selected && (
+                            <span
+                              style={{ width: "0.6rem", height: "0.6rem", borderRadius: "999px", background: accent }}
+                            />
+                          )}
+                        </span>
                         <span
                           style={{
                             fontSize: "var(--text-sm)",
                             fontWeight: 700,
                             lineHeight: 1.5,
                             color: critical ? "#f87171" : "var(--text-main)",
+                            flex: 1,
                           }}
                         >
                           {item.label}
                         </span>
-                        {selected && <Check size={16} style={{ color: accent, flexShrink: 0 }} />}
+                        {critical && <ShieldAlert size={16} style={{ color: "#f87171", flexShrink: 0 }} />}
                       </button>
                     );
                   })}
                 </div>
+              </div>
 
-                {/* 2 — التفاصيل */}
-                <div style={{ marginTop: "var(--sp-6)" }}>
-                  {sectionTitle(
-                    2,
-                    "التفاصيل",
-                    reason === "other" ? "مطلوبة" : "اختيارية — لكنها تسرّع المراجعة",
-                  )}
-                  <textarea
-                    value={details}
-                    onChange={(e) => setDetails(e.target.value.slice(0, 1000))}
-                    placeholder={current?.hint || "اختر المشكلة أولًا ثم اشرحها هنا..."}
-                    style={{
-                      width: "100%",
-                      minHeight: "7.5rem",
-                      resize: "none",
-                      borderRadius: "var(--radius-lg)",
-                      padding: "var(--sp-4)",
-                      background: "var(--glass-bg)",
-                      border:
-                        reason === "other" && !detailsOk
-                          ? "1px solid #f87171"
-                          : "1px solid var(--border-soft)",
-                      color: "var(--text-main)",
-                      fontSize: "var(--text-base)",
-                      outline: "none",
-                      lineHeight: "var(--lh-relaxed)",
-                      backdropFilter: "var(--glass-blur)",
-                    }}
-                  />
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      marginTop: "var(--sp-1)",
-                      fontSize: "var(--text-xs)",
-                      color: "var(--text-tertiary)",
-                    }}
-                  >
-                    <span>
-                      {reason === "other" && !detailsOk
-                        ? `اكتب ${MIN_OTHER_DETAILS} أحرف على الأقل`
-                        : ""}
-                    </span>
-                    <span>{details.length}/1000</span>
-                  </div>
+              <div style={{ paddingInline: "var(--sp-4)", paddingTop: "var(--sp-3)" }}>
+                <button
+                  onClick={() => reason && setStep(2)}
+                  disabled={!reason}
+                  className="btn-premium"
+                  style={{ width: "100%", height: "3.2rem", opacity: reason ? 1 : 0.6 }}
+                >
+                  التالي
+                </button>
+              </div>
+            </>
+          ) : (
+            /* ───────── الخطوة 2: التفاصيل + لقطات الشاشة ───────── */
+            <>
+              <div className="flex-1 overflow-y-auto no-scrollbar" style={{ padding: "var(--sp-4)" }}>
+                {/* النوع المختار */}
+                <button
+                  onClick={() => setStep(1)}
+                  className="glass-panel"
+                  style={{
+                    width: "100%",
+                    padding: "var(--sp-3) var(--sp-4)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "var(--sp-3)",
+                    textAlign: "right",
+                    cursor: "pointer",
+                    marginBottom: "var(--sp-4)",
+                    border: current?.critical ? "1px solid #ef4444" : "1px solid var(--border-soft)",
+                  }}
+                >
+                  <span style={{ fontSize: "var(--text-sm)", fontWeight: 800, color: "var(--text-main)" }}>
+                    {current?.label}
+                  </span>
+                  <span style={{ fontSize: "var(--text-xs)", color: "var(--color-primary)", fontWeight: 700, flexShrink: 0 }}>
+                    تغيير
+                  </span>
+                </button>
+
+                {/* التفاصيل */}
+                <p style={{ fontSize: "var(--text-base)", fontWeight: 800, color: "var(--text-main)", margin: "0 0 var(--sp-2)" }}>
+                  اكتب ملاحظاتك{" "}
+                  <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-tertiary)" }}>
+                    {reason === "other" ? "(مطلوبة)" : "(اختيارية — تسرّع المراجعة)"}
+                  </span>
+                </p>
+                <textarea
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value.slice(0, 1000))}
+                  placeholder={current?.hint || "اشرح ما حدث..."}
+                  style={{
+                    width: "100%",
+                    minHeight: "8rem",
+                    resize: "none",
+                    borderRadius: "var(--radius-lg)",
+                    padding: "var(--sp-4)",
+                    background: "var(--glass-bg)",
+                    border:
+                      reason === "other" && !detailsOk ? "1px solid #f87171" : "1px solid var(--border-soft)",
+                    color: "var(--text-main)",
+                    fontSize: "var(--text-base)",
+                    outline: "none",
+                    lineHeight: "var(--lh-relaxed)",
+                    fontFamily: "inherit",
+                    boxSizing: "border-box",
+                  }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: "var(--sp-1)",
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-tertiary)",
+                  }}
+                >
+                  <span>
+                    {reason === "other" && !detailsOk ? `اكتب ${MIN_OTHER_DETAILS} أحرف على الأقل` : ""}
+                  </span>
+                  <span>{details.length}/1000</span>
                 </div>
 
-                {/* 3 — لقطات الشاشة */}
+                {/* لقطات الشاشة */}
                 <div style={{ marginTop: "var(--sp-5)" }}>
-                  {sectionTitle(
-                    3,
-                    "لقطات الشاشة",
-                    current?.evidence === "recommended"
-                      ? "موصى بها"
-                      : current?.evidence === "none"
-                        ? ""
-                        : "اختيارية",
-                  )}
+                  <p style={{ fontSize: "var(--text-base)", fontWeight: 800, color: "var(--text-main)", margin: "0 0 var(--sp-2)" }}>
+                    لقطات الشاشة{" "}
+                    <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "var(--text-tertiary)" }}>
+                      {current?.evidence === "recommended" ? "(موصى بها)" : current?.evidence === "none" ? "" : "(اختيارية)"}
+                    </span>
+                  </p>
 
                   {current?.evidence === "none" ? (
                     <div
@@ -644,8 +658,8 @@ export default function ReportSheet({
                         lineHeight: "var(--lh-relaxed)",
                       }}
                     >
-                      لا تُرفق أي صور أو لقطات في هذا النوع من البلاغات. يكفي الوصف النصي، وسنتواصل معك
-                      إن احتجنا لمعلومات إضافية.
+                      لا تُرفق أي صور أو لقطات في هذا النوع من البلاغات. يكفي الوصف النصي، وسنتواصل معك إن احتجنا
+                      لمعلومات إضافية.
                     </div>
                   ) : (
                     <>
@@ -659,11 +673,7 @@ export default function ReportSheet({
                           borderStyle: "dashed",
                         }}
                       >
-                        {processing ? (
-                          <Loader2 className="animate-spin icon-md" />
-                        ) : (
-                          <ImagePlus className="icon-md" />
-                        )}
+                        {processing ? <Loader2 className="animate-spin icon-md" /> : <ImagePlus className="icon-md" />}
                         <span style={{ fontSize: "var(--text-sm)", fontWeight: 700 }}>
                           {processing ? "جارٍ تجهيز الصور..." : "إضافة لقطات شاشة"}
                         </span>
@@ -677,23 +687,14 @@ export default function ReportSheet({
                         />
                       </label>
 
-                      <p
-                        style={{
-                          marginTop: "var(--sp-2)",
-                          fontSize: "var(--text-xs)",
-                          color: "var(--text-tertiary)",
-                        }}
-                      >
+                      <p style={{ marginTop: "var(--sp-2)", fontSize: "var(--text-xs)", color: "var(--text-tertiary)" }}>
                         {remainingUploads > 0
                           ? `المتاح اليوم: ${remainingUploads} من ${DAILY_UPLOAD_LIMIT} لقطات`
                           : "بلغتَ الحد اليومي لرفع لقطات الشاشة"}
                       </p>
 
                       {!!images.length && (
-                        <div
-                          className="flex overflow-x-auto no-scrollbar"
-                          style={{ gap: "var(--sp-3)", marginTop: "var(--sp-3)" }}
-                        >
+                        <div className="flex overflow-x-auto no-scrollbar" style={{ gap: "var(--sp-3)", marginTop: "var(--sp-3)" }}>
                           {images.map((img, index) => (
                             <div key={index} style={{ position: "relative", flexShrink: 0 }}>
                               <img
@@ -732,84 +733,83 @@ export default function ReportSheet({
                     </>
                   )}
                 </div>
+
+                {/* اقتراح التواصل بالبريد للأمور العاجلة */}
+                <div
+                  className="glass-panel"
+                  style={{
+                    marginTop: "var(--sp-5)",
+                    padding: "var(--sp-3) var(--sp-4)",
+                    display: "flex",
+                    gap: "var(--sp-3)",
+                    alignItems: "flex-start",
+                    border: current?.critical ? "1px solid rgba(239,68,68,0.5)" : "1px solid var(--border-soft)",
+                  }}
+                >
+                  <AlertTriangle
+                    style={{ width: "1.1rem", height: "1.1rem", color: current?.critical ? "#f87171" : "var(--text-tertiary)", flexShrink: 0, marginTop: "0.15rem" }}
+                  />
+                  <p style={{ margin: 0, fontSize: "var(--text-xs)", color: "var(--text-secondary)", lineHeight: "var(--lh-relaxed)" }}>
+                    {current?.critical ? "إن كان هناك خطر مباشر فتواصل معنا فورًا" : "إن كان الأمر عاجلًا فراسلنا مباشرة"} على{" "}
+                    <a
+                      href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("بلاغ عاجل — ZAWAJ AI")}`}
+                      style={{ color: "var(--color-primary)", fontWeight: 800, direction: "ltr", display: "inline-block" }}
+                    >
+                      {SUPPORT_EMAIL}
+                    </a>
+                    .
+                  </p>
+                </div>
+
+                <p style={{ marginTop: "var(--sp-3)", fontSize: "var(--text-xs)", color: "var(--text-tertiary)", lineHeight: "var(--lh-relaxed)" }}>
+                  قد يؤدي إرسال بلاغات كاذبة أو مسيئة إلى تقييد حسابك.
+                </p>
               </div>
 
               {/* FOOTER */}
               <div style={{ paddingInline: "var(--sp-4)", paddingTop: "var(--sp-3)" }}>
                 {error && (
-                  <p
-                    style={{
-                      marginBottom: "var(--sp-2)",
-                      fontSize: "var(--text-sm)",
-                      color: "#f87171",
-                      fontWeight: 700,
-                      textAlign: "center",
-                    }}
-                  >
+                  <p style={{ marginBottom: "var(--sp-2)", fontSize: "var(--text-sm)", color: "#f87171", fontWeight: 700, textAlign: "center" }}>
                     {error}
                   </p>
                 )}
-
-                <button
-                  onClick={handleSubmit}
-                  disabled={!canSubmit}
-                  className="btn-premium"
-                  style={{
-                    width: "100%",
-                    height: "3.2rem",
-                    opacity: canSubmit ? 1 : 0.6,
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="animate-spin" size={18} />
-                      جاري الإرسال...
-                    </>
-                  ) : (
-                    <>
-                      <Send size={18} />
-                      إرسال البلاغ
-                    </>
-                  )}
-                </button>
-
-                <div className="flex items-start" style={{ gap: "var(--sp-2)", marginTop: "var(--sp-3)" }}>
-                  <AlertTriangle
+                <div style={{ display: "flex", gap: "var(--sp-2)" }}>
+                  <button
+                    onClick={() => setStep(1)}
+                    disabled={loading}
                     style={{
-                      width: "1rem",
-                      height: "1rem",
-                      color: "var(--text-tertiary)",
-                      flexShrink: 0,
-                      marginTop: "0.15rem",
-                    }}
-                  />
-                  <p
-                    style={{
-                      fontSize: "var(--text-xs)",
-                      color: "var(--text-secondary)",
-                      lineHeight: "var(--lh-relaxed)",
+                      width: "5.5rem",
+                      height: "3.2rem",
+                      borderRadius: "var(--radius-full)",
+                      border: "1px solid var(--border-soft)",
+                      background: "transparent",
+                      color: "var(--text-main)",
+                      fontFamily: "inherit",
+                      fontWeight: 700,
+                      cursor: "pointer",
                     }}
                   >
-                    قد يؤدي إرسال بلاغات كاذبة أو مسيئة إلى تقييد حسابك.
-                  </p>
+                    رجوع
+                  </button>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
+                    className="btn-premium"
+                    style={{ flex: 1, height: "3.2rem", opacity: canSubmit ? 1 : 0.6 }}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="animate-spin" size={18} />
+                        جاري الإرسال...
+                      </>
+                    ) : (
+                      <>
+                        <Send size={18} />
+                        إرسال البلاغ
+                      </>
+                    )}
+                  </button>
                 </div>
-
-                <p
-                  style={{
-                    marginTop: "var(--sp-3)",
-                    textAlign: "center",
-                    fontSize: "var(--text-xs)",
-                    color: "var(--text-tertiary)",
-                  }}
-                >
-                  للتواصل المباشر:{" "}
-                  <a
-                    href={`mailto:${SUPPORT_EMAIL}`}
-                    style={{ color: "var(--color-primary)", fontWeight: 700, direction: "ltr", display: "inline-block" }}
-                  >
-                    {SUPPORT_EMAIL}
-                  </a>
-                </p>
               </div>
             </>
           )}

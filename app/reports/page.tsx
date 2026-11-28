@@ -28,10 +28,15 @@ type MyReport = {
 
 type Notice = {
   id: string;
-  kind: 'warning' | 'hidden' | 'restored' | 'suspended' | 'reinstated';
+  kind: 'notice' | 'warning' | 'hidden' | 'restored' | 'suspended' | 'reinstated';
+  severity: 'notice' | 'warning' | 'restriction';
   title: string;
   message: string;
   created_at: string;
+  withdrawn_at: string | null;
+  appeal_status: 'pending' | 'accepted' | 'rejected' | null;
+  appeal_response: string | null;
+  appeal_created_at: string | null;
 };
 
 const REASON_LABELS: Record<string, string> = {
@@ -67,12 +72,21 @@ const STATUS: Record<string, { label: string; hint: string; color: string; icon:
   rejected:      { label: 'لم تتبيّن مخالفة',    hint: 'لم نجد مخالفة لسياسات التطبيق. يمكنك تقديم بلاغ جديد بأدلة إضافية.', color: '#9ca3af', icon: X },
 };
 
-const NOTICE_STYLE: Record<Notice['kind'], { color: string; label: string }> = {
-  warning:    { color: '#eab308', label: 'تحذير' },
-  hidden:     { color: '#fb923c', label: 'إخفاء الملف' },
-  restored:   { color: '#22c55e', label: 'إعادة الظهور' },
-  suspended:  { color: '#ef4444', label: 'إيقاف الحساب' },
-  reinstated: { color: '#22c55e', label: 'إعادة التفعيل' },
+// الدرجات: تنبيه (أصفر) / تحذير (برتقالي) / تقييد (أحمر) — ورفع القيد (أخضر)
+const SEVERITY_STYLE: Record<Notice['severity'], { color: string; label: string }> = {
+  notice:      { color: '#eab308', label: 'تنبيه' },
+  warning:     { color: '#fb923c', label: 'تحذير' },
+  restriction: { color: '#ef4444', label: 'تقييد' },
+};
+function noticeStyle(n: Notice): { color: string; label: string } {
+  if (n.kind === 'restored')   return { color: '#22c55e', label: 'إعادة الظهور' };
+  if (n.kind === 'reinstated') return { color: '#22c55e', label: 'إعادة التفعيل' };
+  return SEVERITY_STYLE[n.severity] ?? SEVERITY_STYLE.notice;
+}
+const APPEAL_STATUS: Record<string, { label: string; color: string }> = {
+  pending:  { label: 'طعنك قيد المراجعة', color: '#eab308' },
+  accepted: { label: 'تم قبول طعنك',      color: '#22c55e' },
+  rejected: { label: 'رُفض الطعن',        color: '#9ca3af' },
 };
 
 const refLabel = (n: number | null, id: string) =>
@@ -94,6 +108,12 @@ export default function ReportsCenterPage() {
   const [reports, setReports] = useState<MyReport[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
 
+  // الطعن (مرة واحدة لكل بند)
+  const [appealFor, setAppealFor] = useState<Notice | null>(null);
+  const [appealText, setAppealText] = useState('');
+  const [appealBusy, setAppealBusy] = useState(false);
+  const [appealErr, setAppealErr] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -102,10 +122,7 @@ export default function ReportsCenterPage() {
 
     const [r, n] = await Promise.all([
       supabase.rpc('my_reports'),
-      supabase.from('account_notices')
-        .select('id,kind,title,message,created_at')
-        .order('created_at', { ascending: false })
-        .limit(50),
+      supabase.rpc('my_notices'),
     ]);
 
     if (r.error) setError('تعذّر تحميل بلاغاتك. حاول لاحقًا.');
@@ -115,6 +132,30 @@ export default function ReportsCenterPage() {
   }, [router]);
 
   useEffect(() => { load(); }, [load]);
+
+  async function submitAppeal() {
+    if (!appealFor || appealBusy) return;
+    setAppealBusy(true);
+    setAppealErr(null);
+    const { error: e } = await supabase.rpc('appeal_notice', {
+      p_notice_id: appealFor.id,
+      p_message: appealText.trim(),
+    });
+    setAppealBusy(false);
+    if (e) {
+      const m = String(e.message);
+      setAppealErr(
+        m.includes('appeal_exists')       ? 'قدّمت طعنًا على هذا البند من قبل — الطعن مرة واحدة فقط.'
+        : m.includes('message_too_short') ? 'اكتب 10 أحرف على الأقل لشرح سبب الطعن.'
+        : m.includes('notice_not_found')  ? 'هذا البند غير متاح للطعن.'
+        : 'تعذّر إرسال الطعن، حاول لاحقًا.',
+      );
+      return;
+    }
+    setAppealFor(null);
+    setAppealText('');
+    load();
+  }
 
   const tabBtn = (key: 'mine' | 'notices', label: string, count: number) => (
     <button
@@ -223,12 +264,22 @@ export default function ReportsCenterPage() {
                     لا توجد تحذيرات أو إجراءات على حسابك. حسابك بحالة جيدة.
                   </div>
                 ) : notices.map((n) => {
-                  const ns = NOTICE_STYLE[n.kind] ?? NOTICE_STYLE.warning;
+                  const ns = noticeStyle(n);
+                  const lift = n.kind === 'restored' || n.kind === 'reinstated';
+                  const withdrawn = !!n.withdrawn_at;
+                  const ap = n.appeal_status ? APPEAL_STATUS[n.appeal_status] : null;
                   return (
-                    <div key={n.id} style={{ ...card, borderColor: `${ns.color}55` }}>
+                    <div key={n.id} style={{ ...card, borderColor: `${ns.color}55`, opacity: withdrawn ? 0.65 : 1 }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 'var(--sp-2)' }}>
-                        <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 'var(--text-xs)', fontWeight: 700, color: ns.color, background: `${ns.color}1f` }}>
-                          {ns.label}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 'var(--text-xs)', fontWeight: 800, color: ns.color, background: `${ns.color}1f` }}>
+                            {ns.label}
+                          </span>
+                          {withdrawn && (
+                            <span style={{ padding: '3px 10px', borderRadius: 99, fontSize: 'var(--text-xs)', fontWeight: 700, color: '#9ca3af', background: 'rgba(156,163,175,0.15)' }}>
+                              ملغى
+                            </span>
+                          )}
                         </span>
                         <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{fmtDate(n.created_at)}</span>
                       </div>
@@ -236,6 +287,30 @@ export default function ReportsCenterPage() {
                       <p style={{ margin: 'var(--sp-2) 0 0', fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-relaxed)' }}>
                         {n.message}
                       </p>
+
+                      {!lift && !withdrawn && (
+                        <div style={{ marginTop: 'var(--sp-3)', paddingTop: 'var(--sp-3)', borderTop: '1px solid var(--glass-border)' }}>
+                          {ap ? (
+                            <>
+                              <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 99, fontSize: 'var(--text-xs)', fontWeight: 700, color: ap.color, background: `${ap.color}1f` }}>
+                                {ap.label}
+                              </span>
+                              {n.appeal_response && (
+                                <p style={{ margin: 'var(--sp-2) 0 0', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-relaxed)' }}>
+                                  رد الإشراف: {n.appeal_response}
+                                </p>
+                              )}
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => { setAppealFor(n); setAppealText(''); setAppealErr(null); }}
+                              style={{ background: 'none', border: `1px solid ${ns.color}66`, color: ns.color, borderRadius: 99, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--text-xs)', fontWeight: 700 }}
+                            >
+                              تقديم طعن (مرة واحدة)
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -261,6 +336,57 @@ export default function ReportsCenterPage() {
           </p>
         </div>
       </div>
+
+      {/* نافذة الطعن */}
+      {appealFor && (
+        <div
+          onClick={() => !appealBusy && setAppealFor(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 1300, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            dir="rtl"
+            style={{ width: '100%', maxWidth: 400, background: 'var(--bg-elevated)', border: '1px solid var(--glass-border)', borderRadius: 22, padding: 20, boxShadow: 'var(--shadow-deep)' }}
+          >
+            <h3 style={{ margin: '0 0 6px', fontSize: 'var(--text-base)', fontWeight: 800, color: 'var(--text-main)' }}>
+              تقديم طعن
+            </h3>
+            <p style={{ margin: '0 0 var(--sp-3)', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', lineHeight: 'var(--lh-relaxed)' }}>
+              «{appealFor.title}» — لكل بند طعن واحد فقط، فاشرح موقفك بوضوح.
+            </p>
+            <textarea
+              value={appealText}
+              onChange={(e) => setAppealText(e.target.value.slice(0, 1000))}
+              placeholder="لماذا تعتقد أن هذا القرار غير صحيح؟"
+              style={{ width: '100%', minHeight: '7rem', resize: 'none', borderRadius: 'var(--radius-md)', padding: 'var(--sp-3)', background: 'var(--glass-bg)', border: '1px solid var(--border-soft)', color: 'var(--text-main)', fontSize: 'var(--text-sm)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', lineHeight: 'var(--lh-relaxed)' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', margin: '4px 0 var(--sp-3)' }}>
+              <span>{appealText.trim().length > 0 && appealText.trim().length < 10 ? 'اكتب 10 أحرف على الأقل' : ''}</span>
+              <span>{appealText.length}/1000</span>
+            </div>
+            {appealErr && (
+              <p style={{ margin: '0 0 var(--sp-3)', fontSize: 'var(--text-xs)', color: '#f87171', fontWeight: 700 }}>{appealErr}</p>
+            )}
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={submitAppeal}
+                disabled={appealBusy || appealText.trim().length < 10}
+                className="btn-premium"
+                style={{ flex: 1, height: 44, opacity: appealBusy || appealText.trim().length < 10 ? 0.6 : 1 }}
+              >
+                {appealBusy ? 'جاري الإرسال...' : 'إرسال الطعن'}
+              </button>
+              <button
+                onClick={() => setAppealFor(null)}
+                disabled={appealBusy}
+                style={{ flex: 1, height: 44, borderRadius: 14, border: '1px solid var(--glass-border)', background: 'transparent', color: 'var(--text-main)', fontFamily: 'inherit', fontWeight: 700, cursor: 'pointer' }}
+              >
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
